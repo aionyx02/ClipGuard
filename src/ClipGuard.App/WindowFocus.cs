@@ -20,6 +20,9 @@ internal static class WindowFocus
         return pid == OwnPid;
     }
 
+    /// <summary>最上層的視窗（GA_ROOT）；用來比較「是不是同一個視窗」，不受焦點在子視窗上影響。</summary>
+    public static IntPtr Root(IntPtr hwnd) => hwnd == IntPtr.Zero ? IntPtr.Zero : GetAncestor(hwnd, 2 /* GA_ROOT */);
+
     public static PasteTarget Describe(IntPtr hwnd)
     {
         var cls = new StringBuilder(256);
@@ -89,6 +92,9 @@ internal static class WindowFocus
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);

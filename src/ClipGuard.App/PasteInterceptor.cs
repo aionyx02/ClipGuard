@@ -29,8 +29,11 @@ internal sealed class PasteInterceptor : IDisposable
     private readonly Action<string, string> _notify;
 
     private ClipboardSecretSnapshot _snapshot = ClipboardSecretSnapshot.Empty(0);
-    // 已經吞掉一次貼上、使用者還沒在確認框做決定。期間其他視窗的貼上和 Enter 都先擋住。
+    // 已經吞掉一次貼上、使用者還沒在確認框做決定。期間送往原目標視窗的 Enter 先擋住。
+    // 最多等 PasteGuard.PendingTimeout，確認框也會在那時自動取消，所以不會一直卡著。
     private bool _pending;
+    private long _pendingSince;
+    private IntPtr _pendingTargetRoot;
     private PasteConfirmForm? _dialog;
 
     private readonly List<(string Text, long Until)> _selfWrites = [];
@@ -94,33 +97,57 @@ internal sealed class PasteInterceptor : IDisposable
 
     // ---------------------------------------------------------------- hook 回呼（要快、不能丟例外）
 
+    private TimeSpan PendingFor => TimeSpan.FromMilliseconds(Environment.TickCount64 - _pendingSince);
+
+    // 逾時還沒清掉（理論上不會發生）就當作沒在等，避免任何狀況讓攔截一直卡住。
+    private bool IsPending => _pending && PendingFor < PasteGuard.PendingTimeout;
+
+    private void BeginPending(IntPtr foreground)
+    {
+        _pending = true;
+        _pendingSince = Environment.TickCount64;
+        _pendingTargetRoot = WindowFocus.Root(foreground);
+    }
+
+    private void EndPending()
+    {
+        _pending = false;
+        _pendingTargetRoot = IntPtr.Zero;
+    }
+
     private bool OnPastePressed(IntPtr foreground, PasteChord chord)
     {
         if (WindowFocus.IsOwnWindow(foreground)) return false;   // 確認框、登記視窗裡照常貼上
-        if (_pending) return true;                               // 還在等使用者決定：先別貼
 
         var target = WindowFocus.Describe(foreground);
         if (PasteGuard.IsAllowed(target, Settings)) return false;
+        var pending = IsPending;
 
         if (ClipboardAccess.SequenceNumber != _snapshot.Sequence)
         {
             // 剪貼簿剛換過、WM_CLIPBOARDUPDATE 還沒處理（複製後立刻貼上）。不知道新內容有沒有機密，
-            // 先擋下來，分析完再決定要跳確認框還是照原樣把貼上送回去。
-            _pending = true;
+            // 先擋下來，分析完再決定要跳確認框還是照原樣把貼上送回去。已經有確認框在等時就照常放行，
+            // 只有一個確認框，不能為了它擋住其他程式的一般貼上。
+            if (pending) return false;
+            BeginPending(foreground);
             _ui.Post(_ => HandleStalePaste(foreground, chord, target), null);
             return true;
         }
 
         if (PasteGuard.Decide(_snapshot.Kinds, target, Settings) == PasteDecision.Allow) return false;
 
-        _pending = true;
+        // 已經有一個確認框在等：這次一樣是機密，擋下但不再開第二個確認框。
+        if (pending) return true;
+
+        BeginPending(foreground);
         _ui.Post(_ => ConfirmAndPaste(foreground, chord, target), null);
         return true;
     }
 
     private bool OnEnterPressed(IntPtr foreground) =>
-        // 確認框還沒搶到焦點（或使用者點走了）時，Enter 不能送到聊天程式。
-        _pending && !WindowFocus.IsOwnWindow(foreground);
+        // 確認框還沒搶到焦點（或使用者點走了）時，Enter 不能送到原本要貼上的那個程式；其他程式照常。
+        PasteGuard.ShouldSwallowEnter(_pending, PendingFor, WindowFocus.Root(foreground), _pendingTargetRoot,
+            WindowFocus.IsOwnWindow(foreground));
 
     // ---------------------------------------------------------------- UI 執行緒
 
@@ -134,29 +161,35 @@ internal sealed class PasteInterceptor : IDisposable
                 ConfirmAndPaste(target, chord, info);
                 return;
             }
-            _pending = false;
+            EndPending();
             if (await WindowFocus.ActivateAsync(target)) KeyboardPasteHook.SendPaste(chord);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            _pending = false;
+            EndPending();
         }
     }
 
     private async void ConfirmAndPaste(IntPtr target, PasteChord chord, PasteTarget info)
     {
         PasteChoice choice;
+        // 使用者沒注意到確認框時，逾時自動取消（結果 = Cancel，焦點切回目標），等待狀態不會一直卡著。
+        var remaining = PasteGuard.PendingTimeout - PendingFor;
+        using var timeout = new System.Windows.Forms.Timer { Interval = (int)Math.Max(1, remaining.TotalMilliseconds) };
         try
         {
             using var dlg = new PasteConfirmForm(_snapshot.Secrets, info.ProcessName);
             _dialog = dlg;
+            timeout.Tick += (_, _) => { timeout.Stop(); dlg.Close(); };
+            timeout.Start();
             dlg.ShowDialog();
             choice = dlg.Choice;
         }
         finally
         {
+            timeout.Stop();
             _dialog = null;
-            _pending = false;
+            EndPending();
         }
 
         try

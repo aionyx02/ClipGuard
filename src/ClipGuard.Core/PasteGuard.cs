@@ -145,6 +145,25 @@ public static class PasteGuard
         return sb.ToString();
     }
 
+    /// <summary>
+    /// 攔下一次貼上之後，最多等使用者多久；超過就當成取消，保證「等待中」不會卡住。
+    /// </summary>
+    public static readonly TimeSpan PendingTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// 已攔下貼上、使用者還沒決定時，這次 Enter 要不要吞掉。
+    /// 只擋送往「原本要貼上的那個視窗」的 Enter（防止在確認框搶到焦點前按下聊天程式的送出）；
+    /// 其他程式的 Enter 一律放行，使用者沒注意到確認框也不會整台電腦的 Enter 都失靈。
+    /// </summary>
+    /// <param name="pending">是否正在等使用者決定。</param>
+    /// <param name="pendingFor">已經等了多久；超過 <see cref="PendingTimeout"/> 就不再擋。</param>
+    /// <param name="foregroundRoot">目前前景視窗的最上層視窗（GetAncestor GA_ROOT）。</param>
+    /// <param name="targetRoot">被攔下的那次貼上的目標最上層視窗。</param>
+    /// <param name="foregroundIsOwn">前景是 ClipGuard 自己的視窗（確認框）。</param>
+    public static bool ShouldSwallowEnter(bool pending, TimeSpan pendingFor, nint foregroundRoot, nint targetRoot, bool foregroundIsOwn) =>
+        pending && pendingFor < PendingTimeout && !foregroundIsOwn
+        && targetRoot != 0 && foregroundRoot == targetRoot;
+
     public const string RegisteredMask = "********";
     public const string PemBodyMask = "（私鑰內容已遮罩）";
 

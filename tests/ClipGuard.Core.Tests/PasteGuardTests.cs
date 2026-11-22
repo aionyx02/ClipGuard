@@ -207,6 +207,53 @@ public class PasteGuardTests
         Assert.Equal("AAA5678", PasteGuard.MaskText("12345678", [overlap, a, outOfRange]));
     }
 
+    private static readonly TimeSpan Soon = TimeSpan.FromSeconds(1);
+
+    [Fact]
+    public void Enter_ToPasteTarget_WhilePending_IsSwallowed()
+    {
+        Assert.True(PasteGuard.ShouldSwallowEnter(true, Soon, foregroundRoot: 100, targetRoot: 100, foregroundIsOwn: false));
+    }
+
+    [Fact]
+    public void Enter_ToOtherApp_WhilePending_PassesThrough()
+    {
+        // 使用者沒注意到確認框、跑去別的程式打字：那裡的 Enter 不能被吃掉。
+        Assert.False(PasteGuard.ShouldSwallowEnter(true, Soon, foregroundRoot: 200, targetRoot: 100, foregroundIsOwn: false));
+    }
+
+    [Fact]
+    public void Enter_ToOwnDialog_PassesThrough()
+    {
+        Assert.False(PasteGuard.ShouldSwallowEnter(true, Soon, foregroundRoot: 100, targetRoot: 100, foregroundIsOwn: true));
+    }
+
+    [Fact]
+    public void Enter_NotPending_PassesThrough()
+    {
+        Assert.False(PasteGuard.ShouldSwallowEnter(false, Soon, foregroundRoot: 100, targetRoot: 100, foregroundIsOwn: false));
+    }
+
+    [Fact]
+    public void Enter_AfterPendingTimeout_PassesThrough()
+    {
+        var late = PasteGuard.PendingTimeout + TimeSpan.FromMilliseconds(1);
+        Assert.False(PasteGuard.ShouldSwallowEnter(true, late, foregroundRoot: 100, targetRoot: 100, foregroundIsOwn: false));
+        Assert.False(PasteGuard.ShouldSwallowEnter(true, PasteGuard.PendingTimeout, 100, 100, false));
+    }
+
+    [Fact]
+    public void Enter_UnknownTarget_PassesThrough()
+    {
+        Assert.False(PasteGuard.ShouldSwallowEnter(true, Soon, foregroundRoot: 0, targetRoot: 0, foregroundIsOwn: false));
+    }
+
+    [Fact]
+    public void PendingTimeout_IsBounded()
+    {
+        Assert.InRange(PasteGuard.PendingTimeout, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(2));
+    }
+
     [Theory]
     [InlineData("Signal", "Signal")]
     [InlineData("signal.EXE", "signal")]
