@@ -1,0 +1,111 @@
+using System.Runtime.InteropServices;
+using ClipGuard.Core;
+
+namespace ClipGuard.App;
+
+internal sealed class TrayApp : ApplicationContext
+{
+    private readonly NotifyIcon _tray;
+    private readonly ClipboardMonitor _monitor;
+    private readonly ToolStripMenuItem _restoreItem;
+
+    // 被清掉的內容只留在記憶體，讓使用者誤判時可以拿回來；不寫檔、不記 log。
+    private string? _quarantined;
+    // 自己寫入剪貼簿時會再收到一次通知，用這個旗標略過。
+    private bool _selfWrite;
+
+    public TrayApp()
+    {
+        _restoreItem = new ToolStripMenuItem("還原被清除的內容", null, (_, _) => Restore()) { Enabled = false };
+
+        var menu = new ContextMenuStrip();
+        menu.Items.Add(_restoreItem);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("結束", null, (_, _) => ExitThread());
+
+        _tray = new NotifyIcon
+        {
+            Icon = SystemIcons.Shield,
+            Text = "ClipGuard：剪貼簿防護中",
+            ContextMenuStrip = menu,
+            Visible = true,
+        };
+
+        _monitor = new ClipboardMonitor();
+        _monitor.ClipboardChanged += OnClipboardChanged;
+    }
+
+    private void OnClipboardChanged(object? sender, EventArgs e)
+    {
+        if (_selfWrite) { _selfWrite = false; return; }
+
+        var text = TryGetText();
+        if (text is null) return;
+
+        var verdict = CommandDetector.Analyze(text);
+        switch (verdict.Level)
+        {
+            case ThreatLevel.Malicious:
+                _quarantined = text;
+                _restoreItem.Enabled = true;
+                _selfWrite = true;
+                TryClear();
+                Notify(ToolTipIcon.Error, "已攔截可疑的「貼上執行」指令",
+                    "剪貼簿已清空。正常網站不會要你按 Win+R 貼上指令。\n" + string.Join("、", verdict.Reasons)
+                    + "\n若確定安全，可從系統匣選單還原。");
+                break;
+
+            case ThreatLevel.Suspicious:
+                Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
+                    "貼上前請確認來源可信。\n" + string.Join("、", verdict.Reasons));
+                break;
+        }
+    }
+
+    private void Restore()
+    {
+        if (_quarantined is null) return;
+        _selfWrite = true;
+        if (TrySetText(_quarantined))
+        {
+            _quarantined = null;
+            _restoreItem.Enabled = false;
+        }
+        else
+        {
+            _selfWrite = false;
+        }
+    }
+
+    private void Notify(ToolTipIcon icon, string title, string body) =>
+        _tray.ShowBalloonTip(8000, title, body, icon);
+
+    // 剪貼簿可能正被別的程式開著，短暫重試幾次。
+    private static T? Retry<T>(Func<T> action)
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            try { return action(); }
+            catch (ExternalException) { Thread.Sleep(30); }
+        }
+        return default;
+    }
+
+    private static string? TryGetText() =>
+        Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : null);
+
+    private static void TryClear() => Retry(() => { Clipboard.Clear(); return true; });
+
+    private static bool TrySetText(string text) => Retry(() => { Clipboard.SetText(text); return true; });
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _monitor.Dispose();
+            _tray.Visible = false;
+            _tray.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+}
