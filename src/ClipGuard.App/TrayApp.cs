@@ -31,6 +31,9 @@ internal sealed class TrayApp : ApplicationContext
             Visible = true,
         };
 
+        _tray.BalloonTipClicked += (_, _) => { var a = _balloonClick; _balloonClick = null; a?.Invoke(); };
+        _tray.BalloonTipClosed += (_, _) => _balloonClick = null;
+
         _monitor = new ClipboardMonitor();
         _monitor.ClipboardChanged += OnClipboardChanged;
     }
@@ -43,6 +46,10 @@ internal sealed class TrayApp : ApplicationContext
         if (text is null) return;
 
         var verdict = CommandDetector.Analyze(text);
+        if (verdict.Level == ThreatLevel.None) return;
+
+        // 白話說明與解碼內容只放進通知，不寫檔、不記 log。
+        var explanation = CommandExplainer.Explain(text);
         switch (verdict.Level)
         {
             case ThreatLevel.Malicious:
@@ -51,15 +58,26 @@ internal sealed class TrayApp : ApplicationContext
                 _selfWrite = true;
                 TryClear();
                 Notify(ToolTipIcon.Error, "已攔截可疑的「貼上執行」指令",
-                    "剪貼簿已清空。正常網站不會要你按 Win+R 貼上指令。\n" + string.Join("、", verdict.Reasons)
-                    + "\n若確定安全，可從系統匣選單還原。");
+                    ComposeBody("剪貼簿已清空，正常網站不會要你按 Win+R 貼上指令。", explanation,
+                        "若確定安全，點這則通知或從系統匣選單還原。"),
+                    onClick: Restore);
                 break;
 
             case ThreatLevel.Suspicious:
                 Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
-                    "貼上前請確認來源可信。\n" + string.Join("、", verdict.Reasons));
+                    ComposeBody("貼上前請確認來源可信。", explanation, null));
                 break;
         }
+    }
+
+    // 通知內文上限 255 字元（NOTIFYICONDATA.szInfo），把白話說明塞進頭尾之間的空間。
+    private const int MaxBodyLength = 255;
+
+    private static string ComposeBody(string head, CommandExplanation explanation, string? tail)
+    {
+        var room = MaxBodyLength - head.Length - 1 - (tail is null ? 0 : tail.Length + 1);
+        var body = head + "\n" + explanation.ToDisplayText(room);
+        return tail is null ? body : body + "\n" + tail;
     }
 
     private void Restore()
@@ -77,8 +95,18 @@ internal sealed class TrayApp : ApplicationContext
         }
     }
 
-    private void Notify(ToolTipIcon icon, string title, string body) =>
+    // 點通知時要做的事（例如還原）；每則新通知都會覆蓋，通知關閉後清掉。
+    private Action? _balloonClick;
+
+    private void Notify(ToolTipIcon icon, string title, string body) => Notify(icon, title, body, onClick: null);
+
+    private void Notify(ToolTipIcon icon, string title, string body, Action? onClick)
+    {
+        _balloonClick = onClick;
+        if (title.Length > 63) title = title[..62] + "…";   // szInfoTitle 上限
+        if (body.Length > MaxBodyLength) body = body[..(MaxBodyLength - 1)] + "…";
         _tray.ShowBalloonTip(8000, title, body, icon);
+    }
 
     // 剪貼簿可能正被別的程式開著，短暫重試幾次。
     private static T? Retry<T>(Func<T> action)
