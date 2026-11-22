@@ -8,11 +8,13 @@ internal sealed class TrayApp : ApplicationContext
     private readonly NotifyIcon _tray;
     private readonly ClipboardMonitor _monitor;
     private readonly ToolStripMenuItem _restoreItem;
+    private readonly ForegroundWatcher _foreground;
+    private readonly EntryWarningGate _entryGate = new();
+    private readonly SecretGuard _secrets = new();
 
-    // 被清掉的內容只留在記憶體，讓使用者誤判時可以拿回來；不寫檔、不記 log。
-    private string? _quarantined;
-    // 自己寫入剪貼簿時會再收到一次通知，用這個旗標略過。
-    private bool _selfWrite;
+    // 判定、隔離與還原的狀態都在 Core；被清掉的內容只留在記憶體，不寫檔、不記 log。
+    private readonly ClipboardGuardState _state = new();
+    private readonly WalletSwapDetector _walletSwap = new();
 
     public TrayApp()
     {
@@ -20,6 +22,8 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_restoreItem);
+        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog());
+        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("結束", null, (_, _) => ExitThread());
 
@@ -31,54 +35,116 @@ internal sealed class TrayApp : ApplicationContext
             Visible = true,
         };
 
+        _tray.BalloonTipClicked += (_, _) => { var a = _balloonClick; _balloonClick = null; a?.Invoke(); };
+        _tray.BalloonTipClosed += (_, _) => _balloonClick = null;
+
         _monitor = new ClipboardMonitor();
         _monitor.ClipboardChanged += OnClipboardChanged;
+
+        _foreground = new ForegroundWatcher();
+        _foreground.ForegroundChanged += OnForegroundChanged;
+
+        // 啟動前（或啟動途中）就已複製的內容不會觸發通知，等訊息迴圈開始後先檢查一次。
+        var startup = new System.Windows.Forms.Timer { Interval = 1 };
+        startup.Tick += (_, _) => { startup.Dispose(); OnClipboardChanged(null, EventArgs.Empty); };
+        startup.Start();
     }
 
     private void OnClipboardChanged(object? sender, EventArgs e)
     {
-        if (_selfWrite) { _selfWrite = false; return; }
-
         var text = TryGetText();
-        if (text is null) return;
+        var action = _state.OnClipboardText(text);
 
-        var verdict = CommandDetector.Analyze(text);
-        switch (verdict.Level)
+        // 白話說明與解碼內容只放進通知，不寫檔、不記 log。只有需要通知時才產生。
+        var explanation = action is ClipboardAction.Quarantine or ClipboardAction.WarnSuspicious && text is not null
+            ? CommandExplainer.Explain(text)
+            : null;
+
+        var secretNotified = false;
+        switch (action)
         {
-            case ThreatLevel.Malicious:
-                _quarantined = text;
+            case ClipboardAction.Quarantine:
                 _restoreItem.Enabled = true;
-                _selfWrite = true;
                 TryClear();
                 Notify(ToolTipIcon.Error, "已攔截可疑的「貼上執行」指令",
-                    "剪貼簿已清空。正常網站不會要你按 Win+R 貼上指令。\n" + string.Join("、", verdict.Reasons)
-                    + "\n若確定安全，可從系統匣選單還原。");
+                    ComposeBody("剪貼簿已清空，正常網站不會要你按 Win+R 貼上指令。", explanation!,
+                        "若確定安全，點這則通知或從系統匣選單還原。"),
+                    onClick: Restore);
                 break;
 
-            case ThreatLevel.Suspicious:
+            case ClipboardAction.WarnSuspicious:
                 Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
-                    "貼上前請確認來源可信。\n" + string.Join("、", verdict.Reasons));
+                    ComposeBody("貼上前請確認來源可信。", explanation!, null));
+                break;
+
+            // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
+            case ClipboardAction.None when text is not null && _secrets.Check(text) is { } secret:
+                Notify(ToolTipIcon.Warning, secret.Title, secret.Body);
+                secretNotified = true;
                 break;
         }
+
+        // 指令警告優先：已經跳出攔截或提醒時，不再用隱藏字元通知蓋掉它（攔截通知帶有「點擊還原」）。
+        if (text is not null)
+            CheckHiddenCharsAndWalletSwap(text, notifyHiddenChars: action == ClipboardAction.None && !secretNotified);
+    }
+
+    // 隱藏字元（#5）與錢包地址掉包（#6）。通知不顯示地址或原文。
+    private void CheckHiddenCharsAndWalletSwap(string text, bool notifyHiddenChars)
+    {
+        if (_walletSwap.Observe(text) is { } swap)
+        {
+            Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
+                $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒內被換成另一個地址，可能有剪貼簿劫持惡意程式。\n"
+                + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
+            return;
+        }
+
+        if (!notifyHiddenChars) return;
+        var hidden = HiddenCharDetector.Analyze(text);
+        if (hidden.Level != ThreatLevel.None)
+            Notify(ToolTipIcon.Warning, "剪貼簿裡有看不見或偽裝的字元",
+                "貼上前請確認內容。\n" + string.Join("、", hidden.Reasons));
+    }
+
+    // 通知內文上限 255 字元（NOTIFYICONDATA.szInfo），把白話說明塞進頭尾之間的空間。
+    private const int MaxBodyLength = 255;
+
+    private static string ComposeBody(string head, CommandExplanation explanation, string? tail)
+    {
+        var room = MaxBodyLength - head.Length - 1 - (tail is null ? 0 : tail.Length + 1);
+        var body = head + "\n" + explanation.ToDisplayText(room);
+        return tail is null ? body : body + "\n" + tail;
     }
 
     private void Restore()
     {
-        if (_quarantined is null) return;
-        _selfWrite = true;
-        if (TrySetText(_quarantined))
-        {
-            _quarantined = null;
-            _restoreItem.Enabled = false;
-        }
-        else
-        {
-            _selfWrite = false;
-        }
+        if (_state.BeginRestore() is not { } text) return;
+        var ok = TrySetText(text);
+        _state.EndRestore(ok);
+        _restoreItem.Enabled = _state.Quarantined is not null;
     }
 
-    private void Notify(ToolTipIcon icon, string title, string body) =>
+    // Win+R、檔案總管、終端機等執行入口被叫到前景時，依剪貼簿狀態再警告一次。
+    private void OnForegroundChanged(ForegroundWatcher.WindowInfo w)
+    {
+        var warning = ExecutionEntryGuard.Decide(w.ClassName, w.Title, w.ProcessName, _state.Level, _state.QuarantineActive);
+        if (warning is null || !_entryGate.TryEnter(w.Handle, _state.Generation)) return;
+        Notify(warning.Level == ThreatLevel.Malicious ? ToolTipIcon.Error : ToolTipIcon.Warning, warning.Title, warning.Body);
+    }
+
+    // 點通知時要做的事（例如還原）；每則新通知都會覆蓋，通知關閉後清掉。
+    private Action? _balloonClick;
+
+    private void Notify(ToolTipIcon icon, string title, string body) => Notify(icon, title, body, onClick: null);
+
+    private void Notify(ToolTipIcon icon, string title, string body, Action? onClick)
+    {
+        _balloonClick = onClick;
+        if (title.Length > 63) title = title[..62] + "…";   // szInfoTitle 上限
+        if (body.Length > MaxBodyLength) body = body[..(MaxBodyLength - 1)] + "…";
         _tray.ShowBalloonTip(8000, title, body, icon);
+    }
 
     // 剪貼簿可能正被別的程式開著，短暫重試幾次。
     private static T? Retry<T>(Func<T> action)
@@ -102,6 +168,7 @@ internal sealed class TrayApp : ApplicationContext
     {
         if (disposing)
         {
+            _foreground.Dispose();
             _monitor.Dispose();
             _tray.Visible = false;
             _tray.Dispose();

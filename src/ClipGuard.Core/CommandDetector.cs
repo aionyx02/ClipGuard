@@ -17,16 +17,33 @@ public static class CommandDetector
     // 超過這個長度幾乎不可能是要貼進 Win+R 的一行指令（Win+R 上限 259 字元，留寬鬆空間）。
     private const int MaxLength = 4096;
 
-    // 程式名稱要「像在下指令」：位於開頭或分隔符號後，且後面接參數、引號、註解或結尾。
-    // 避免把網址路徑（github.com/powershell）或一般句子（我在學 PowerShell）當成指令。
-    private static Regex Invocation(string program) => new(
-        $@"(?:^|[\s;&|(""'])(?:{program})(?:\.exe)?(?=\s+[-/""'#a-z0-9]|\s*$|\s*[|;&])",
+    // 程式名稱後面「像參數」的東西：-x 或 /x 參數、引號、註解、變數、腳本區塊、呼叫運算子。
+    private const string CommonArg = @"[-/][a-z?]|[""'#$&({\[]";
+
+    // PowerShell 直接接指令的寫法（powershell iwr …）：後面要是 cmdlet、常見別名或腳本路徑，
+    // 而不是任意英文單字，否則 "I use powershell every day" 也會被當成指令（#8）。
+    private const string PowerShellArg =
+        @"(?:iwr|irm|iex|saps|curl|wget)\b" +
+        @"|(?:invoke|start|stop|new|set|get|add|remove|copy|move|out|write|import|expand|register|enable|disable)-[a-z]" +
+        @"|\.{1,2}[\\/]|[a-z]:\\|\S+\.ps1\b";
+
+    // mshta 的參數是要執行的網址、vbscript:/javascript: 或 .hta 檔。
+    private const string MshtaArg = @"(?:https?://|vbscript:|javascript:|about:)|\S+\.hta\b";
+
+    // 程式名稱要「像在下指令」：位於開頭或分隔符號後，且後面接參數。
+    // 什麼都不接時（例如 `curl … | powershell`），前面必須是開頭或管線／分隔符號，
+    // 避免把網址路徑（github.com/powershell）或一般句子（我在學 PowerShell、I use powershell）當成指令。
+    private static Regex Invocation(string program, string arg) => new(
+        $@"(?:(?:^|[\s;&|(""']){Prog(program)}(?=\s+(?:{CommonArg}|{arg}))" +
+        $@"|(?:^|[;&|(])\s*{Prog(program)}(?=\s*$|\s*[|;&]|\s+#))",
         Opts | RegexOptions.Multiline);
+
+    private static string Prog(string program) => $@"(?:{program})(?:\.exe)?";
 
     private static readonly (Regex Pattern, string Reason)[] ExecutionSignals =
     [
-        (Invocation("powershell|pwsh"), "呼叫 PowerShell"),
-        (Invocation("mshta"), "呼叫 mshta（常用來執行遠端 HTA）"),
+        (Invocation("powershell|pwsh", PowerShellArg), "呼叫 PowerShell"),
+        (Invocation("mshta", MshtaArg), "呼叫 mshta（常用來執行遠端 HTA）"),
         (new(@"\bcmd(\.exe)?\s+/[ck]\b", Opts), "呼叫 cmd 執行指令"),
         (new(@"\bcertutil(\.exe)?\b.*-urlcache", Opts), "用 certutil 下載檔案"),
         (new(@"\bbitsadmin(\.exe)?\b.*/transfer", Opts), "用 bitsadmin 下載檔案"),
