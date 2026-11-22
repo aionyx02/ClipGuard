@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "ClipGuard 剪貼簿守門員",
+  "version": "0.1.0",
+  "description": "貼上前偵測身分證、統編、信用卡、手機與 API key 並可改貼遮罩版本；偵測網頁偷改你複製的內容（pastejacking）。",
+  "minimum_chrome_version": "111",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["main-world.js"],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/secrets.js", "lib/pastejack.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
