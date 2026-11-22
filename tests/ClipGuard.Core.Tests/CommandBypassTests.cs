@@ -58,6 +58,47 @@ public class CommandBypassTests
         AssertMalicious(filler + PsSample(Ps) + "\n" + filler);
     }
 
+    // PR #29 review：填充放在指令前面或中間。
+    private static string BaitSample() => $"{Hta} {Url} # I am not a ro" + "bot";
+
+    [Theory]
+    [InlineData(4000)]
+    [InlineData(5000)]
+    [InlineData(100_000)]
+    public void 同一行指令前面補空白仍攔截(int pad)
+    {
+        AssertMalicious(new string(' ', pad) + BaitSample());
+        AssertMalicious(new string('\t', pad) + BaitSample());
+    }
+
+    [Fact]
+    public void 第二行指令前面補空白仍攔截()
+    {
+        AssertMalicious("x\n" + new string(' ', 5000) + BaitSample());
+    }
+
+    [Fact]
+    public void cmd與指令中間補空白仍攔截()
+    {
+        AssertMalicious("cmd /c" + new string(' ', 5000) + BaitSample());
+    }
+
+    [Theory]
+    [InlineData(5000)]
+    [InlineData(50_000)]
+    public void 指令前面補非空白字元仍攔截(int pad)
+    {
+        AssertMalicious("echo " + new string('a', pad) + " & " + BaitSample());
+    }
+
+    [Fact]
+    public void 縮短空白不會讓大量空白接井號的訊號消失()
+    {
+        var collapsed = CommandDetector.CollapseLongWhitespace("a" + new string(' ', 5000) + "#\n" + new string(' ', 10) + "b");
+        Assert.Equal("a" + new string(' ', 64) + "#\n" + new string(' ', 10) + "b", collapsed);
+        AssertMalicious(PsSample(Ps).Replace(" -w hidden", "") + new string(' ', 5000) + "# x");
+    }
+
     [Fact]
     public void 超長的一般文字仍是乾淨()
     {
@@ -74,6 +115,8 @@ public class CommandBypassTests
             new string(' ', 2_000_000),
             new string('\n', 2_000_000),
             string.Concat(Enumerable.Repeat("certutil " , 200_000)),
+            string.Concat(Enumerable.Repeat("rundll32 # ", 200_000)),
+            new string('a', 2_000_000),
             string.Concat(Enumerable.Repeat(new string(' ', 4000) + "x\n", 500)),
         };
         foreach (var text in huge)
