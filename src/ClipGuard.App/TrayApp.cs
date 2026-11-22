@@ -13,6 +13,7 @@ internal sealed class TrayApp : ApplicationContext
     private string? _quarantined;
     // 自己寫入剪貼簿時會再收到一次通知，用這個旗標略過。
     private bool _selfWrite;
+    private readonly WalletSwapDetector _walletSwap = new();
 
     public TrayApp()
     {
@@ -60,6 +61,25 @@ internal sealed class TrayApp : ApplicationContext
                     "貼上前請確認來源可信。\n" + string.Join("、", verdict.Reasons));
                 break;
         }
+
+        CheckHiddenCharsAndWalletSwap(text);
+    }
+
+    // 隱藏字元（#5）與錢包地址掉包（#6）。通知不顯示地址或原文。
+    private void CheckHiddenCharsAndWalletSwap(string text)
+    {
+        if (_walletSwap.Observe(text) is { } swap)
+        {
+            Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
+                $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒內被換成另一個地址，可能有剪貼簿劫持惡意程式。\n"
+                + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
+            return;
+        }
+
+        var hidden = HiddenCharDetector.Analyze(text);
+        if (hidden.Level != ThreatLevel.None)
+            Notify(ToolTipIcon.Warning, "剪貼簿裡有看不見或偽裝的字元",
+                "貼上前請確認內容。\n" + string.Join("、", hidden.Reasons));
     }
 
     private void Restore()
