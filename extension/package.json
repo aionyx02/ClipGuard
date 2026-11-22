@@ -1,0 +1,9 @@
+{
+  "name": "clipguard-extension",
+  "private": true,
+  "type": "module",
+  "description": "ClipGuard Chrome extension. No dependencies; tests use node --test.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
