@@ -309,14 +309,27 @@
     root.append(el('style', {}, STYLE), box);
     (document.body || document.documentElement).append(host);
     currentUi = { host, onClose };
-    box.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        closeUi();
-      }
-    });
     return host;
   }
+
+  // 提示框裡的按鍵（特別是 Enter）完全不讓網頁看到：有些聊天網站在 window／document 上聽 Enter 當「送出」，
+  // 連 capture 階段都要擋。content script 在 document_start 就註冊，通常比網頁自己的 listener 早。
+  // 只擋傳遞、不擋預設動作，所以 Enter／空白鍵照常會按下焦點所在的按鈕，Tab 也照常移動焦點。
+  // 在提示框按下 Enter 選擇後，焦點已經回到輸入框，放開 Enter 的 keyup 會落在輸入框上，也一併擋掉。
+  let swallowEnterKeyup = false;
+  function onUiKey(event) {
+    if (event.type === 'keyup' && event.key === 'Enter' && swallowEnterKeyup) {
+      swallowEnterKeyup = false;
+      event.stopImmediatePropagation();
+      return;
+    }
+    const ui = currentUi;
+    if (!ui || !event.composedPath().includes(ui.host)) return;
+    event.stopImmediatePropagation();
+    if (event.type === 'keydown' && event.key === 'Enter') swallowEnterKeyup = true;
+    if (event.type === 'keydown' && event.key === 'Escape') closeUi();
+  }
+  for (const type of ['keydown', 'keypress', 'keyup']) window.addEventListener(type, onUiKey, true);
 
   function placeNear(box, target) {
     const r = target.getBoundingClientRect();
