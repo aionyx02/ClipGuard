@@ -13,6 +13,7 @@ internal sealed class TrayApp : ApplicationContext
 
     // 判定、隔離與還原的狀態都在 Core；被清掉的內容只留在記憶體，不寫檔、不記 log。
     private readonly ClipboardGuardState _state = new();
+    private readonly WalletSwapDetector _walletSwap = new();
 
     public TrayApp()
     {
@@ -72,6 +73,28 @@ internal sealed class TrayApp : ApplicationContext
                     ComposeBody("貼上前請確認來源可信。", explanation!, null));
                 break;
         }
+
+        // 指令警告優先：已經跳出攔截或提醒時，不再用隱藏字元通知蓋掉它（攔截通知帶有「點擊還原」）。
+        if (text is not null)
+            CheckHiddenCharsAndWalletSwap(text, notifyHiddenChars: action == ClipboardAction.None);
+    }
+
+    // 隱藏字元（#5）與錢包地址掉包（#6）。通知不顯示地址或原文。
+    private void CheckHiddenCharsAndWalletSwap(string text, bool notifyHiddenChars)
+    {
+        if (_walletSwap.Observe(text) is { } swap)
+        {
+            Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
+                $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒內被換成另一個地址，可能有剪貼簿劫持惡意程式。\n"
+                + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
+            return;
+        }
+
+        if (!notifyHiddenChars) return;
+        var hidden = HiddenCharDetector.Analyze(text);
+        if (hidden.Level != ThreatLevel.None)
+            Notify(ToolTipIcon.Warning, "剪貼簿裡有看不見或偽裝的字元",
+                "貼上前請確認內容。\n" + string.Join("、", hidden.Reasons));
     }
 
     // 通知內文上限 255 字元（NOTIFYICONDATA.szInfo），把白話說明塞進頭尾之間的空間。
