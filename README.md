@@ -11,8 +11,8 @@ Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個
 |---|---|---|
 | 1 | 剪貼簿監聽 + ClickFix 偵測 + 系統匣通知／清空／還原 | ✅ |
 | 2 | 偵測 Win+R、檔案總管網址列（FileFix）等執行入口 | ⏳ |
-| 3 | 個資格式偵測（含檢查碼驗證） | ⏳ |
-| 4 | 登記機密：HMAC 比對，金鑰存 DPAPI | ⏳ |
+| 3 | 個資格式偵測（含檢查碼驗證） | ✅ |
+| 4 | 登記機密：HMAC 比對，金鑰存 DPAPI | ✅ |
 | 5 | 瀏覽器插件：攔截貼上並遮罩、Pastejacking 偵測 | ⏳ |
 
 ## 結構
@@ -38,3 +38,5 @@ dotnet run --project src/ClipGuard.App
 ## 隱私
 
 剪貼簿內容不寫檔、不記錄、不連網。
+
+登記的機密只存「長度 + HMAC-SHA256」到 `%LOCALAPPDATA%\ClipGuard\secrets.json`，HMAC 金鑰是隨機 256 位元、以 DPAPI（目前 Windows 使用者）保護，存在同目錄的 `key.bin`。不用單純 SHA-256，是因為身分證、手機這類號碼只有約 1e8–1e9 種組合，雜湊可以被暴力反推。

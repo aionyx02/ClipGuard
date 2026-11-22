@@ -8,6 +8,7 @@ internal sealed class TrayApp : ApplicationContext
     private readonly NotifyIcon _tray;
     private readonly ClipboardMonitor _monitor;
     private readonly ToolStripMenuItem _restoreItem;
+    private readonly SecretGuard _secrets = new();
 
     // 被清掉的內容只留在記憶體，讓使用者誤判時可以拿回來；不寫檔、不記 log。
     private string? _quarantined;
@@ -20,6 +21,8 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_restoreItem);
+        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog());
+        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("結束", null, (_, _) => ExitThread());
 
@@ -58,6 +61,11 @@ internal sealed class TrayApp : ApplicationContext
             case ThreatLevel.Suspicious:
                 Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
                     "貼上前請確認來源可信。\n" + string.Join("、", verdict.Reasons));
+                break;
+
+            // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
+            case ThreatLevel.None when _secrets.Check(text) is var (title, body):
+                Notify(ToolTipIcon.Warning, title, body);
                 break;
         }
     }
