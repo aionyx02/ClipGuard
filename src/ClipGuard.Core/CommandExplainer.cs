@@ -75,8 +75,13 @@ public static class CommandExplainer
         return b64 is null ? null : TryDecode(b64);
     }
 
+    // 說明只看開頭這麼長（正規化後的文字），避免超大剪貼簿拖慢通知。
+    private const int MaxExplainLength = 4096;
+
     public static CommandExplanation Explain(string text)
     {
+        // 跟偵測一樣先正規化，完整路徑、^、引號拆字、dash 變體的寫法才說明得出來（#19）。
+        text = CommandNormalizer.Normalize(text.Length > MaxExplainLength ? text[..MaxExplainLength] : text);
         var encoded = FindEncodedArg(text);
         var decoded = encoded is null ? null : TryDecode(encoded);
         // 解碼內容一起分析，說明才會講到藏起來的那段。

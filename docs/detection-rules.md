@@ -46,7 +46,31 @@
 
 ## 3. 指令偵測（ClickFix / FileFix）
 
-程式：`src/ClipGuard.Core/CommandDetector.cs`。
+程式：`src/ClipGuard.Core/CommandDetector.cs`、`CommandNormalizer.cs`。
+
+### 3.0 比對前的處理（#19）
+
+**長度**：不會因為總長度就整段跳過。
+
+| 內容長度 | 分析範圍 |
+|---|---|
+| ≤ 4096 字 | 整段一起分析（訊號可以分散在不同行） |
+| > 4096 字 | 分段分析，取最高等級：開頭 4096 字（涵蓋第一行和 Win+R 的 259 字上限），加上之後的每一行（每行只看前 4096 字）。總共最多分析 256 KB、4000 行，超過的部分不分析，避免卡住 UI |
+
+**正規化**（`CommandNormalizer`，純函式）：規則比對的是正規化後的文字；原文另外保留給隔離區還原，不寫檔、不記 log。白話說明（§3.3）也用同一份正規化結果，只看前 4096 字。依序處理：
+
+| 步驟 | 例子 |
+|---|---|
+| dash 變體換成 `-`：U+2010–2015、U+2212、U+FE58、U+FE63、全形 U+FF0D | `–w hidden` → `-w hidden` |
+| 去掉 cmd 的 `^` 跳脫；`^^` 變 `^`；行尾的 `^` 接下一行 | `m^s^h^t^a` → `mshta` |
+| 代入 `set x=…`、`set "x=…"` 設定的 `%x%`（只代入一層；最多 16 個變數、64 次代入、值最長 1024 字） | `set x=…&& call %x%` |
+| 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
+| 合併字中間的引號 | `"m"sh"ta"`、`ms""hta` → `mshta` |
+| 已知程式（powershell、pwsh、mshta、cmd、certutil、bitsadmin、rundll32、regsvr32、msiexec、conhost、curl、wget）的完整路徑只留檔名，有沒有引號、`.exe` 都可以 | `"C:\…\System32\mshta.exe"` → `mshta` |
+
+- 只縮短「已知程式」的路徑：其他路徑（例如 `C:\x\a.ps1`）保持原樣，因為 PowerShell 的參數判斷要用到它。#21 新增程式時要一起加進清單。
+- 只有 `/` 的路徑（`github.com/powershell/powershell`）和網址（含 `://`）不算路徑，避免把網址當成指令。
+- 單獨一行的完整路徑（例如只有 `C:\Windows\System32\mshta.exe`）跟只寫 `mshta.exe` 一樣判為 Suspicious，因為貼進 Win+R 就會執行。句子裡提到路徑則不算。
 
 ### 3.1 兩類訊號
 
@@ -93,8 +117,9 @@
 ### 3.4 已知缺口（尚未修正）
 | 缺口 | Issue |
 |---|---|
-| 超過 **4096 字**就整段跳過，可以用填充繞過 | #19（高） |
-| 用完整路徑、`%SystemRoot%`、`^`、引號拆字、en-dash 寫法時偵測不到 | #19 |
+| 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；超過 256 KB / 4000 行的部分不分析 | #19 的取捨 |
+| cmd 子字串展開（`%x:~0,3%`）、`set /p`、多層變數代入、`for` 迴圈組字、PowerShell 的變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母 | 尚未開 issue |
+| 延遲展開 `!x!`（`cmd /v:on`） | #21 |
 | `-w 1`、參數縮寫、`/w`，以及沒有 hidden 的「下載＋執行」只會提醒 | #20 |
 | wscript、cscript、hh、cmstp、UNC/WebDAV、`search-ms:` 等沒有涵蓋 | #21 |
 
@@ -182,6 +207,7 @@
 | 居留證第 2 碼 | 1、2、8、9、A–D | 1、2、8、9 |
 | 統編關鍵字距離 | 前 20 字內 | 前 12 字內 |
 | 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking） |
+| 指令正規化（§3.0） | 有（`CommandNormalizer`） | 沒有：完整路徑、`^`、引號拆字、dash 變體都認不得 |
 
 ## 8. 測試資料規範
 - 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、明顯是假的 key。
