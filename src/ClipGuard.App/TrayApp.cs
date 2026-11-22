@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using ClipGuard.Core;
 
 namespace ClipGuard.App;
@@ -11,6 +10,11 @@ internal sealed class TrayApp : ApplicationContext
     private readonly ForegroundWatcher _foreground;
     private readonly EntryWarningGate _entryGate = new();
     private readonly SecretGuard _secrets = new();
+    private readonly PasteInterceptor _paste;
+    private readonly ToolStripMenuItem _strictRegisteredItem;
+    private readonly ToolStripMenuItem _strictDetectedItem;
+    // 上一次分析過的剪貼簿序號：貼上攔截可能先觸發一次分析，之後的 WM_CLIPBOARDUPDATE 不要再通知一次。
+    private uint _analyzedSequence;
 
     // 判定、隔離與還原的狀態都在 Core；被清掉的內容只留在記憶體，不寫檔、不記 log。
     private readonly ClipboardGuardState _state = new();
@@ -20,10 +24,26 @@ internal sealed class TrayApp : ApplicationContext
     {
         _restoreItem = new ToolStripMenuItem("還原被清除的內容", null, (_, _) => Restore()) { Enabled = false };
 
+        _paste = new PasteInterceptor(_secrets, RegisteredSecretStore.DefaultDirectory,
+            reanalyzeClipboard: () => OnClipboardChanged(null, EventArgs.Empty),
+            notify: (title, body) => Notify(ToolTipIcon.Warning, title, body));
+
+        _strictRegisteredItem = new ToolStripMenuItem("攔截已登記的機密", null,
+            (_, _) => UpdatePasteSettings(s => s with { InterceptRegistered = !s.InterceptRegistered }));
+        _strictDetectedItem = new ToolStripMenuItem("也攔截個資與 API key", null,
+            (_, _) => UpdatePasteSettings(s => s with { InterceptDetected = !s.InterceptDetected }));
+        var pasteMenu = new ToolStripMenuItem("貼上前確認（嚴格模式）");
+        pasteMenu.DropDownItems.Add(_strictRegisteredItem);
+        pasteMenu.DropDownItems.Add(_strictDetectedItem);
+        pasteMenu.DropDownItems.Add(new ToolStripSeparator());
+        pasteMenu.DropDownItems.Add("允許清單…", null, (_, _) => ShowAllowlist());
+        SyncPasteMenu();
+
         var menu = new ContextMenuStrip();
         menu.Items.Add(_restoreItem);
-        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog());
-        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog());
+        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog(_paste.RefreshHook));
+        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog(_paste.RefreshHook));
+        menu.Items.Add(pasteMenu);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("結束", null, (_, _) => ExitThread());
 
@@ -46,14 +66,32 @@ internal sealed class TrayApp : ApplicationContext
 
         // 啟動前（或啟動途中）就已複製的內容不會觸發通知，等訊息迴圈開始後先檢查一次。
         var startup = new System.Windows.Forms.Timer { Interval = 1 };
-        startup.Tick += (_, _) => { startup.Dispose(); OnClipboardChanged(null, EventArgs.Empty); };
+        startup.Tick += (_, _) =>
+        {
+            startup.Dispose();
+            OnClipboardChanged(null, EventArgs.Empty);
+            if (_paste.SettingsError is not null || _paste.HookError is not null)
+                Notify(ToolTipIcon.Warning, "貼上前確認的設定有問題", _paste.HookError ?? "設定檔損毀，已改用預設值。");
+        };
         startup.Start();
     }
 
     private void OnClipboardChanged(object? sender, EventArgs e)
     {
-        var text = TryGetText();
+        var text = ClipboardAccess.TryGetText();
+        // 讀完才取序號：延遲產生格式的程式在被讀取時才寫入，先取的話摘要會一出生就過期。
+        var sequence = ClipboardAccess.SequenceNumber;
+        if (sequence == _analyzedSequence && sender is not null) return;
+        _analyzedSequence = sequence;
+
         var action = _state.OnClipboardText(text);
+
+        // 貼上攔截只記「有哪些機密」的摘要（種類＋遮罩），不記原文。被清空的指令不算。
+        var secrets = text is not null && action != ClipboardAction.Quarantine ? _secrets.Find(text) : [];
+        _paste.UpdateSnapshot(ClipboardSecretSnapshot.From(sequence, secrets));
+
+        // 貼遮罩版時自己暫時寫入的遮罩版、事後還原的原文：複製當下已經通知過，不再跳一次。
+        if (text is not null && action != ClipboardAction.Quarantine && _paste.IsSelfWrite(text)) return;
 
         // 白話說明與解碼內容只放進通知，不寫檔、不記 log。只有需要通知時才產生。
         var explanation = action is ClipboardAction.Quarantine or ClipboardAction.WarnSuspicious && text is not null
@@ -78,7 +116,7 @@ internal sealed class TrayApp : ApplicationContext
                 break;
 
             // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
-            case ClipboardAction.None when text is not null && _secrets.Check(text) is { } secret:
+            case ClipboardAction.None when SecretGuard.Describe(secrets) is { } secret:
                 Notify(ToolTipIcon.Warning, secret.Title, secret.Body);
                 secretNotified = true;
                 break;
@@ -146,28 +184,49 @@ internal sealed class TrayApp : ApplicationContext
         _tray.ShowBalloonTip(8000, title, body, icon);
     }
 
-    // 剪貼簿可能正被別的程式開著，短暫重試幾次。
-    private static T? Retry<T>(Func<T> action)
+    private void UpdatePasteSettings(Func<PasteGuardSettings, PasteGuardSettings> change)
     {
-        for (var i = 0; i < 5; i++)
+        try
         {
-            try { return action(); }
-            catch (ExternalException) { Thread.Sleep(30); }
+            _paste.UpdateSettings(change(_paste.Settings));
         }
-        return default;
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(ex.Message, "無法儲存設定", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        SyncPasteMenu();
+        if (_paste.HookError is not null) Notify(ToolTipIcon.Warning, "貼上前確認沒有作用", _paste.HookError);
     }
 
-    private static string? TryGetText() =>
-        Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : null);
+    private void SyncPasteMenu()
+    {
+        _strictRegisteredItem.Checked = _paste.Settings.InterceptRegistered;
+        _strictDetectedItem.Checked = _paste.Settings.InterceptDetected;
+    }
 
-    private static void TryClear() => Retry(() => { Clipboard.Clear(); return true; });
+    private void ShowAllowlist()
+    {
+        using var dlg = new AllowlistForm(_paste.Settings.AllowedApps);
+        if (dlg.ShowDialog() == DialogResult.OK)
+            UpdatePasteSettings(s => s with { AllowedApps = dlg.AllowedApps });
+    }
 
-    private static bool TrySetText(string text) => Retry(() => { Clipboard.SetText(text); return true; });
+    private static void TryClear() => ClipboardAccess.TryClear();
+
+    private static bool TrySetText(string text) => ClipboardAccess.TrySetText(text);
+
+    protected override void ExitThreadCore()
+    {
+        // 先拔掉鍵盤 hook，再結束訊息迴圈：回呼要靠這個迴圈才跑得動，迴圈停了還掛著會拖慢全系統的按鍵。
+        _paste.Dispose();
+        base.ExitThreadCore();
+    }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
+            _paste.Dispose();
             _foreground.Dispose();
             _monitor.Dispose();
             _tray.Visible = false;

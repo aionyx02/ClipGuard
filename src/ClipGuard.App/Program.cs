@@ -10,6 +10,7 @@ static class Program
         if (!isNew) return;
 
         ApplicationConfiguration.Initialize();
-        Application.Run(new TrayApp());
+        using var app = new TrayApp();
+        Application.Run(app);
     }
 }
