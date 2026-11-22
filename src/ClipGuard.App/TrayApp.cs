@@ -10,6 +10,7 @@ internal sealed class TrayApp : ApplicationContext
     private readonly ToolStripMenuItem _restoreItem;
     private readonly ForegroundWatcher _foreground;
     private readonly EntryWarningGate _entryGate = new();
+    private readonly SecretGuard _secrets = new();
 
     // 判定、隔離與還原的狀態都在 Core；被清掉的內容只留在記憶體，不寫檔、不記 log。
     private readonly ClipboardGuardState _state = new();
@@ -21,6 +22,8 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_restoreItem);
+        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog());
+        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("結束", null, (_, _) => ExitThread());
 
@@ -57,6 +60,7 @@ internal sealed class TrayApp : ApplicationContext
             ? CommandExplainer.Explain(text)
             : null;
 
+        var secretNotified = false;
         switch (action)
         {
             case ClipboardAction.Quarantine:
@@ -72,11 +76,17 @@ internal sealed class TrayApp : ApplicationContext
                 Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
                     ComposeBody("貼上前請確認來源可信。", explanation!, null));
                 break;
+
+            // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
+            case ClipboardAction.None when text is not null && _secrets.Check(text) is { } secret:
+                Notify(ToolTipIcon.Warning, secret.Title, secret.Body);
+                secretNotified = true;
+                break;
         }
 
         // 指令警告優先：已經跳出攔截或提醒時，不再用隱藏字元通知蓋掉它（攔截通知帶有「點擊還原」）。
         if (text is not null)
-            CheckHiddenCharsAndWalletSwap(text, notifyHiddenChars: action == ClipboardAction.None);
+            CheckHiddenCharsAndWalletSwap(text, notifyHiddenChars: action == ClipboardAction.None && !secretNotified);
     }
 
     // 隱藏字元（#5）與錢包地址掉包（#6）。通知不顯示地址或原文。
