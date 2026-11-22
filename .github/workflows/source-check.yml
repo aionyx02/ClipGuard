@@ -1,0 +1,20 @@
+name: source-check
+
+on:
+  pull_request:
+    branches: [main]               # only PRs targeting main
+
+permissions: {}
+
+jobs:
+  only-from-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require PR to come from this repo's dev branch
+        # Also check the head repo: a fork could have its own branch named "dev".
+        if: github.head_ref != 'dev' || github.event.pull_request.head.repo.full_name != github.repository
+        env:
+          HEAD_REF: ${{ github.head_ref }}   # via env to avoid script injection from branch names
+        run: |
+          echo "::error::PRs into main must come from dev (got '$HEAD_REF')"
+          exit 1
