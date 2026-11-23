@@ -26,25 +26,25 @@ public static class HiddenCharDetector
 
         var zeroWidth = CountZeroWidth(text);
         if (zeroWidth > 0)
-            reasons.Add($"含零寬字元 {zeroWidth} 個（看不見，但會改變內容）");
+            reasons.Add(CoreStrings.Hidden_ZeroWidth(zeroWidth));
 
         var tags = CountTagChars(text);
         if (tags > 0)
-            reasons.Add($"含 Unicode TAG 字元 {tags} 個（看不見，可能藏著給 AI 的指令）");
+            reasons.Add(CoreStrings.Hidden_Tag(tags));
 
         var (invisible, samples) = FindOtherInvisible(text);
         if (invisible > 0)
-            reasons.Add($"含其他看不見的字元 {invisible} 個（{string.Join("、", samples.Select(cp => $"U+{cp:X4}"))}）");
+            reasons.Add(CoreStrings.Hidden_OtherInvisible(invisible, string.Join(CoreStrings.ListSeparator, samples.Select(cp => $"U+{cp:X4}"))));
 
         var bidi = text.Count(IsBidiControl);
         if (bidi > 0)
-            reasons.Add($"含 Bidi 控制字元 {bidi} 個（可讓文字顯示順序與實際內容不同）");
+            reasons.Add(CoreStrings.Hidden_Bidi(bidi));
 
         if (FindHomoglyph(text) is { } glyph)
-            reasons.Add($"英文字裡混有長得像英文字母的 {ScriptName(glyph)}字母 {glyph}（U+{(int)glyph:X4}）");
+            reasons.Add(CoreStrings.Hidden_Homoglyph(ScriptName(glyph), glyph, ((int)glyph).ToString("X4", CultureInfo.InvariantCulture)));
 
         if (HasTrailingNewlineAfterCommand(text))
-            reasons.Add("指令結尾有換行，貼進終端機會直接執行");
+            reasons.Add(CoreStrings.Hidden_TrailingNewline);
 
         return reasons.Count == 0 ? Verdict.Clean : new Verdict(ThreatLevel.Suspicious, reasons);
     }
@@ -280,7 +280,7 @@ public static class HiddenCharDetector
     private static bool IsCyrillicOrGreek(char c) =>
         c is >= '\u0370' and <= '\u03FF' or >= '\u0400' and <= '\u052F' or >= '\u1F00' and <= '\u1FFF';
 
-    private static string ScriptName(char c) => c >= '\u0400' ? "西里爾" : "希臘";
+    private static string ScriptName(char c) => c >= '\u0400' ? CoreStrings.Hidden_ScriptCyrillic : CoreStrings.Hidden_ScriptGreek;
 
     /// <summary>
     /// 兩種情形算同形字攻擊：

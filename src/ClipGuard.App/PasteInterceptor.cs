@@ -72,7 +72,7 @@ internal sealed class PasteInterceptor : IDisposable
         if (Settings.CanIntercept(_secrets.HasRegistered))
         {
             var err = _hook.Install();
-            HookError = err == 0 ? null : $"無法安裝鍵盤 hook（錯誤 {err}），貼上攔截沒有作用。";
+            HookError = err == 0 ? null : Strings.Paste_HookFailed(err);
         }
         else
         {
@@ -202,7 +202,7 @@ internal sealed class PasteInterceptor : IDisposable
                     break;
                 case PasteChoice.Original:
                     if (await WindowFocus.ActivateAsync(target)) KeyboardPasteHook.SendPaste(chord);
-                    else _notify("沒有貼上", "無法切回原本的視窗，請自己再貼一次。");
+                    else _notify(Strings.Paste_NotPasted_Title, Strings.Paste_CannotReturnPasteYourself);
                     break;
                 case PasteChoice.Masked:
                     await PasteMaskedAsync(target, chord);
@@ -212,7 +212,7 @@ internal sealed class PasteInterceptor : IDisposable
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             // 不顯示例外內容：理論上不含剪貼簿資料，但沒必要冒險。
-            _notify("貼上時發生錯誤", "剪貼簿可能還是遮罩版，請重新複製一次。");
+            _notify(Strings.Paste_Error_Title, Strings.Paste_Error_Body);
         }
     }
 
@@ -223,21 +223,21 @@ internal sealed class PasteInterceptor : IDisposable
         var saved = ClipboardAccess.TrySaveTextFormats();
         if (text is null || saved is null)
         {
-            _notify("沒有貼上", "讀不到剪貼簿內容，請重新複製一次。");
+            _notify(Strings.Paste_NotPasted_Title, Strings.Paste_CannotRead);
             return;
         }
 
         var masked = PasteGuard.MaskText(text, _secrets.Find(text));
         if (!await WindowFocus.ActivateAsync(target))
         {
-            _notify("沒有貼上", "無法切回原本的視窗，剪貼簿沒有變動。");
+            _notify(Strings.Paste_NotPasted_Title, Strings.Paste_CannotReturnUnchanged);
             return;
         }
 
         MarkSelfWrite(masked);
         if (!ClipboardAccess.TrySetTextExcludedFromHistory(masked))
         {
-            _notify("沒有貼上", "無法寫入剪貼簿，請稍後再試。");
+            _notify(Strings.Paste_NotPasted_Title, Strings.Paste_CannotWrite);
             return;
         }
         var maskedSeq = ClipboardAccess.SequenceNumber;
@@ -246,13 +246,13 @@ internal sealed class PasteInterceptor : IDisposable
         var sent = (WindowFocus.GetForegroundWindow() == target || await WindowFocus.ActivateAsync(target, 300))
                    && KeyboardPasteHook.SendPaste(chord);
         if (sent) await Task.Delay(RestoreDelayMs);
-        else _notify("沒有貼上", "無法把貼上送回原本的視窗。");
+        else _notify(Strings.Paste_NotPasted_Title, Strings.Paste_CannotSend);
 
         // 這段時間使用者又複製了別的東西：不要用舊內容蓋掉。
         if (ClipboardAccess.SequenceNumber != maskedSeq) return;
         MarkSelfWrite(text);
         if (!ClipboardAccess.TrySet(saved))
-            _notify("剪貼簿還是遮罩版", "無法換回原本的內容，需要的話請重新複製一次。");
+            _notify(Strings.Paste_StillMasked_Title, Strings.Paste_StillMasked_Body);
     }
 
     public void Dispose()

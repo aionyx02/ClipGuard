@@ -437,6 +437,8 @@ internal sealed class SecretRule
     public string Pack { get; init; } = SecretPacks.Universal;
     public required SecretKind Kind { get; init; }
     public required string Label { get; init; }
+    /// <summary>通知裡顯示的名稱：CoreStrings 有 <c>RuleLabel_&lt;id&gt;</c> 就用它（有翻譯），否則用規則檔的 label。</summary>
+    public string DisplayLabel => CoreStrings.Lookup("RuleLabel_" + Id) ?? Label;
     /// <summary>在 ASCII 版本上找範圍的 regex；跟 <see cref="Finder"/> 二選一。</summary>
     public Regex? Pattern { get; init; }
     /// <summary>regex 寫不出來的格式（信用卡分組）：程式寫的候選產生器，回傳 ASCII 版本裡的位置（見 <see cref="PiiFormats"/>）。</summary>

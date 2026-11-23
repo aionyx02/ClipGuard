@@ -203,11 +203,11 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 - 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
 ### 3.3 白話說明（`CommandExplainer.cs`）
-- 指令被判為 Suspicious 或 Malicious 時，會產生一段 zh-TW 的白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。
+- 指令被判為 Suspicious 或 Malicious 時，會產生一段白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。說明跟著介面語言（zh-TW 或英文，#27），文字在 `src/ClipGuard.Core/Resources/CoreStrings*.resx` 的 `Explain_*`；本文件引用的是 zh-TW 版本。
 - #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
 - 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
 - `-enc` 系列參數會用 UTF-16LE 解碼並顯示；解出來不是合理文字時就不顯示。
-- 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。
+- 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。英文比中文長，攔截通知的開頭和結尾句加起來仍要留至少 60 字給白話說明，`LocalizationTests` 會對兩種語言檢查這個空間和標題長度。
 
 ### 3.4 已知缺口（尚未修正）
 | 缺口 | Issue |
@@ -571,6 +571,8 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | Pastejacking | 比對「使用者選取的文字」和「頁面寫進剪貼簿的內容」。被取代、多了指令或換行、多了隱形字元時警告。複製後 2 秒內頁面又寫入剪貼簿，而且使用者這段期間沒有任何點擊或按鍵，才算是被改寫 |
 | 權限 | 不使用 `permissions`、`host_permissions`；不連網、不存資料、沒有 service worker |
 
+**介面語言**：插件的文字在 `_locales/en`（預設）和 `_locales/zh_TW`，用 `chrome.i18n` 取；偵測器回傳的 `label` 不翻譯，提示框顯示時才用 `lib/i18n.js` 的 `displayLabel` 依規則 id（`rule_<id>`，個資也是規則）換成目前語言，規則名稱的翻譯跟桌面版的 `RuleLabel_<id>` 一樣（測試會比對）。
+
 **機密規則的來源**：所有規則（API key、JWT、PEM、上下文＋亂度、#27 起的個資包）跟桌面版共用 `rules/*.json`（§5.4），比對引擎在 `extension/lib/rules.js`，檢查碼、信用卡分組、遮罩在 `extension/lib/pii.js`，跟 C# 的 `SecretRules`、`PiiFormats`、`Checksums`、`SecretMasker` 逐項對應，兩邊的測試用同樣的樣本（`SecretPacksTests` ＝ `packs.test.js`）。#27 以前的不一致（舊式居留證、統編關鍵字距離、重疊取哪一筆、遮罩字串、API key 留幾碼）都已經統一。
 
 **目前和 C# 端不一致的地方**（見 #27）：
@@ -608,3 +610,4 @@ Review 一個會動到偵測行為的 PR 時，逐項確認：
 - [ ] **C# / JS 一致**：改到兩邊都有的規則時，兩邊都要改，或是在 §7 的不一致表裡記下來。
 - [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `tools/convert-gitleaks.mjs` 更新，不手改 `rules/gitleaks.json`。
 - [ ] **測試資料**：符合 §8 的規範。
+- [ ] **介面文字**：新的通知、說明、機密名稱放進 `.resx`（桌面）或 `_locales`（插件），英文和 zh-TW 都要有，`{0}` 參數一致；改了 `.resx` 有重新執行 `node tools/gen-resx-accessors.mjs`。

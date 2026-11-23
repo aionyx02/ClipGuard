@@ -165,7 +165,7 @@ public static class PasteGuard
         && targetRoot != 0 && foregroundRoot == targetRoot;
 
     public const string RegisteredMask = "********";
-    public const string PemBodyMask = "（私鑰內容已遮罩）";
+    public static string PemBodyMask => CoreStrings.PemBodyMask;
 
     private static bool IsPemHeader(SecretMatch m) =>
         m.Kind == SecretKind.ApiKey && m.Masked.StartsWith("-----BEGIN ", StringComparison.Ordinal)

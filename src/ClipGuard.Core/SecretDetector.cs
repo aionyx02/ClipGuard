@@ -121,7 +121,7 @@ public static class SecretDetector
             foreach (var (index, length, secret) in rule.Scan(ascii, text, contextLower))
             {
                 var (i, l) = norm.ToOriginal(index, length);
-                add(k, new(rule.Kind, rule.Label, rule.Mask(secret), i, l));
+                add(k, new(rule.Kind, rule.DisplayLabel, rule.Mask(secret), i, l));
             }
         }
     }

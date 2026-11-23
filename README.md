@@ -55,7 +55,7 @@ Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個
 src/ClipGuard.Core   純邏輯（偵測規則），不含 UI 和 Win32，可以單元測試
 src/ClipGuard.App    WinForms 系統匣程式：監聽剪貼簿、前景視窗，負責通知與對話框
 rules/               桌面版與插件共用的機密規則檔（JSON），桌面版內嵌進組件
-tools/               規則檔的轉換工具（gitleaks → rules/gitleaks.json、rules/ → 插件）
+tools/               規則檔的轉換工具（gitleaks → rules/gitleaks.json、rules/ → 插件）、.resx 存取類別產生器
 tests/               xUnit 測試
 extension/           Chrome 插件（ES modules，用 node --test 測試）
 docs/                判斷準則
@@ -77,6 +77,27 @@ node tools/build-extension-rules.mjs
 ```
 
 更新 gitleaks 規則的步驟寫在 `tools/convert-gitleaks.mjs` 開頭。
+
+## 介面語言
+
+桌面程式和插件都支援英文與繁體中文（#27）。桌面程式跟著 Windows 的顯示語言：繁體中文（zh-TW、zh-HK、zh-MO）顯示繁中，其他語言（包括簡體中文）顯示英文。想強制指定時，用命令列參數或環境變數，命令列優先：
+
+```powershell
+dotnet run --project src/ClipGuard.App -- --lang=en
+$env:CLIPGUARD_LANG = "zh-TW"; dotnet run --project src/ClipGuard.App
+```
+
+插件跟著 Chrome 的介面語言，`zh_TW` 以外一律是英文。
+
+文字放在這些檔案，英文是預設語系，翻譯檔的 key 要跟它一樣：
+
+| 位置 | 英文（預設） | 繁中 |
+|---|---|---|
+| 桌面程式的選單、通知、對話框 | `src/ClipGuard.App/Resources/Strings.resx` | `Strings.zh-TW.resx` |
+| 白話說明、執行入口警告、隱藏字元與機密名稱 | `src/ClipGuard.Core/Resources/CoreStrings.resx` | `CoreStrings.zh-TW.resx` |
+| 插件 | `extension/_locales/en/messages.json` | `extension/_locales/zh_TW/messages.json` |
+
+改了 `.resx` 之後執行 `node tools/gen-resx-accessors.mjs`，重新產生強型別的存取類別（`Strings.g.cs`、`CoreStrings.g.cs`；dotnet CLI 沒有 Visual Studio 的 ResXFileCodeGenerator）。`LocalizationTests` 會檢查兩種語言的 key、`{0}` 參數、通知長度上限，以及存取類別是不是最新的。翻譯編譯成 `zh-TW/ClipGuard.App.resources.dll` 和 `zh-TW/ClipGuard.Core.resources.dll`，要跟 exe 放在一起；用 `PublishSingleFile` 發行時會直接包進 exe。
 
 ## 開發流程
 
