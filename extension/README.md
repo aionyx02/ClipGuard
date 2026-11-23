@@ -49,7 +49,7 @@ python -m http.server 8765
 | `content_scripts`，`matches: <all_urls>` | 貼上和複製可能發生在任何網站，必須在每個頁面注入。Chrome 會因此顯示「讀取及變更你在所有網站上的資料」 |
 | `content_scripts`，`world: "MAIN"`（`main-world.js`） | 只有在網頁自己的 JS 環境裡，才能看到網頁呼叫 `setData`／`writeText` 寫了什麼（見下節） |
 | `all_frames` + `match_origin_as_fallback` | 很多編輯器放在 iframe（含 `about:blank`）裡 |
-| `web_accessible_resources`：`lib/secrets.js`、`lib/rules.js`、`lib/rules.generated.js`、`lib/pastejack.js` | content script 是 classic script，要用 `import()` 載入偵測模組，Chrome 要求被 import 的檔案列在這裡。代價是網頁能探測到這些檔案存在（可被用來辨識你裝了 ClipGuard） |
+| `web_accessible_resources`：`lib/secrets.js`、`lib/rules.js`、`lib/rules.generated.js`、`lib/pastejack.js`、`lib/i18n.js` | content script 是 classic script，要用 `import()` 載入偵測模組，Chrome 要求被 import 的檔案列在這裡。代價是網頁能探測到這些檔案存在（可被用來辨識你裝了 ClipGuard） |
 
 不連網、不存任何貼上或複製的內容（只在提示框開著時放在記憶體）、沒有分析或遙測，也沒有背景 service worker。
 
