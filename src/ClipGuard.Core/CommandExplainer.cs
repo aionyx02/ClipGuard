@@ -35,17 +35,14 @@ public static class CommandExplainer
     private static readonly Regex EncodedArg =
         new(@"(?:^|\s)-(?<name>[a-z]+)\s+[""']?(?<b64>[A-Za-z0-9+/]{8,}={0,2})", Opts);
 
-    private static readonly Regex Url = new(@"https?://(?<host>[^/\s""'`)\]|;:?#]+)", Opts);
-
-    // 沒寫 https:// 的下載目標，例如 irm get.scoop.sh。
-    private static readonly Regex BareHost =
-        new(@"\b(?:iwr|irm|curl|wget|invoke-webrequest|invoke-restmethod)\s+[""']?(?<host>[a-z0-9-]+(?:\.[a-z0-9-]+)+)\b", Opts);
-
     private static readonly Regex Download =
         new(@"\b(?:iwr|irm|curl|wget|invoke-webrequest|invoke-restmethod|start-bitstransfer)\b|downloadstring|downloaddata|net\.webclient", Opts);
 
     private static readonly Regex Execute =
-        new(@"\b(?:iex|invoke-expression)\b|\|\s*(?:powershell|pwsh|cmd|(?:ba|z)?sh)(?:\.exe)?\b", Opts);
+        new(@"\b(?:iex|invoke-expression)\b|\|\s*(?:powershell|pwsh|cmd|(?:ba|z)?sh)(?:\.exe)?\b|scriptblock\]\s*::\s*create\b", Opts);
+
+    // UNC 路徑的主機：\\host\share、\\host@SSL\DavWWWRoot。
+    private static readonly Regex UncHost = new(@"\\\\(?<host>[^\s\\""'/@]+)", Opts);
 
     private static readonly Regex DownloadFile =
         new(@"downloadfile|-outfile\b|\bcertutil(?:\.exe)?\b.*-urlcache|\bbitsadmin(?:\.exe)?\b.*/transfer|\bstart-bitstransfer\b", Opts);
@@ -58,7 +55,7 @@ public static class CommandExplainer
     private static readonly Regex RunAs = new(@"-verb\s+[""']?runas", Opts);
 
     private static readonly Regex Hidden =
-        new(@"(?:^|\s)-(?:w|win|window|windowstyle)\s+[""']?(?:h|hid|hidden)\b|\bconhost(?:\.exe)?\b.*--headless", Opts);
+        new($@"{CommandDetector.HiddenWindowPattern}|\bconhost(?:\.exe)?\b.*--headless", Opts);
 
     private static readonly Regex Bypass =
         new(@"(?:^|\s)-(?:ep|ex|exec|executionpolicy)\s+[""']?bypass\b|\bset-executionpolicy\b", Opts);
@@ -91,7 +88,7 @@ public static class CommandExplainer
         var from = hosts.Count > 0 ? $"從 {string.Join("、", hosts)} " : "從網路";
         var actions = new List<string>();
 
-        var downloadAndRun = Download.IsMatch(all) && Execute.IsMatch(all);
+        var downloadAndRun = Download.IsMatch(all) && Execute.IsMatch(all) || DownloadExecution.IsMatch(all);
         if (downloadAndRun)
             actions.Add($"{from}下載並執行");
         if (Mshta.IsMatch(all))
@@ -104,6 +101,7 @@ public static class CommandExplainer
             actions.Add($"{from}下載檔案");
         if (Rundll32Script.IsMatch(all))
             actions.Add("用 rundll32 執行一段腳本");
+        AddLolbinActions(all, actions);
         if (StartProcess.IsMatch(all))
             actions.Add(RunAs.IsMatch(all) ? "以系統管理員權限啟動其他程式" : "啟動其他程式");
         if (Hidden.IsMatch(all))
@@ -154,15 +152,38 @@ public static class CommandExplainer
         return ascii * 2 >= s.Length ? s : null;
     }
 
-    private static List<string> Hosts(string text)
+    // #21 的系統程式、遠端檔案與 protocol handler。樣式跟偵測共用，說明跟判斷不會對不上。
+    private static void AddLolbinActions(string text, List<string> actions)
     {
-        var hosts = Url.Matches(text).Select(m => m.Groups["host"].Value).ToList();
-        if (hosts.Count == 0)
-            hosts = BareHost.Matches(text).Select(m => m.Groups["host"].Value).ToList();
-        return hosts
-            .Select(h => h.ToLowerInvariant().TrimEnd('.'))
-            .Distinct()
-            .Take(3)
-            .ToList();
+        var share = UncHost.Match(text) is { Success: true } m ? m.Groups["host"].Value.ToLowerInvariant() + " " : "";
+
+        if (CommandDetector.DelayedExpansion.IsMatch(text))
+            actions.Add("用 cmd 的延遲展開（!變數!）把指令拆開藏起來");
+        if (CommandDetector.ScriptHost.IsMatch(text))
+            actions.Add("用 wscript／cscript 執行腳本檔");
+        if (CommandDetector.HtmlHelp.IsMatch(text))
+            actions.Add("用 hh 開啟說明檔，裡面可以藏腳本");
+        if (CommandDetector.Cmstp.IsMatch(text))
+            actions.Add("用 cmstp 安裝連線設定檔，可藉此執行任意程式");
+        if (CommandDetector.Pcalua.IsMatch(text))
+            actions.Add("透過 pcalua 間接啟動其他程式");
+        if (CommandDetector.Odbcconf.IsMatch(text))
+            actions.Add("用 odbcconf 載入並執行 DLL");
+        if (CommandDetector.InstallUtil.IsMatch(text))
+            actions.Add("用 InstallUtil 執行 .NET 程式");
+        if (CommandDetector.FtpScript.IsMatch(text))
+            actions.Add("用 ftp 照一份指令檔執行");
+        if (CommandDetector.RemoteFile.IsMatch(text))
+            actions.Add($"執行 {share}網路分享上的檔案");
+        else if (CommandDetector.WebDav.IsMatch(text))
+            actions.Add($"連到 {share}的 WebDAV 遠端資料夾");
+        if (CommandDetector.NetUseThenRun(text))
+            actions.Add("掛載網路磁碟後執行裡面的程式");
+        if (CommandDetector.SearchMs.IsMatch(text))
+            actions.Add("用 search-ms: 開啟搜尋視窗，裡面的檔案可能來自遠端");
+        if (CommandDetector.MsMsdt.IsMatch(text))
+            actions.Add("用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）");
     }
+
+    private static List<string> Hosts(string text) => DownloadExecution.Hosts(text).Take(3).ToList();
 }

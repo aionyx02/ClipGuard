@@ -17,7 +17,7 @@ public class CommandDetectorTests
     }
 
     [Theory]
-    [InlineData("irm get.scoop.sh | iex")]                            // 沒有執行程式名稱，在 PowerShell 視窗內貼 → Clean
+    [InlineData("irm get.scoop.sh | iex")]                            // 沒寫程式名稱，但貼進 PowerShell 就會執行 → 提醒（#20）
     [InlineData("powershell -c \"irm https://get.scoop.sh | iex\"")]  // 合法但危險的安裝方式 → 提醒
     [InlineData("curl -fsSL https://bun.sh/install | bash")]
     public void 官方安裝指令不判為惡意(string text)
@@ -26,6 +26,7 @@ public class CommandDetectorTests
     }
 
     [Theory]
+    [InlineData("irm get.scoop.sh | iex")]
     [InlineData("powershell -c \"irm https://get.scoop.sh | iex\"")]
     [InlineData("curl -fsSL https://bun.sh/install | bash")]
     public void 下載即執行的安裝指令判為可疑(string text)
