@@ -15,11 +15,14 @@
   const LATE_WRITE_MS = 2000;
 
   let lib = null;
+  let packs = null;
   Promise.all([
     import(chrome.runtime.getURL('lib/secrets.js')),
     import(chrome.runtime.getURL('lib/pastejack.js')),
   ]).then(([secrets, pastejack]) => {
     lib = { ...secrets, ...pastejack };
+    // 個資的國家包依瀏覽器偏好語言選（#27，例如 zh-TW 開台灣包、en-US 開美國包）；通用包一律開。
+    packs = secrets.packsForLocales(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);
   }, () => {});
 
   // ====================================================================
@@ -123,7 +126,7 @@
     if (!el) return;
     const text = event.clipboardData.getData('text/plain');
     if (!text) return;
-    const findings = lib.findSecrets(text);
+    const findings = lib.findSecrets(text, { packs });
     if (findings.length === 0) return; // 沒有機密：不 preventDefault，網站行為完全不變。
 
     // 有機密：攔下原本的貼上，連網頁自己的 paste handler 也不讓它看到原文。
