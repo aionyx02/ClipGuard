@@ -11,13 +11,48 @@ public enum Cryptocurrency
     Tron,
 }
 
+/// <summary>文字裡的一個錢包地址：位置、幣別、用來比較是否同一地址的正規化字串。</summary>
+public readonly record struct WalletAddressMatch(int Index, int Length, Cryptocurrency Currency, string Normalized);
+
 /// <summary>
-/// 辨識「整段文字就是一個錢包地址」的情形，並盡量驗證檢查碼以減少誤判：
+/// 辨識錢包地址，並盡量驗證檢查碼以減少誤判：
 ///   BTC 1… / 3…：Base58Check；BTC bc1…：bech32（v0）/ bech32m（v1+）；
 ///   TRON T…：Base58Check（版本 0x41）；ETH 0x + 40 hex：格式檢查（EIP-55 需 Keccak，未驗證）。
+/// <see cref="TryParse"/> 只接受「整段就是一個地址」；<see cref="FindAll"/> 找出句子裡的地址。
 /// </summary>
 public static class WalletAddress
 {
+    /// <summary>只掃前面這麼多字，和機密偵測一致；超過的部分不分析。</summary>
+    public const int MaxScanLength = 100_000;
+
+    /// <summary>每段文字最多驗證這麼多個候選字串（每個都要算 SHA-256 或 bech32），避免超長內容卡住 UI。</summary>
+    public const int MaxCandidates = 256;
+
+    /// <summary>
+    /// 找出文字裡所有通過驗證的地址。地址必須是一整段連續的英數字（前後不能緊鄰英數字），
+    /// 所以 hash、Base64 這類更長的英數字串不會被切出一段來誤認。
+    /// </summary>
+    public static IReadOnlyList<WalletAddressMatch> FindAll(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return [];
+        var end = Math.Min(text.Length, MaxScanLength);
+        var found = new List<WalletAddressMatch>();
+        var candidates = 0;
+        var i = 0;
+        while (i < end && candidates < MaxCandidates)
+        {
+            if (!char.IsAsciiLetterOrDigit(text[i])) { i++; continue; }
+            var start = i;
+            while (i < text.Length && char.IsAsciiLetterOrDigit(text[i])) i++;
+            var length = i - start;
+            if (length is < 26 or > 90) continue;
+            candidates++;
+            if (TryParse(text.Substring(start, length), out var currency, out var normalized))
+                found.Add(new WalletAddressMatch(start, length, currency, normalized));
+        }
+        return found;
+    }
+
     /// <summary>
     /// 辨識成功時回傳幣別，並給出可用來比較是否為同一地址的正規化字串。
     /// </summary>

@@ -21,6 +21,8 @@ public sealed class ClipboardGuardState
     // 用內容比對，不用「略過下一次通知」：一次寫入可能觸發多次或零次 WM_CLIPBOARDUPDATE，
     // 旗標會錯位，結果不是還原後又被攔，就是下一次真正的複製被漏掉。
     private string? _trusted;
+    // 隔離時分析的那段文字（可能是截斷過的前綴）。還原後剪貼簿讀回來的也是同一段前綴，用它比對才對得上。
+    private string? _quarantinedKey;
 
     /// <summary>被清空的原內容；沒有可還原的內容時為 null。</summary>
     public string? Quarantined { get; private set; }
@@ -36,8 +38,12 @@ public sealed class ClipboardGuardState
 
     public Verdict LastVerdict { get; private set; } = Verdict.Clean;
 
-    /// <param name="text">剪貼簿目前的文字；沒有文字（空的、圖片、檔案）時為 null。</param>
-    public ClipboardAction OnClipboardText(string? text)
+    /// <param name="text">剪貼簿目前的文字（最多 <see cref="ClipboardLimits.MaxAnalyzedChars"/> 字）；沒有文字（空的、圖片、檔案）時為 null。</param>
+    /// <param name="readFull">
+    /// <paramref name="text"/> 被截斷時，讀取完整內容的方法。只有要隔離時才會呼叫，讓還原時不會少一截；
+    /// 讀不到（回傳 null）就只能隔離截斷後的內容。
+    /// </param>
+    public ClipboardAction OnClipboardText(string? text, Func<string?>? readFull = null)
     {
         if (text is null)
         {
@@ -66,7 +72,8 @@ public sealed class ClipboardGuardState
         switch (LastVerdict.Level)
         {
             case ThreatLevel.Malicious:
-                Quarantined = text;
+                Quarantined = readFull?.Invoke() ?? text;
+                _quarantinedKey = text;
                 QuarantineActive = true;
                 Level = ThreatLevel.None;
                 return ClipboardAction.Quarantine;
@@ -83,7 +90,7 @@ public sealed class ClipboardGuardState
     public string? BeginRestore()
     {
         if (Quarantined is null) return null;
-        _trusted = Quarantined;
+        _trusted = _quarantinedKey ?? Quarantined;
         return Quarantined;
     }
 

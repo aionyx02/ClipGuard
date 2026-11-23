@@ -83,19 +83,163 @@ function looksLikeCardIin(digits) {
 
 const NOT_ALNUM_BEFORE = '(?<![A-Za-z0-9])';
 const NOT_ALNUM_AFTER = '(?![A-Za-z0-9])';
+// 號碼中間允許的分隔：單一的空白、點、連字號，或一個換行（#22）。零寬字元在正規化時已經刪掉。
+const SEP = '(?:[ .\\-]|\\r?\\n)';
 
-/** @type {{type: string, label: string, pattern: RegExp, normalize?: (s: string) => string, validate?: (s: string, text: string, index: number) => boolean}[]} */
+// ---------- 正規化（#22） ----------
+
+const NFKC_CACHE = new Map();
+const ZERO_WIDTH = new Set(['​', '‌', '‍', '⁠', '﻿', '­']);
+
+/**
+ * 逐字 NFKC（全形轉半形）、dash 變體換成 -、刪掉零寬字元，並記住每個字來自原文哪裡。
+ * 與 C# 的 SecretTextNormalizer 相同。
+ * @returns {{text: string, start: number[], end: number[]}}
+ */
+export function normalizeForSecrets(text, from = 0, to = text.length) {
+  let out = '';
+  const start = [];
+  const end = [];
+  const push = (s, a, b) => {
+    for (const c of s) {
+      // c 可能是 surrogate pair（數學字母等）：每個 UTF-16 單位都要有一筆位置。
+      for (let k = 0; k < c.length; k++) { start.push(a); end.push(b); }
+      out += c;
+    }
+  };
+  for (let i = from; i < to; i++) {
+    const code = text.charCodeAt(i);
+    const c = text[i];
+    if (code < 0x80 || (code >= 0x3400 && code <= 0x9fff) || (code >= 0xac00 && code <= 0xd7a3)) {
+      out += c; start.push(i); end.push(i + 1);
+      continue;
+    }
+    if (ZERO_WIDTH.has(c)) continue;
+    if ((code >= 0x2010 && code <= 0x2015) || code === 0x2212 || code === 0xfe58) {
+      out += '-'; start.push(i); end.push(i + 1);
+      continue;
+    }
+    if (code >= 0xd800 && code <= 0xdbff && i + 1 < to) {
+      const low = text.charCodeAt(i + 1);
+      if (low >= 0xdc00 && low <= 0xdfff) {
+        push(text.slice(i, i + 2).normalize('NFKC'), i, i + 2);
+        i++;
+        continue;
+      }
+    }
+    if (code >= 0xd800 && code <= 0xdfff) { out += c; start.push(i); end.push(i + 1); continue; }
+    let mapped = NFKC_CACHE.get(c);
+    if (mapped === undefined) { mapped = c.normalize('NFKC'); NFKC_CACHE.set(c, mapped); }
+    push(mapped, i, i + 1);
+  }
+  return { text: out, start, end };
+}
+
+// ---------- 信用卡分組 ----------
+
+/**
+ * 找出用單一分隔符號接起來的數字組，再從裡面找連續幾組合起來像卡號的：
+ * 4-4-4-4（最後一組 1–4 碼）、Amex 4-6-5、Diners 4-6-4，分隔符號一致（換行可取代任何一種）。
+ * 日期清單、IP、版本號碼這類組合不會被硬湊成卡號。與 C# 的 CardCandidates 相同。
+ */
+function* cardCandidates(text) {
+  const isDigit = (i) => i < text.length && text.charCodeAt(i) >= 48 && text.charCodeAt(i) <= 57;
+  const sepAt = (p) => {
+    const c = text[p];
+    if (c === ' ' || c === '.' || c === '-') return isDigit(p + 1) ? [c, p + 1] : null;
+    if (c === '\n') return isDigit(p + 1) ? ['\n', p + 1] : null;
+    if (c === '\r' && text[p + 1] === '\n') return isDigit(p + 2) ? ['\n', p + 2] : null;
+    return null;
+  };
+  let i = 0;
+  while (i < text.length) {
+    if (!isDigit(i)) { i++; continue; }
+    const groups = [];
+    let sep = '';
+    for (;;) {
+      const s = i;
+      while (isDigit(i)) i++;
+      groups.push({ start: s, end: i, sep });
+      const next = sepAt(i);
+      if (!next) break;
+      [sep, i] = next;
+    }
+    const len = (k) => groups[k].end - groups[k].start;
+    for (let g = 0; g < groups.length; g++) {
+      let total = 0;
+      for (let h = g; h < groups.length; h++) {
+        total += len(h);
+        if (total > 19) break;
+        if (h > g) {
+          const prev = len(h - 1);
+          if (prev !== 4 && !(h - 1 === g + 1 && prev === 6)) break;
+        }
+        if (total < 13 || !isCardGrouping(groups, g, h, len)) continue;
+        const digits = groups.slice(g, h + 1).map((x) => text.slice(x.start, x.end)).join('');
+        if (!looksLikeCardIin(digits) || !isValidLuhn(digits)) continue;
+        yield { start: groups[g].start, end: groups[h].end };
+        g = h;
+        break;
+      }
+    }
+  }
+}
+
+function isCardGrouping(groups, first, last, len) {
+  if (first === last) return true;
+  let sep = '';
+  for (let k = first + 1; k <= last; k++) {
+    const s = groups[k].sep;
+    if (s === '\n') continue;
+    if (!sep) sep = s;
+    else if (sep !== s) return false;
+  }
+  if (last - first === 2 && len(first) === 4 && len(first + 1) === 6 && (len(last) === 4 || len(last) === 5)) return true;
+  for (let k = first; k < last; k++) if (len(k) !== 4) return false;
+  return len(last) >= 1 && len(last) <= 4;
+}
+
+// ---------- JWT ----------
+
+/** header 要能解成 JSON 物件，而且有字串型別的 alg。 */
+function isJwtHeader(segment) {
+  if (segment.length % 4 === 1) return false;
+  try {
+    const b64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    const json = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    return json !== null && typeof json === 'object' && !Array.isArray(json) && typeof json.alg === 'string';
+  } catch {
+    return false;
+  }
+}
+
+/** @type {{type: string, label: string, pattern?: RegExp, find?: (text: string) => Iterable<{start: number, end: number}>, validate?: (s: string, text: string, index: number, m: RegExpMatchArray) => boolean}[]} */
 const DETECTORS = [
+  {
+    type: 'api-key',
+    label: 'JWT',
+    // header.payload.signature，三段 base64url；header 一定是 {" 開頭，編碼後是 eyJ。
+    // 結尾可以接句點，但句點後不能再接 base64url 字元（那是 5 段的 JWE）。
+    pattern: /(?<![A-Za-z0-9_-])(eyJ[A-Za-z0-9_-]{2,509})\.[A-Za-z0-9_-]{2,6144}\.[A-Za-z0-9_-]{0,1024}(?!\.?[A-Za-z0-9_-])/g,
+    validate: (s, text, index, m) => isJwtHeader(m[1]),
+  },
   {
     type: 'tw-id',
     label: '身分證／居留證號',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}[A-Za-z][1289]\\d{8}${NOT_ALNUM_AFTER}`, 'g'),
-    validate: (s) => isValidTaiwanId(s.toUpperCase()),
+    pattern: new RegExp(`${NOT_ALNUM_BEFORE}[A-Za-z]${SEP}?[1289](?:${SEP}?[0-9]){8}${NOT_ALNUM_AFTER}`, 'g'),
+    // 分隔符號最多 3 個（A 123 456 789）；\r\n 算一個。
+    validate: (s) => {
+      const id = s.replace(/[^A-Za-z0-9]/g, '');
+      const seps = s.replace(/\r\n/g, '\n').length - id.length;
+      return seps <= 3 && isValidTaiwanId(id.toUpperCase());
+    },
   },
   {
     type: 'ubn',
     label: '統一編號',
-    pattern: /(?<!\d)\d{8}(?!\d)/g,
+    pattern: /(?<![0-9])[0-9]{8}(?![0-9])/g,
     // 新規則下隨機 8 位數約 1/5 會通過檢查碼，日期、訂單號碼會大量誤判，
     // 所以統編還要求前面 12 字內出現「統編／統一編號／稅籍／Tax ID／VAT」等字樣。
     validate: (s, text, index) =>
@@ -104,17 +248,16 @@ const DETECTORS = [
   {
     type: 'credit-card',
     label: '信用卡號',
-    // 13–19 位數，允許每位之間有一個空白或連字號（4111 1111 1111 1111、4111-1111-...）。
-    pattern: /(?<![\d-])\d(?:[ -]?\d){12,18}(?![\d])/g,
-    validate: (s) => {
-      const digits = s.replace(/[ -]/g, '');
-      return digits.length >= 13 && digits.length <= 19 && looksLikeCardIin(digits) && isValidLuhn(digits);
-    },
+    // 13–19 位數，分組方式要像卡號（見 cardCandidates），開頭與 Luhn 都要對。
+    find: cardCandidates,
   },
   {
     type: 'tw-mobile',
     label: '手機號碼',
-    pattern: /(?<![\d+])(?:\+886[- ]?|0)9\d{2}[- ]?\d{3}[- ]?\d{3}(?!\d)/g,
+    // 09 加 8 碼、+886／886 開頭（可以多寫一個 0）、(09)55666777。
+    pattern: new RegExp(
+      `(?<![0-9+])(?:(?:\\+?886${SEP}?0?|0)9[0-9]{2}${SEP}?[0-9]{3}${SEP}?[0-9]{3}`
+      + `|\\(09\\)${SEP}?(?:[0-9]{4}${SEP}?[0-9]{4}|[0-9]{2}${SEP}?[0-9]{3}${SEP}?[0-9]{3}))(?![0-9])`, 'g'),
   },
   // API key：前綴很有辨識度，誤判率低。順序有意義：sk-ant- 要排在 sk- 前面。
   {
@@ -149,23 +292,49 @@ const DETECTORS = [
   },
 ];
 
-// 太長的貼上（整份文件、log）照樣掃，但設上限避免在巨大字串上跑 regex 卡住頁面。
-export const MAX_SCAN_LENGTH = 200_000;
+// 太長的貼上（整份文件、log）最多分析這麼多字；超過時分析開頭和結尾各一半，中間不分析，
+// 避免在巨大字串上卡住頁面。與 C# 的 SecretDetector.MaxScanLength 相同。
+export const MAX_SCAN_LENGTH = 1 << 20;
+// 每段往後多看的字數（機密最長不超過這個長度，例如 JWT 的上限）與往前多看的字數（lookbehind、統編關鍵字）。
+const OVERLAP = 8 * 1024;
+const CONTEXT = 64;
+
+function scanRanges(length) {
+  if (length <= MAX_SCAN_LENGTH) return [[0, length]];
+  return [[0, MAX_SCAN_LENGTH / 2], [length - MAX_SCAN_LENGTH / 2, length]];
+}
 
 /**
  * 找出文字中的機密。回傳依出現位置排序、互不重疊的結果。
+ * 比對前先正規化（全形轉半形、去零寬字元）；start/end 是原文的位置，value 是正規化後的字串（給遮罩用）。
  * @param {string} text
  * @returns {{type: string, label: string, start: number, end: number, value: string}[]}
  */
 export function findSecrets(text) {
   if (typeof text !== 'string' || text.length === 0) return [];
-  const scanned = text.length > MAX_SCAN_LENGTH ? text.slice(0, MAX_SCAN_LENGTH) : text;
   const hits = [];
-  for (const d of DETECTORS) {
-    d.pattern.lastIndex = 0;
-    for (const m of scanned.matchAll(d.pattern)) {
-      if (d.validate && !d.validate(m[0], scanned, m.index)) continue;
-      hits.push({ type: d.type, label: d.label, start: m.index, end: m.index + m[0].length, value: m[0] });
+  for (const [from, to] of scanRanges(text.length)) {
+    const segStart = Math.max(0, from - CONTEXT);
+    const segEnd = Math.min(text.length, to + OVERLAP);
+    const norm = normalizeForSecrets(text, segStart, segEnd);
+    const scanned = norm.text;
+    const add = (d, s, e) => {
+      const start = norm.start[s];
+      const end = norm.end[e - 1];
+      if (start < from || start >= to) return;
+      if (segEnd < text.length && end >= segEnd) return; // 可能被切斷
+      hits.push({ type: d.type, label: d.label, start, end, value: scanned.slice(s, e) });
+    };
+    for (const d of DETECTORS) {
+      if (d.find) {
+        for (const c of d.find(scanned)) add(d, c.start, c.end);
+        continue;
+      }
+      d.pattern.lastIndex = 0;
+      for (const m of scanned.matchAll(d.pattern)) {
+        if (d.validate && !d.validate(m[0], scanned, m.index, m)) continue;
+        add(d, m.index, m.index + m[0].length);
+      }
     }
   }
   // 重疊時保留較早出現、同起點取較長者（例如卡號裡剛好藏著一段像手機的數字）。
@@ -197,7 +366,7 @@ function maskMiddle(value, keepStart, keepEnd, maxStars = Infinity) {
   return head + '*'.repeat(Math.min(maxStars, hidden.size)) + tail;
 }
 
-const API_KEY_PREFIX = /^(github_pat_|gh[pousr]_|sk-ant-|sk-proj-|sk-|AKIA|ASIA|xox[abposr]-|AIza)/;
+const API_KEY_PREFIX = /^(eyJ|github_pat_|gh[pousr]_|sk-ant-|sk-proj-|sk-|AKIA|ASIA|xox[abposr]-|AIza)/;
 
 /**
  * 遮罩單一機密：A123456789 → A12****789。

