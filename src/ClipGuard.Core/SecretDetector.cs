@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ClipGuard.Core;
@@ -65,38 +64,13 @@ public static class SecretDetector
         $@"(?<![0-9+])(?:(?:\+?886{Sep}?0?|0)9[0-9]{{2}}{Sep}?[0-9]{{3}}{Sep}?[0-9]{{3}}"
         + $@"|\(09\){Sep}?(?:[0-9]{{4}}{Sep}?[0-9]{{4}}|[0-9]{{2}}{Sep}?[0-9]{{3}}{Sep}?[0-9]{{3}}))(?![0-9])", Opts);
 
-    // key 前後不能緊鄰同類字元，以免切到更長字串的一部分。
-    private const string Tail = @"(?![A-Za-z0-9_\-])";
-    private const string Lead = @"(?<![A-Za-z0-9_\-])";
+    // API key、JWT、PEM 和上下文＋亂度的規則都在共用規則檔裡（rules/*.json，見 SecretRules，#26）。
+    // 個資（有檢查碼或要特殊分組的）還留在程式裡，#27 再拆。
 
-    // JWT（JWS compact）：header.payload.signature，三段都是 base64url。header 一定是 {"…" 開頭，
-    // 編碼後就是 eyJ。長度有上限（header 512、payload 6144、signature 1024），整串一定短於 Overlap。
-    // 結尾允許句點，但句點後面不能再接 base64url 字元（那是 5 段的 JWE，不在範圍內）。
-    private static readonly Regex Jwt = new(
-        $@"{Lead}(eyJ[A-Za-z0-9_\-]{{2,509}})\.([A-Za-z0-9_\-]{{2,6144}})\.([A-Za-z0-9_\-]{{0,1024}})(?!\.?[A-Za-z0-9_\-])", Opts);
-
-    // Prefix 是遮罩時保留的前綴長度（前綴本身不是機密，留著讓人看得出是哪種 key）；
-    // -1 表示比對到的只有標頭（如 PEM 的 BEGIN 行），本身不含機密，原樣顯示。
-
-    private static readonly (Regex Pattern, string Label, int Prefix)[] ApiKeys =
-    [
-        (new($@"{Lead}github_pat_[A-Za-z0-9_]{{22,255}}{Tail}", Opts), "GitHub token", 11),
-        (new($@"{Lead}gh[pousr]_[A-Za-z0-9]{{36,255}}{Tail}", Opts), "GitHub token", 4),
-        (new($@"{Lead}sk-ant-[A-Za-z0-9_\-]{{20,255}}{Tail}", Opts), "Anthropic API key", 7),
-        (new($@"{Lead}sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{{20,255}}{Tail}", Opts), "API key（sk-）", 3),
-        (new($@"{Lead}(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{{16,255}}{Tail}", Opts), "Stripe key", 8),
-        (new(@"(?<![A-Z0-9])(?:AKIA|ASIA)[A-Z0-9]{16}(?![A-Z0-9])", Opts), "AWS access key", 4),
-        (new($@"{Lead}xox[abposr]-[A-Za-z0-9\-]{{10,255}}{Tail}", Opts), "Slack token", 5),
-        (new($@"{Lead}AIza[A-Za-z0-9_\-]{{35}}{Tail}", Opts), "Google API key", 4),
-        (new($@"{Lead}glpat-[A-Za-z0-9_\-]{{20,255}}{Tail}", Opts), "GitLab token", 6),
-        (new($@"{Lead}npm_[A-Za-z0-9]{{36}}{Tail}", Opts), "npm token", 4),
-        (new(@"-----BEGIN (?:[A-Z]+ ){0,8}PRIVATE KEY-----", Opts), "私鑰（PEM）", -1),
-    ];
-
-    // 優先順序：前面的類型先佔位置，後面重疊的候選會被丟掉。
-    private const int RankJwt = 0;                      // 排在 API key 前面：JWT 有自己的驗證，不會跟 key 前綴重疊
-    private const int RankApiKey = 1;                   // 1 .. ApiKeys.Length
-    private static readonly int RankId = RankApiKey + ApiKeys.Length;
+    // 優先順序：前面的類型先佔位置，後面重疊的候選會被丟掉。規則檔的規則依檔案 priority 排在個資前面。
+    private static readonly IReadOnlyList<SecretRule> Rules = SecretRules.All;
+    private const int RankRule = 0;                      // 0 .. Rules.Count-1
+    private static readonly int RankId = RankRule + Rules.Count;
     private static readonly int RankCard = RankId + 1;
     private static readonly int RankBusinessId = RankId + 2;
     private static readonly int RankMobile = RankId + 3;
@@ -156,16 +130,16 @@ public static class SecretDetector
             return new(kind, label, masked, i, l);
         }
 
-        foreach (Match m in Jwt.Matches(text))
-            if (IsJwtHeader(m.Groups[1].Value))
-                add(RankJwt, Make(SecretKind.ApiKey, "JWT", SecretMasker.Mask(m.Value, 3, 3), m.Index, m.Length));
-
-        for (var k = 0; k < ApiKeys.Length; k++)
+        // 規則檔：在 ASCII 版本上比對（位置不變），先用 keywords 篩掉不可能命中的規則。
+        var ascii = SecretRules.AsciiView(text);
+        var lower = ascii.ToLowerInvariant();
+        for (var k = 0; k < Rules.Count; k++)
         {
-            var (pattern, label, prefix) = ApiKeys[k];
-            foreach (Match m in pattern.Matches(text))
-                add(RankApiKey + k, Make(SecretKind.ApiKey, label,
-                    prefix < 0 ? m.Value : SecretMasker.Mask(m.Value, prefix, 3), m.Index, m.Length));
+            var rule = Rules[k];
+            if (!rule.KeywordsPresent(lower)) continue;
+            foreach (var (index, length, secret) in rule.Scan(ascii, text))
+                add(RankRule + k, Make(rule.Kind, rule.Label,
+                    rule.PemBlock ? secret : SecretMasker.Mask(secret, rule.KeepStart, 3), index, length));
         }
 
         foreach (Match m in TaiwanId.Matches(text))
@@ -316,28 +290,6 @@ public static class SecretDetector
                     || d.StartsWith("62")) && len is >= 16 and <= 19,                    // Discover / UnionPay
             _ => false,
         };
-    }
-
-    // ---------- JWT ----------
-
-    /// <summary>header 要能解成 JSON 物件，而且有字串型別的 <c>alg</c>，用來壓低誤報。</summary>
-    private static bool IsJwtHeader(string segment)
-    {
-        var b64 = segment.Replace('-', '+').Replace('_', '/');
-        b64 += (b64.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
-        var buffer = new byte[b64.Length];
-        if (b64.Length % 4 == 1 || !Convert.TryFromBase64String(b64, buffer, out var written)) return false;
-        try
-        {
-            using var doc = JsonDocument.Parse(buffer.AsMemory(0, written));
-            return doc.RootElement.ValueKind == JsonValueKind.Object
-                   && doc.RootElement.TryGetProperty("alg", out var alg)
-                   && alg.ValueKind == JsonValueKind.String;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
     }
 
     // ---------- 共用 ----------

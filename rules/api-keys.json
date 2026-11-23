@@ -1,0 +1,127 @@
+{
+  "format": 1,
+  "name": "api-keys",
+  "priority": 10,
+  "description": "第 1 層：手寫的已知前綴規則（原本寫在 SecretDetector.cs 與 secrets.js 裡）。排在 gitleaks 規則前面，重疊時以這裡的標籤為準。格式見 docs/detection-rules.md §5.4。",
+  "rules": [
+    {
+      "id": "jwt",
+      "kind": "api-key",
+      "label": "JWT",
+      "regex": "eyJ[A-Za-z0-9_-]{2,509}\\.[A-Za-z0-9_-]{2,6144}\\.[A-Za-z0-9_-]{0,1024}",
+      "keywords": ["eyj"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "\\.?[A-Za-z0-9_-]",
+      "validate": "jwt-header",
+      "mask": { "keepStart": 3 }
+    },
+    {
+      "id": "github-fine-grained-pat",
+      "kind": "api-key",
+      "label": "GitHub token",
+      "regex": "github_pat_[A-Za-z0-9_]{22,255}",
+      "keywords": ["github_pat_"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 11 }
+    },
+    {
+      "id": "github-token",
+      "kind": "api-key",
+      "label": "GitHub token",
+      "regex": "gh[pousr]_[A-Za-z0-9]{36,255}",
+      "keywords": ["ghp_", "gho_", "ghu_", "ghs_", "ghr_"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 4 }
+    },
+    {
+      "id": "anthropic-api-key",
+      "kind": "api-key",
+      "label": "Anthropic API key",
+      "regex": "sk-ant-[A-Za-z0-9_-]{20,255}",
+      "keywords": ["sk-ant-"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 7 }
+    },
+    {
+      "id": "sk-api-key",
+      "kind": "api-key",
+      "label": "API key（sk-）",
+      "regex": "sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,255}",
+      "keywords": ["sk-"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 3 }
+    },
+    {
+      "id": "stripe-key",
+      "kind": "api-key",
+      "label": "Stripe key",
+      "regex": "(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,255}",
+      "keywords": ["sk_live_", "sk_test_", "rk_live_", "rk_test_"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 8 }
+    },
+    {
+      "id": "aws-access-key",
+      "kind": "api-key",
+      "label": "AWS access key",
+      "regex": "(?:AKIA|ASIA)[A-Z0-9]{16}",
+      "keywords": ["akia", "asia"],
+      "notPrecededBy": "[A-Z0-9]",
+      "notFollowedBy": "[A-Z0-9]",
+      "mask": { "keepStart": 4 }
+    },
+    {
+      "id": "slack-token",
+      "kind": "api-key",
+      "label": "Slack token",
+      "regex": "xox[abposr]-[A-Za-z0-9-]{10,255}",
+      "keywords": ["xox"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 5 }
+    },
+    {
+      "id": "google-api-key",
+      "kind": "api-key",
+      "label": "Google API key",
+      "regex": "AIza[A-Za-z0-9_-]{35}",
+      "keywords": ["aiza"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 4 }
+    },
+    {
+      "id": "gitlab-token",
+      "kind": "api-key",
+      "label": "GitLab token",
+      "regex": "glpat-[A-Za-z0-9_-]{20,255}",
+      "keywords": ["glpat-"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 6 }
+    },
+    {
+      "id": "npm-token",
+      "kind": "api-key",
+      "label": "npm token",
+      "regex": "npm_[A-Za-z0-9]{36}",
+      "keywords": ["npm_"],
+      "notPrecededBy": "[A-Za-z0-9_-]",
+      "notFollowedBy": "[A-Za-z0-9_-]",
+      "mask": { "keepStart": 4 }
+    },
+    {
+      "id": "private-key-pem",
+      "kind": "api-key",
+      "label": "私鑰（PEM）",
+      "regex": "-----BEGIN (?:[A-Z]+ ){0,8}PRIVATE KEY-----",
+      "keywords": ["-----begin"],
+      "mask": "pem-block"
+    }
+  ]
+}
