@@ -98,6 +98,9 @@ internal sealed class TrayApp : ApplicationContext
             ? CommandExplainer.Explain(text)
             : null;
 
+        // 錢包掉包每次都要記錄（記住最後一次看到的地址）；通知只讓給「指令被攔截」（§2）。
+        var swap = _walletSwap.Observe(text, UserInput.IdleTime());
+
         var secretNotified = false;
         switch (action)
         {
@@ -110,34 +113,37 @@ internal sealed class TrayApp : ApplicationContext
                     onClick: Restore);
                 break;
 
-            case ClipboardAction.WarnSuspicious:
+            case ClipboardAction.WarnSuspicious when swap is null:
                 Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
                     ComposeBody("貼上前請確認來源可信。", explanation!, null));
                 break;
 
             // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
-            case ClipboardAction.None when SecretGuard.Describe(secrets) is { } secret:
+            case ClipboardAction.None when swap is null && SecretGuard.Describe(secrets) is { } secret:
                 Notify(ToolTipIcon.Warning, secret.Title, secret.Body);
                 secretNotified = true;
                 break;
         }
 
         // 指令警告優先：已經跳出攔截或提醒時，不再用隱藏字元通知蓋掉它（攔截通知帶有「點擊還原」）。
-        if (text is not null)
-            CheckHiddenCharsAndWalletSwap(text, notifyHiddenChars: action == ClipboardAction.None && !secretNotified);
+        if (swap is not null && action != ClipboardAction.Quarantine)
+            NotifyWalletSwap(swap);
+        else if (text is not null)
+            CheckHiddenChars(text, notifyHiddenChars: action == ClipboardAction.None && !secretNotified);
     }
 
-    // 隱藏字元（#5）與錢包地址掉包（#6）。通知不顯示地址或原文。
-    private void CheckHiddenCharsAndWalletSwap(string text, bool notifyHiddenChars)
+    // 錢包地址掉包（#6、#23）。通知不顯示地址，連遮罩版都不顯示（P4）。
+    private void NotifyWalletSwap(WalletSwap swap)
     {
-        if (_walletSwap.Observe(text) is { } swap)
-        {
-            Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
-                $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒內被換成另一個地址，可能有剪貼簿劫持惡意程式。\n"
-                + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
-            return;
-        }
+        var to = swap.ReplacementCurrency == swap.Currency ? "" : $" {swap.ReplacementCurrency} ";
+        Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
+            $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒後被換成另一個{to}地址，可能有剪貼簿劫持惡意程式。\n"
+            + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
+    }
 
+    // 隱藏字元（#5、#23）。通知只顯示 code point，不顯示原文。
+    private void CheckHiddenChars(string text, bool notifyHiddenChars)
+    {
         if (!notifyHiddenChars) return;
         var hidden = HiddenCharDetector.Analyze(text);
         if (hidden.Level != ThreatLevel.None)
