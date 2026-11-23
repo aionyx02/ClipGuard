@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="ClipGuard" width="100%">
+</p>
+
 # ClipGuard
 
 Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個方向。
@@ -73,3 +77,7 @@ cd extension; node --test
 - 貼上前確認只記「這份剪貼簿含哪些機密」的種類和遮罩字串，不記原文；設定存在 `%LOCALAPPDATA%\ClipGuard\paste-guard.json`，只有開關和允許清單。不記錄任何按鍵。
 - 登記的機密只存「長度 + HMAC-SHA256」，位置在 `%LOCALAPPDATA%\ClipGuard\secrets.json`。HMAC 金鑰是隨機產生的 256 位元，用 DPAPI（目前的 Windows 使用者）保護，存在同一個目錄的 `key.bin`。
 - 不用單純的 SHA-256，因為身分證、手機這類號碼只有約 1e8–1e9 種組合，雜湊值可以被暴力反推。
+
+## 授權
+
+[MIT](LICENSE)
