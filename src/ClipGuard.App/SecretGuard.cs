@@ -34,10 +34,12 @@ internal sealed class SecretGuard
     /// <summary>登記的機密優先，偵測到的格式不能跟它重疊。結果只有遮罩字串與位置，不含原文。</summary>
     public IReadOnlyList<SecretMatch> Find(string text)
     {
-        var found = new List<SecretMatch>();
-        if (_store is not null) found.AddRange(_store.Find(text));
+        // 只跟登記的機密比重疊（筆數很少）；偵測結果本身已經互不重疊。
+        // 不能拿正在變長的 found 來比，超長文字命中很多筆時會變成 O(n²)，卡住 UI。
+        IReadOnlyList<SecretMatch> registered = _store is not null ? _store.Find(text) : [];
+        var found = new List<SecretMatch>(registered);
         found.AddRange(SecretDetector.Find(text).Where(m =>
-            !found.Any(r => m.Index < r.Index + r.Length && r.Index < m.Index + m.Length)));
+            !registered.Any(r => m.Index < r.Index + r.Length && r.Index < m.Index + m.Length)));
         found.Sort((a, b) => a.Index.CompareTo(b.Index));
         return found;
     }
