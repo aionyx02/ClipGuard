@@ -20,7 +20,7 @@ Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個
 | 💬 **白話說明** | 用白話說明指令會做什麼，並把 `-enc` 編碼的內容解出來 | 顯示在通知裡 |
 | 🚪 **執行入口再警告** | 剪貼簿有危險指令時，打開 Win+R、檔案總管、檔案對話框或終端機會再警告一次 | 每個視窗只提醒一次 |
 | 🔐 **個資偵測** | 身分證／居留證、統一編號、信用卡號碼都會驗檢查碼，另外偵測手機號碼。全形、點號或空白分隔、中間換行的寫法也認得 | 遮罩後通知（`A12****789`） |
-| 🔑 **API key 偵測** | GitHub、OpenAI / Anthropic、AWS、Stripe、Slack、Google、GitLab、npm、PEM 私鑰、JWT | 遮罩後通知 |
+| 🔑 **API key 偵測** | 三層：已知前綴（GitHub、OpenAI / Anthropic、AWS、Stripe、Slack、Google、GitLab、npm、PEM 私鑰、JWT），加上從 [gitleaks](https://github.com/gitleaks/gitleaks) 轉換的近 200 種服務格式；沒有固定格式的 key 看上下文（`api_key=`、`"token": `、`Authorization: Bearer`）和亂度；再不行就自己登記。hash、UUID、git SHA、Base64 圖片不會誤報 | 遮罩後通知 |
 | 📝 **登記機密** | 在系統匣選單登記自己的密碼或號碼，只存 HMAC，不存原文 | 複製到時通知 |
 | ✋ **貼上前確認** | 剪貼簿含登記的機密時，在 Ctrl+V／Shift+Insert 的當下擋住，跳出搶焦點的確認框；手快按下的 Enter 只會取消。個資與 API key 可以在系統匣選單另外打開；密碼管理器和允許清單內的程式照常貼上 | 取消、貼遮罩版或貼原文（要明確點選） |
 | 👻 **隱藏字元** | 零寬字元、Bidi 控制字元、混進英文的西里爾或希臘字母、指令結尾的換行 | 提醒 |
@@ -30,7 +30,7 @@ Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個
 
 | 功能 | 說明 |
 |---|---|
-| 🙈 **貼上遮罩** | 在網頁上貼上機密時，可以選擇貼遮罩版、貼原文或取消；沒有機密時完全不介入 |
+| 🙈 **貼上遮罩** | 在網頁上貼上機密時，可以選擇貼遮罩版、貼原文或取消；沒有機密時完全不介入。API key 規則跟桌面版共用同一份規則檔 |
 | 🪝 **Pastejacking 偵測** | 網頁偷偷把你複製的內容換成別的東西（例如指令）時警告 |
 
 安裝方式見 [`extension/README.md`](extension/README.md)。
@@ -53,6 +53,8 @@ Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個
 ```
 src/ClipGuard.Core   純邏輯（偵測規則），不含 UI 和 Win32，可以單元測試
 src/ClipGuard.App    WinForms 系統匣程式：監聽剪貼簿、前景視窗，負責通知與對話框
+rules/               桌面版與插件共用的機密規則檔（JSON），桌面版內嵌進組件
+tools/               規則檔的轉換工具（gitleaks → rules/gitleaks.json、rules/ → 插件）
 tests/               xUnit 測試
 extension/           Chrome 插件（ES modules，用 node --test 測試）
 docs/                判斷準則
@@ -67,6 +69,14 @@ dotnet run --project src/ClipGuard.App
 cd extension; node --test
 ```
 
+改了 `rules/*.json` 之後要重新產生插件用的檔案（`extension/test/rules.test.js` 會檢查）：
+
+```powershell
+node tools/build-extension-rules.mjs
+```
+
+更新 gitleaks 規則的步驟寫在 `tools/convert-gitleaks.mjs` 開頭。
+
 ## 開發流程
 
 `feature/*` → PR 到 `dev` → PR 到 `main`。`main` 只接受來自 `dev` 的 PR，兩個分支都要通過 CI（`build-test`、`only-from-dev`）。
@@ -80,4 +90,6 @@ cd extension; node --test
 
 ## 授權
 
-[MIT](LICENSE)
+本專案以 [MIT](LICENSE) 授權。
+
+`rules/gitleaks.json`（以及由它產生的 `extension/lib/rules.generated.js`）轉換自 [gitleaks](https://github.com/gitleaks/gitleaks) 的預設規則，以 MIT License 授權，見 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。

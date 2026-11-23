@@ -229,7 +229,15 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 5. 機密偵測
 
-程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`SecretMasker.cs`。
+程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`SecretMasker.cs`；規則檔 `rules/*.json`（§5.4）。
+
+API key 分三層（#26）：
+
+| 層 | 規則 | 位置 |
+|---|---|---|
+| 1. 已知格式 | 手寫的前綴規則（GitHub、sk-、AWS、Stripe、JWT、PEM…），加上從 gitleaks 轉換的 198 條服務格式 | `rules/api-keys.json`、`rules/gitleaks.json` |
+| 2. 上下文＋亂度 | 值前面有像金鑰的名稱（`api_key=`、`"token": `、`Authorization: Bearer`），而且值夠長、夠亂 | `rules/context.json`，§5.5 |
+| 3. 自行登記 | 前兩層都抓不到的，使用者自己登記（HMAC） | §5.1 |
 
 ### 5.0 比對前的處理（#22）
 
@@ -267,10 +275,14 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 統一編號 | 8 位數字，**前面 20 字內**要出現統一編號、統編、營利事業、稅籍、VAT 或 Tax ID 等關鍵字 | 權重 1,2,1,2,1,2,4,1，總和要能被 **5** 整除；第 7 碼是 7 時有特例（依財政部 110-12-22 公告的新規則） |
 | 信用卡 | 13–19 碼，分組方式見 §5.0，而且要符合發卡機構的前綴和長度 | Luhn |
 | 手機 | `09` 加 8 碼；`+886 9…` 或沒有加號的 `886 9…`（`+886 0912…` 多寫的 0 也接受）；`(09)` 加 8 碼。市話（`(02)2555-6666`）不偵測：沒有檢查碼，8 碼數字太常見 | 沒有檢查碼 |
-| API key | 前綴比對：GitHub（`gh?_`、`github_pat_`）、`sk-ant-`、`sk-`、Stripe、AWS（`AKIA` / `ASIA`）、Slack、Google、GitLab、npm、PEM 私鑰標頭 | 只比對前綴和長度 |
+| API key（第 1 層，手寫） | 前綴比對：GitHub（`gh?_`、`github_pat_`）、`sk-ant-`、`sk-`、Stripe、AWS（`AKIA` / `ASIA`）、Slack、Google、GitLab、npm、PEM 私鑰標頭。前後不能緊鄰同類字元 | 只比對前綴和長度 |
+| API key（第 1 層，gitleaks） | 198 條服務專屬格式（Shopify、DigitalOcean、Twilio、Postman…），部分要求前面有服務名稱（`adafruit … = <值>`） | 依各規則：固定前綴、長度、gitleaks 的亂度門檻與 allowlist |
 | JWT | `eyJ…` 開頭、三段 base64url（header ≤ 512、payload ≤ 6144、signature ≤ 1024 字，signature 可以是空的）。結尾可以接句點；五段的 JWE 不算 | header 要能解成 JSON 物件，而且有字串型別的 `alg` |
+| 疑似金鑰或密碼、Authorization 權杖（第 2 層） | 見 §5.5 | 長度、亂度、排除佔位字 |
 
 - JWT 歸在 API key 類（`SecretKind.ApiKey`，標籤「JWT」），遮罩成 `eyJ********xyz`（P4）。
+- 所有規則檔的命中都是 `SecretKind.ApiKey`，通知格式跟以前一樣是「標籤 遮罩」：有固定前綴的保留前綴（`shpat_********3f1`、`ghp_********xyz`），沒有前綴的只留最後 3 碼（`********x7Q`）。PEM 只顯示標頭，貼遮罩版時一路遮到 END 行。
+- 重疊時的優先順序：`api-keys.json` → `gitleaks.json` → `context.json` → 個資。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的。
 - 統編要求關鍵字的原因：改成「能被 5 整除」之後，隨機的 8 位數字約有 1/5 會通過檢查碼，日期和訂單號碼都會誤報（P6）。所以**沒有關鍵字的統編刻意不偵測**（#22 F13），README 的已知限制也有寫。
 - 掃描上限（`SecretDetector.MaxScanLength`）不能超過剪貼簿的讀取上限（§2.2）。
 
@@ -292,7 +304,10 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 兩個以上連續分隔符號（`A12345  6789`）、分隔符號超過上限、不在上述分組裡的卡號或手機寫法（例如 `09-1234-5678`、`41 11 11…`） | #22 的取捨 |
 | 號碼前面緊貼著零寬字元和英數字時（`X​A123456789`），零寬字元刪掉後會黏在一起，不算命中 | #22 的取捨 |
 | 登記的機密仍只掃前 20,000 字，也沒有正規化（比對的是 HMAC，全形版本是另一個字串） | 尚未開 issue |
-| 不知名服務的 API key（沒有固定前綴） | #26 |
+| 沒有固定前綴、前面也沒有金鑰名稱的 key（例如一行裡只有一串亂碼）不偵測；名稱是中文（`金鑰：…`、`密碼=…`）也不算（§5.5） | #26 的取捨 |
+| 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算 | #26 的取捨 |
+| `curl -u 帳號:密碼`、只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單） | #26 的取捨 |
+| 長於 8K 字的機密（`Overlap`）可能被分段切斷，跟 JWT 一樣 | #22、#26 的取捨 |
 | 只支援台灣的個資格式 | #27 |
 | 貼上攔截預設只管**登記的機密**；個資與 API key 要自己在系統匣打開才會攔（取捨見 §5.3） | #25 |
 | 貼上攔截攔不到右鍵選單的「貼上」、拖放、程式自己讀剪貼簿，以及系統管理員權限的視窗 | #25 |
@@ -339,6 +354,102 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 貼遮罩版要等 600 ms 才換回原文，極慢的程式可能讀到原文或還沒讀 | 沒有「目標已讀完剪貼簿」的通知可等 |
 | 確認框開著時，送往原目標視窗的 Enter 會被吞掉（最多 60 秒） | 刻意的：決定之前不讓 Enter 在那個程式送出任何東西 |
 | 複製後約 50 ms 內按 Ctrl+V，危險指令（Malicious）仍會被貼出去；約 150 ms 後剪貼簿已清空（#24 F21 實測） | 指令攔截靠的是複製後清空剪貼簿，不是貼上攔截；WM_CLIPBOARDUPDATE 處理完之前，目標程式已經讀到內容。一般人複製後不會這麼快貼上，所以只記錄 |
+
+### 5.4 共用規則檔（`rules/*.json`，#26）
+
+桌面版和插件讀**同一份**規則。目前放 API key 類的規則；有檢查碼的個資（身分證、卡號、統編、手機）還寫在程式裡，#27 會拆成各國的規則包。
+
+```
+rules/*.json ──(內嵌資源)──────────────────> C# SecretRules（啟動時編譯一次）
+      │
+      └─ node tools/build-extension-rules.mjs ─> extension/lib/rules.generated.js ─> rules.js
+gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（commit 進 repo）
+```
+
+- **桌面版**：`ClipGuard.Core.csproj` 把 `rules/*.json` 內嵌進組件，執行時不讀檔、不連網（P3）。
+- **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs` 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
+- **gitleaks**：toml 先另外下載（`gh api`），再用 `tools/convert-gitleaks.mjs <toml> <版本> <commit>` 轉換；執行時從不連網。授權見 `THIRD_PARTY_NOTICES.md`。目前是 v8.30.1（commit `5f6ec56`）。
+
+**檔案格式**（`format: 1`）：
+
+| 欄位 | 說明 |
+|---|---|
+| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、gitleaks 20、context 30 |
+| `exclude`、`stopwords`（檔案層級） | 套用到檔案裡每一條規則（gitleaks 的全域 allowlist 就放這裡） |
+| `skipped` | 只有 gitleaks.json 有：沒收的規則和原因（產生的，不要手改） |
+| `rules[].id` | 所有檔案裡不能重複。gitleaks 的加 `gitleaks.` 前綴 |
+| `kind` | 目前只有 `api-key`（對應 `SecretKind.ApiKey`）。#27 加個資時要在 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
+| `label` | 通知裡顯示的名稱 |
+| `regex`、`ignoreCase` | 語法限制見下方 |
+| `secretGroup` | 機密是第幾個群組；沒寫就是第一個有比對到、不是空字串的群組，沒有群組就是整段（同 gitleaks）。結果的位置、遮罩、貼遮罩版都只針對這一段 |
+| `keywords` | 小寫。文字轉小寫後至少出現一個才跑 regex（同 gitleaks 的預先篩選，是效能的關鍵）。沒寫表示一律跑 |
+| `notPrecededBy`、`notFollowedBy` | 取代 lookaround：前一個字元符合 `notPrecededBy`（單一字元的類別）或比對結果後面接著 `notFollowedBy` 時不算 |
+| `minLength`、`maxLength` | 機密的長度 |
+| `entropy` | 數字（gitleaks 的固定門檻），或 `{hex, base36, base64}` 各一組 `[a, b, cap]`（§5.5）。亂度 ≤ 門檻就不算 |
+| `digitRequiredBelow` | 機密短於這個長度時一定要有數字 |
+| `rejectSequential` | 一半以上的相鄰字元相同或連號時不算（`aaaa`、`0123456789abcdef`） |
+| `exclude` | `[{regex, target, ignoreCase}]`，符合就不算。`target`：`secret`（預設）、`match`（整段比對結果）、`line`（所在的那一行）、`key`（群組 1 往前延伸到整個識別字，給金鑰名稱用）。`ignoreCase` 表示先把目標轉小寫，regex 要寫小寫 |
+| `stopwords` | 機密（轉小寫）包含其中一個就不算（同 gitleaks） |
+| `validate` | 額外的驗證，目前只有 `jwt-header`。#27 的檢查碼（`luhn`、`tw-id`…）也照這個方式加，兩邊各實作一次 |
+| `mask` | `{keepStart}`：遮罩時保留的前綴長度；或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行 |
+
+**regex 語法**：只用 .NET 和 JS（沒有 `u` 旗標）行為一樣的子集合，而且不能用 lookaround、backreference、possessive、atomic group 和行內旗標 `(?i)`（要整條不分大小寫就用 `ignoreCase`）。理由：
+
+- **線性時間**：.NET 用 `RegexOptions.NonBacktracking` 編譯（不支援 lookaround），最壞情況也是線性。JS 是回溯引擎，所以 gitleaks 規則裡在 JS 會變成 O(n²) 的（curl 那兩條）不收；兩邊的測試都會拿每條規則跑 1 Mi 字的病態輸入。
+- **`$`** 是「整段結尾」（JS 沒有 `m` 旗標時的意思）；.NET 的 `$` 在最後一個換行前也成立，所以載入時換成 `\z`。
+- **ASCII 版本**：`\b`、`\w`、不分大小寫在 .NET 認 Unicode，在 JS 只認 ASCII。所以規則比對的是「非 ASCII 字元都換成 U+001A」的版本（長度不變，位置直接對回原文），兩邊結果一樣，而且中文緊貼著 key（`金鑰dop_v1_…`）也找得到。
+- **NonBacktracking 的群組**：.NET 9 的 NonBacktracking 找到的範圍正確，但有些 pattern 的捕獲群組是空的（實測 context-assignment），所以範圍交給 NonBacktracking，群組在那一小段裡用一般引擎（`^(?:…)\z`，逾時 200 ms）重比一次。
+
+**gitleaks 怎麼轉**（`tools/convert-gitleaks.mjs`）：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
+
+**沒收的 gitleaks 規則**（24 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
+
+| 原因 | 規則 |
+|---|---|
+| 第 2 層負責 | generic-api-key |
+| 手寫規則已涵蓋 | github-pat、github-oauth、github-app-token、github-refresh-token、github-fine-grained-pat、jwt、private-key |
+| client ID 是公開的識別碼 | adobe、asana、bitbucket、discord、linkedin、looker、messagebird、plaid 的 client-id |
+| 只在特定檔案類型才成立（剪貼簿沒有檔名） | freemius-secret-key、hashicorp-tf-password、kubernetes-secret-yaml、nuget-config-password、pkcs12-file |
+| JS 會變成 O(n²) | curl-auth-header、curl-auth-user |
+| 會把 git SHA 當成 token | sourcegraph-access-token（有一個分支是單獨的 40 位 hex） |
+
+### 5.5 上下文＋亂度（第 2 層，`rules/context.json`）
+
+兩條規則：
+
+| 規則 | 上下文 | 值 |
+|---|---|---|
+| context-assignment（疑似金鑰或密碼） | 名稱含 `api_key`／`apikey`／`api-key`、`secret`、`token`、`password`／`passwd`、`pwd`、`credential`、`private_key`、`access_key`、`auth_key`、`signing_key`、`encryption_key`、`master_key`、`session_key`（不分大小寫，`.`、`_`、`-` 都可以），後面接 `=`、`:`、`:=`、`=>`、`?=`、`+=`，名稱和值可以有引號。涵蓋 `.env` 的 `KEY=value`、`export`、JSON 的 `"apiKey": "…"`、YAML、程式碼的指定、`X-API-Key:` 標頭、`$env:X = "…"` | 16–512 字的 `[A-Za-z0-9_+/=.~!@#%^*-]`，後面要接空白、引號、`;`、`,`、`)`、`}`、`]`、`>`、`&` 或結尾 |
+| context-authorization（Authorization 權杖） | `Authorization:`（或 `=`）加 `Bearer`、`Token`、`Basic`、`ApiKey`，包括 `curl -H "Authorization: Bearer …"` | 16–1024 字的 `[A-Za-z0-9_+/=.~-]` |
+
+值要再通過：
+
+1. **亂度**：Shannon entropy 要**大於** `min(cap, a + b·log2(長度))`，依字元組成分三類：
+
+   | 類別 | 條件 | a | b | cap | 16 字 | 32 字 | 64 字 |
+   |---|---|---|---|---|---|---|---|
+   | hex | 只有 `0-9a-f`（可以有 `-`，UUID） | 0.70 | 0.49 | 3.5 | 2.66 | 3.15 | 3.5 |
+   | base36 | 只有小寫英數，或只有大寫英數 | 0.49 | 0.665 | 4.2 | 3.15 | 3.82 | 4.2 |
+   | base64 | 其他 | 0.19 | 0.785 | 4.5 | 3.33 | 4.12 | 4.5 |
+
+   **校準**：每類每個長度（16、20、24、32、40、64）用固定種子產生 5,000 個隨機字串，門檻取約第 1 百分位數（99% 的隨機 key 會通過）。例如隨機 32 字英數的第 1 百分位數是 4.20、中位數 4.54；隨機 32 位 hex 是 3.25、3.62。同樣長度下單字組成的值低很多：`your_api_key_here` 3.29、`changeme_changeme` 2.91、`REPLACE_WITH_YOUR_SECRET` 3.69、`deadbeef…` 2.16。只靠亂度分不開的是 camelCase 識別字（`accessTokenFromStorage` 3.66、`this.configuration.secretToken` 3.85），所以加了下面第 2、4 點。
+2. **32 字以下一定要有數字**：隨機 20 字英數沒有數字的機率約 3%，識別字幾乎都沒有數字。
+3. **不是連號或同一個字重複**（`rejectSequential`）。
+4. **排除**：佔位字（`example`、`sample`、`dummy`、`placeholder`、`changeme`、`replace`、`insert`、`redacted`、`xxxx`、`todo`、`fake`、`your_`、`_here`、`<…>`、`${…}`、`{{…}}`）；屬性存取 `a.b.c`（`process.env.SECRET_KEY`、`settings.API_KEY`）；路徑（`/`、`./`、`~/` 開頭，或以 `.json`、`.pem`、`.key` 等副檔名結尾）；只有數字和標點。
+5. **名稱排除**（`key` 目標，名稱會往前延伸到整個識別字）：以 `url`、`uri`、`endpoint`、`path`、`file`、`dir`、`name`、`type`、`length`、`count`、`size`、`limit`、`ttl`、`expires`、`timeout`、`header`、`field`、`prefix`、`format`、`version`、`policy`、`id`、`hash`、`digest`、`checksum`、`md5`、`sha*` 結尾，或含 `tokeniz`、`csrf`、`xsrf`、`public`、`publishable`、`page_token`、`max_tokens`。
+
+**UUID 與 git SHA 的決定**：有沒有金鑰名稱才是分界。
+
+| 情況 | 結果 | 理由 |
+|---|---|---|
+| `token: <UUID>`、`secret=<40 位 hex>` | **警告** | Heroku 等服務的 key 就是 UUID；明確寫著 secret／token 的 40 位 hex 多半就是 token。誤報只是多一則提醒（P1） |
+| `id: <UUID>`、`token_id: <UUID>`、`commit: <SHA>`、`password_hash: <hex>`、`git log` 輸出 | 不警告 | 沒有金鑰名稱，或名稱表示它是識別碼或雜湊 |
+
+`token = GetToken()`、`password = input()` 這類程式碼不會命中：值後面接的是 `(`，不是結尾字元。
+
+**誤報樣本**：`tests/fixtures/secret-false-positives.json`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
+
+**效能**（`SecretRulesTests`、`rules.test.js` 會量）：每條規則各跑 5 種 1 Mi 字的病態輸入（關鍵字重複、關鍵字加 `=`、關鍵字加 40 個字母、關鍵字後面接 1 Mi 個字母…），C# 最慢的一條 66 ms、JS 49 ms。整個 `SecretDetector.Find` 在 1 Mi 字、所有規則的關鍵字都出現時約 80 ms，滿滿的 `.env`（2 萬多筆命中）約 145 ms（C#；JS 約 115、155 ms）。不會因為長度整段跳過。
 
 ## 6. 隱藏字元與錢包掉包
 
@@ -406,7 +517,9 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | Pastejacking | 比對「使用者選取的文字」和「頁面寫進剪貼簿的內容」。被取代、多了指令或換行、多了隱形字元時警告。複製後 2 秒內頁面又寫入剪貼簿，而且使用者這段期間沒有任何點擊或按鍵，才算是被改寫 |
 | 權限 | 不使用 `permissions`、`host_permissions`；不連網、不存資料、沒有 service worker |
 
-**目前和 C# 端不一致的地方**（統一規則檔前要注意，見 #26、#27）：
+**機密規則的來源**：API key、JWT、PEM、上下文＋亂度跟桌面版共用 `rules/*.json`（§5.4），比對引擎在 `extension/lib/rules.js`，跟 C# 的 `SecretRules` 逐項對應（ASCII 版本、`keywords` 預先篩選、群組、亂度、排除、驗證），兩邊的測試用同一組亂數種子和同一份誤報樣本。個資規則還是兩邊各寫一份（#27）。
+
+**目前和 C# 端不一致的地方**（見 #27）：
 
 | 項目 | C#（桌面） | JS（插件） |
 |---|---|---|
@@ -414,8 +527,8 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | 統編關鍵字距離 | 前 20 字內 | 前 12 字內 |
 | 機密的正規化、分隔符號、JWT、長度上限（§5.0） | 有 | 同一套（`normalizeForSecrets`、`cardCandidates`、`MAX_SCAN_LENGTH` = 1 Mi 字頭尾）。插件不分段，頭尾各一次正規化 |
 | 重疊的機密取哪一筆 | 依類型優先順序（API key > 身分證 > 卡號 > 統編 > 手機） | 起點較早的（同起點取較長的） |
-| 遮罩字串 | `A12****789`、`4111********1111`、`eyJ********xyz` | 保留分隔符號，例如 `**** **** **** 1111`、`eyJ********wxyz` |
-| PEM、Stripe、GitLab、npm 的 key | 有 | 沒有 |
+| 遮罩字串 | `A12****789`、`4111********1111`、`eyJ********xyz`（API key 留最後 3 碼） | 保留分隔符號，例如 `**** **** **** 1111`；API key 保留的前綴一樣（規則檔的 `keepStart`），但留最後 4 碼：`eyJ********wxyz` |
+| 規則檔的 regex 引擎 | NonBacktracking（保證線性時間），群組在比對到的那段重比 | V8 的回溯引擎；會變成 O(n²) 的規則在轉換時就不收（§5.4），兩邊的測試都量每條規則 |
 | 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler |
 | 指令正規化（§3.0） | 有（`CommandNormalizer`） | 沒有：完整路徑、`^`、引號拆字、dash 變體都認不得 |
 | 貼上提示的 Enter | 取消（§5.3） | 貼遮罩版。插件直接插入文字，不必換剪貼簿，沒有桌面版的副作用 |
@@ -426,6 +539,8 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 - 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、明顯是假的 key。
 - 網址一律用 `example.invalid`。惡意指令樣本要在執行時用片段組合，不要以完整字串寫進檔案（理由同文件開頭的防毒說明）。
 - 偵測規則的測試要同時有「該命中」和「不該命中」兩種樣本。誤報樣本至少包含：日期、訂單號碼、UUID、hash、Base64、一般中英文句子、官方安裝指令。
+- **API key 樣本不能完整寫進檔案**（包括規則檔和測試）：GitHub 的 push protection 會擋，防毒也可能有反應。測試用「前綴 + 固定種子的亂數」在執行時產生（C# 的 `SecretRulesTests.Gen` 和 JS 的 `gen` 產生一樣的字串）。規則檔只放 regex；`SecretRulesTests` 會掃一次規則檔，確認裡面沒有長得像 key 的字串。
+- 機密的誤報樣本放在 `tests/fixtures/secret-false-positives.json`，桌面版和插件共用；新增誤報案例時加在這裡。
 
 ## 9. Review 檢查清單
 
@@ -440,4 +555,5 @@ Review 一個會動到偵測行為的 PR 時，逐項確認：
 - [ ] **長度上限**：新規則碰到超長輸入時，不是「整段跳過」（#19 的教訓），而且不會卡住 UI。
 - [ ] **繞過**：想想正規化問題，例如大小寫、全形、路徑、引號、`^`、dash 變體、零寬字元。
 - [ ] **C# / JS 一致**：改到兩邊都有的規則時，兩邊都要改，或是在 §7 的不一致表裡記下來。
+- [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `tools/convert-gitleaks.mjs` 更新，不手改 `rules/gitleaks.json`。
 - [ ] **測試資料**：符合 §8 的規範。

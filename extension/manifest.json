@@ -28,7 +28,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["lib/secrets.js", "lib/pastejack.js"],
+      "resources": ["lib/secrets.js", "lib/rules.js", "lib/rules.generated.js", "lib/pastejack.js"],
       "matches": ["<all_urls>"]
     }
   ]

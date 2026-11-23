@@ -11,4 +11,9 @@
     <InternalsVisibleTo Include="ClipGuard.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 共用規則檔（#26）：內嵌進組件，執行時不讀檔、不連網。插件那邊用 tools/build-extension-rules.mjs 產生的檔案。 -->
+    <EmbeddedResource Include="..\..\rules\*.json" LogicalName="ClipGuard.Rules.%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

@@ -2,6 +2,11 @@
 //
 // 每個偵測器回傳 { type, label, start, end, value }，start/end 是在原字串中的位置。
 // 只靠 regex 抓「長得像」的字串會很吵，所以有檢查碼的格式一律再驗證檢查碼。
+//
+// API key、JWT、PEM、上下文＋亂度的規則來自共用規則檔 rules/*.json（與桌面版相同，#26），
+// 由 tools/build-extension-rules.mjs 產生 rules.generated.js，比對引擎在 rules.js。格式見 docs/detection-rules.md §5.4。
+
+import { RULES, asciiView, keywordsPresent, scanRule } from './rules.js';
 
 // ---------- 檢查碼 ----------
 
@@ -199,32 +204,9 @@ function isCardGrouping(groups, first, last, len) {
   return len(last) >= 1 && len(last) <= 4;
 }
 
-// ---------- JWT ----------
-
-/** header 要能解成 JSON 物件，而且有字串型別的 alg。 */
-function isJwtHeader(segment) {
-  if (segment.length % 4 === 1) return false;
-  try {
-    const b64 = segment.replace(/-/g, '+').replace(/_/g, '/');
-    const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
-    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-    const json = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-    return json !== null && typeof json === 'object' && !Array.isArray(json) && typeof json.alg === 'string';
-  } catch {
-    return false;
-  }
-}
-
+// 個資（有檢查碼或要特殊分組的）還留在程式裡，#27 再拆到規則檔。API key、JWT、PEM 在共用規則檔（RULES）。
 /** @type {{type: string, label: string, pattern?: RegExp, find?: (text: string) => Iterable<{start: number, end: number}>, validate?: (s: string, text: string, index: number, m: RegExpMatchArray) => boolean}[]} */
 const DETECTORS = [
-  {
-    type: 'api-key',
-    label: 'JWT',
-    // header.payload.signature，三段 base64url；header 一定是 {" 開頭，編碼後是 eyJ。
-    // 結尾可以接句點，但句點後不能再接 base64url 字元（那是 5 段的 JWE）。
-    pattern: /(?<![A-Za-z0-9_-])(eyJ[A-Za-z0-9_-]{2,509})\.[A-Za-z0-9_-]{2,6144}\.[A-Za-z0-9_-]{0,1024}(?!\.?[A-Za-z0-9_-])/g,
-    validate: (s, text, index, m) => isJwtHeader(m[1]),
-  },
   {
     type: 'tw-id',
     label: '身分證／居留證號',
@@ -259,37 +241,6 @@ const DETECTORS = [
       `(?<![0-9+])(?:(?:\\+?886${SEP}?0?|0)9[0-9]{2}${SEP}?[0-9]{3}${SEP}?[0-9]{3}`
       + `|\\(09\\)${SEP}?(?:[0-9]{4}${SEP}?[0-9]{4}|[0-9]{2}${SEP}?[0-9]{3}${SEP}?[0-9]{3}))(?![0-9])`, 'g'),
   },
-  // API key：前綴很有辨識度，誤判率低。順序有意義：sk-ant- 要排在 sk- 前面。
-  {
-    type: 'api-key',
-    label: 'GitHub Token',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,})${NOT_ALNUM_AFTER}`, 'g'),
-  },
-  {
-    type: 'api-key',
-    label: 'Anthropic API Key',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}sk-ant-[A-Za-z0-9_-]{20,}`, 'g'),
-  },
-  {
-    type: 'api-key',
-    label: 'OpenAI API Key',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}sk-(?!ant-)[A-Za-z0-9_-]{20,}`, 'g'),
-  },
-  {
-    type: 'api-key',
-    label: 'AWS Access Key',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}(?:AKIA|ASIA)[0-9A-Z]{16}${NOT_ALNUM_AFTER}`, 'g'),
-  },
-  {
-    type: 'api-key',
-    label: 'Slack Token',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}xox[abposr]-[A-Za-z0-9-]{10,}`, 'g'),
-  },
-  {
-    type: 'api-key',
-    label: 'Google API Key',
-    pattern: new RegExp(`${NOT_ALNUM_BEFORE}AIza[0-9A-Za-z_-]{35}${NOT_ALNUM_AFTER}`, 'g'),
-  },
 ];
 
 // 太長的貼上（整份文件、log）最多分析這麼多字；超過時分析開頭和結尾各一半，中間不分析，
@@ -318,13 +269,23 @@ export function findSecrets(text) {
     const segEnd = Math.min(text.length, to + OVERLAP);
     const norm = normalizeForSecrets(text, segStart, segEnd);
     const scanned = norm.text;
-    const add = (d, s, e) => {
+    const add = (d, s, e, extra) => {
       const start = norm.start[s];
       const end = norm.end[e - 1];
       if (start < from || start >= to) return;
       if (segEnd < text.length && end >= segEnd) return; // 可能被切斷
-      hits.push({ type: d.type, label: d.label, start, end, value: scanned.slice(s, e) });
+      hits.push({ type: d.type, label: d.label, start, end, value: scanned.slice(s, e), ...extra });
     };
+    // 共用規則檔：在 ASCII 版本上比對（位置不變），先用 keywords 篩掉不可能命中的規則。排在個資前面，
+    // 同起點、同長度時以規則檔的結果為準（排序是穩定的）。
+    const ascii = asciiView(scanned);
+    const lower = ascii.toLowerCase();
+    for (const rule of RULES) {
+      if (!keywordsPresent(rule, lower)) continue;
+      for (const [s, e] of scanRule(rule, ascii, scanned)) {
+        add(rule, s, e, { rule: rule.id, keepStart: rule.keepStart, ...(rule.pemBlock ? { pemBlock: true } : {}) });
+      }
+    }
     for (const d of DETECTORS) {
       if (d.find) {
         for (const c of d.find(scanned)) add(d, c.start, c.end);
@@ -384,7 +345,9 @@ export function maskSecret(finding) {
     case 'tw-mobile':
       return maskMiddle(v, v.startsWith('+') ? 6 : 4, 3); // 0912***678
     case 'api-key': {
-      const prefix = (v.match(API_KEY_PREFIX) || [''])[0];
+      if (finding.pemBlock) return v; // PEM 標頭本身不是機密；maskText 會把後面的內容遮掉
+      // 規則檔的命中帶有 keepStart（保留的前綴長度）；直接傳 {type, value} 進來時依前綴猜。
+      const prefix = finding.keepStart !== undefined ? v.slice(0, finding.keepStart) : (v.match(API_KEY_PREFIX) || [''])[0];
       return prefix + maskMiddle(v.slice(prefix.length), 0, 4, 8); // ghp_********abcd
     }
     default:
@@ -401,8 +364,18 @@ export function maskText(text, findings = findSecrets(text)) {
   let out = '';
   let pos = 0;
   for (const f of findings) {
+    if (f.start < pos) continue; // 落在已經遮掉的 PEM 內容裡
     out += text.slice(pos, f.start) + maskSecret(f);
     pos = f.end;
+    if (f.pemBlock) {
+      // PEM 只比對到標頭，真正的機密在標頭後面：一路遮到 END 行（沒有 END 就遮到結尾）。與 C# 的 PasteGuard 相同。
+      out += `\n${PEM_BODY_MASK}\n`;
+      const end = text.indexOf('-----END ', pos);
+      pos = end < 0 ? text.length : end;
+    }
   }
   return out + text.slice(pos);
 }
+
+/** 貼遮罩版時，PEM 私鑰內容換成的文字。與 C# 的 PasteGuard.PemBodyMask 相同。 */
+export const PEM_BODY_MASK = '（私鑰內容已遮罩）';
