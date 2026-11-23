@@ -114,10 +114,16 @@ const AKIA = 'AKIAIOSFODNN7EXAMPLE';
 const XOXB = 'xoxb-1234567890-abcdefghij';
 const AIZA = `AIza${'S'.repeat(35)}`;
 
+// 標籤來自共用規則檔 rules/api-keys.json（#26 起與桌面版相同）。Stripe、GitLab、npm 以前只有桌面版有。
+const STRIPE = `sk_live_${'Q7'.repeat(12)}`;
+const GLPAT = `glpat-${'k9X'.repeat(7)}`;
+const NPM = `npm_${'n4P'.repeat(12)}`;
+
 test('API key：各前綴都抓得到，並標示正確種類', () => {
   for (const [key, label] of [
-    [GHP, 'GitHub Token'], [PAT, 'GitHub Token'], [SKANT, 'Anthropic API Key'], [SK, 'OpenAI API Key'],
-    [AKIA, 'AWS Access Key'], [XOXB, 'Slack Token'], [AIZA, 'Google API Key'],
+    [GHP, 'GitHub token'], [PAT, 'GitHub token'], [SKANT, 'Anthropic API key'], [SK, 'API key（sk-）'],
+    [AKIA, 'AWS access key'], [XOXB, 'Slack token'], [AIZA, 'Google API key'],
+    [STRIPE, 'Stripe key'], [GLPAT, 'GitLab token'], [NPM, 'npm token'],
   ]) {
     const found = findSecrets(`export KEY=${key}\n`);
     assert.equal(found.length, 1, key);
