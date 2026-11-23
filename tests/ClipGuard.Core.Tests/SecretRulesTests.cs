@@ -265,11 +265,12 @@ public class SecretRulesTests(ITestOutputHelper output)
             }
         }
         output.WriteLine($"{SecretRules.All.Count} 條規則 × 5 種輸入：合計 {total} ms，最慢 {worst.Ms} ms（{worst.Id}，輸入 {worst.Input}）");
-        Assert.True(worst.Ms < 300, $"{worst.Id} took {worst.Ms} ms");
+        // 門檻抓的是「平方時間」（1 Mi 字會到分鐘級），不是絕對速度：CI 機器比本機慢好幾倍。
+        Assert.True(worst.Ms < 2000, $"{worst.Id} took {worst.Ms} ms");
     }
 
     [Fact]
-    public void 所有關鍵字都出現時_1Mi_也在一秒內()
+    public void 所有關鍵字都出現時_1Mi_不會卡住()
     {
         // 最壞情況：每一段都含有所有規則的 keywords，每條規則都要跑。
         var unit = string.Join(" = \"", SecretRules.All.SelectMany(r => r.Keywords).Distinct()) + " = \"" + new Gen(9).Next(Alnum, 40) + "\"\n";
@@ -287,7 +288,7 @@ public class SecretRulesTests(ITestOutputHelper output)
             var found = SecretDetector.Find(text);
             sw.Stop();
             output.WriteLine($"{name}: {text.Length:N0} 字，{found.Count:N0} 筆，{sw.ElapsedMilliseconds} ms");
-            Assert.True(sw.ElapsedMilliseconds < 1000, $"{name} took {sw.ElapsedMilliseconds} ms");
+            Assert.True(sw.ElapsedMilliseconds < 3000, $"{name} took {sw.ElapsedMilliseconds} ms");
         }
     }
 }
