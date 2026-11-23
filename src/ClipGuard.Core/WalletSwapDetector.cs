@@ -109,14 +109,14 @@ public sealed class WalletSwapDetector
         for (var i = 0; i < addresses.Count; i++)
         {
             var a = addresses[i];
-            template.Append(text, pos, a.Index - pos).Append('￼');
+            template.Append(text, pos, a.Index - pos).Append('\uFFFC');
             raw[i] = text.Substring(a.Index, a.Length);
             pos = a.Index + a.Length;
         }
         template.Append(text, pos, text.Length - pos);
         var trimmed = template.ToString().Trim();
 
-        var hasContext = trimmed.Any(c => c != '￼' && !char.IsWhiteSpace(c));
+        var hasContext = trimmed.Any(c => c != '\uFFFC' && !char.IsWhiteSpace(c));
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(trimmed));
         return new Snapshot([.. addresses], raw, hash, hasContext, at);
     }
