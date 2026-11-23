@@ -1,0 +1,122 @@
+{
+  "extName": {
+    "message": "ClipGuard 剪貼簿守門員"
+  },
+  "extDescription": {
+    "message": "貼上前偵測身分證、統編、信用卡、手機與 API key 並可改貼遮罩版本；偵測網頁偷改你複製的內容（pastejacking）。"
+  },
+  "cancel": {
+    "message": "取消"
+  },
+  "close": {
+    "message": "關閉"
+  },
+  "paste_aria": {
+    "message": "ClipGuard 機密貼上提醒"
+  },
+  "paste_title": {
+    "message": "ClipGuard：要貼上的內容含有機密"
+  },
+  "paste_preview_label": {
+    "message": "遮罩後會貼上："
+  },
+  "paste_masked": {
+    "message": "貼上遮罩版本"
+  },
+  "paste_original": {
+    "message": "貼上原文"
+  },
+  "copy_aria": {
+    "message": "ClipGuard 剪貼簿警告"
+  },
+  "copy_title_replaced": {
+    "message": "ClipGuard：這個網頁改寫了你複製的內容"
+  },
+  "copy_title_unselected": {
+    "message": "ClipGuard：這個網頁把可疑內容寫進剪貼簿"
+  },
+  "copy_written_label": {
+    "message": "實際寫入剪貼簿："
+  },
+  "copy_advice": {
+    "message": "先不要貼到終端機、Win+R 或檔案總管網址列。"
+  },
+  "copy_clear": {
+    "message": "清空剪貼簿"
+  },
+  "copy_cleared": {
+    "message": "已清空剪貼簿。"
+  },
+  "copy_restore": {
+    "message": "改回我選取的文字"
+  },
+  "copy_restored": {
+    "message": "已改回你選取的文字。"
+  },
+  "copy_write_failed": {
+    "message": "無法寫入剪貼簿，請重新複製一次。"
+  },
+  "pj_hidden": {
+    "message": "含有看不見的字元（零寬或雙向控制字元）"
+  },
+  "pj_added": {
+    "message": "網頁加入的內容$SIGNAL$",
+    "placeholders": {
+      "signal": {
+        "content": "$1",
+        "example": "calls PowerShell"
+      }
+    }
+  },
+  "pj_newline": {
+    "message": "加入換行，貼進終端機會直接執行"
+  },
+  "pj_replaced": {
+    "message": "寫入剪貼簿的內容和你選取的文字不同"
+  },
+  "pj_sig_powershell": {
+    "message": "呼叫 PowerShell"
+  },
+  "pj_sig_mshta": {
+    "message": "呼叫 mshta"
+  },
+  "pj_sig_cmd": {
+    "message": "呼叫 cmd 執行指令"
+  },
+  "pj_sig_pipe_shell": {
+    "message": "下載後直接交給 shell 執行"
+  },
+  "pj_sig_iex": {
+    "message": "把內容當程式碼執行（iex）"
+  },
+  "pj_sig_lolbin": {
+    "message": "呼叫常被濫用的系統程式"
+  },
+  "pj_sig_sudo": {
+    "message": "以 sudo 執行指令"
+  },
+  "label_tw_id": {
+    "message": "身分證／居留證號"
+  },
+  "label_ubn": {
+    "message": "統一編號"
+  },
+  "label_credit_card": {
+    "message": "信用卡號"
+  },
+  "label_tw_mobile": {
+    "message": "手機號碼"
+  },
+  "rule_sk_api_key": {
+    "message": "API key（sk-）"
+  },
+  "rule_private_key_pem": {
+    "message": "私鑰（PEM）"
+  },
+  "rule_context_assignment": {
+    "message": "疑似金鑰或密碼"
+  },
+  "rule_context_authorization": {
+    "message": "Authorization 權杖"
+  }
+}
