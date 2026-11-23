@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ClipGuard.Core;
@@ -14,8 +15,20 @@ public static class CommandDetector
 {
     private const RegexOptions Opts = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    // 超過這個長度幾乎不可能是要貼進 Win+R 的一行指令（Win+R 上限 259 字元，留寬鬆空間）。
-    private const int MaxLength = 4096;
+    // 含 `.*` 的規則用不回溯的引擎：同一個程式名稱重複很多次時，回溯引擎會變成 O(n²)。
+    private const RegexOptions Linear = Opts | RegexOptions.NonBacktracking;
+
+    // 這個長度以內整段一起分析（訊號可以分散在不同行）。超過時不能整段跳過（#19：
+    // 惡意指令後面補空白就能繞過），改成分段分析：開頭這麼長的一段（涵蓋第一行與 Win+R 的
+    // 259 字上限），再加上之後的每一行（太長的行切成重疊片段）。見 Segments。
+    private const int WindowLength = 4096;
+
+    // 分段分析的總工作量上限，避免超大剪貼簿卡住 UI 執行緒。超過上限的部分不分析。
+    private const int MaxScannedChars = 256 * 1024;
+    private const int MaxLines = 4000;
+
+    // 超長文字裡，同一行連續空白最多保留這麼多個（要大於「30 個空白後接 #」的門檻）。
+    private const int MaxWhitespaceRun = 64;
 
     // 程式名稱後面「像參數」的東西：-x 或 /x 參數、引號、註解、變數、腳本區塊、呼叫運算子。
     private const string CommonArg = @"[-/][a-z?]|[""'#$&({\[]";
@@ -45,12 +58,12 @@ public static class CommandDetector
         (Invocation("powershell|pwsh", PowerShellArg), "呼叫 PowerShell"),
         (Invocation("mshta", MshtaArg), "呼叫 mshta（常用來執行遠端 HTA）"),
         (new(@"\bcmd(\.exe)?\s+/[ck]\b", Opts), "呼叫 cmd 執行指令"),
-        (new(@"\bcertutil(\.exe)?\b.*-urlcache", Opts), "用 certutil 下載檔案"),
-        (new(@"\bbitsadmin(\.exe)?\b.*/transfer", Opts), "用 bitsadmin 下載檔案"),
-        (new(@"\brundll32(\.exe)?\b.*(javascript:|https?://)", Opts), "用 rundll32 執行腳本或遠端檔案"),
-        (new(@"\bregsvr32(\.exe)?\b.*/i:\s*https?://", Opts), "用 regsvr32 載入遠端腳本"),
-        (new(@"\bmsiexec(\.exe)?\b.*https?://", Opts), "用 msiexec 安裝遠端套件"),
-        (new(@"\bconhost(\.exe)?\b.*--headless", Opts), "用 conhost 無視窗執行"),
+        (new(@"\bcertutil(\.exe)?\b.*-urlcache", Linear), "用 certutil 下載檔案"),
+        (new(@"\bbitsadmin(\.exe)?\b.*/transfer", Linear), "用 bitsadmin 下載檔案"),
+        (new(@"\brundll32(\.exe)?\b.*(javascript:|https?://)", Linear), "用 rundll32 執行腳本或遠端檔案"),
+        (new(@"\bregsvr32(\.exe)?\b.*/i:\s*https?://", Linear), "用 regsvr32 載入遠端腳本"),
+        (new(@"\bmsiexec(\.exe)?\b.*https?://", Linear), "用 msiexec 安裝遠端套件"),
+        (new(@"\bconhost(\.exe)?\b.*--headless", Linear), "用 conhost 無視窗執行"),
         (new(@"\b(curl|wget)\b[^|]*\|\s*(ba|z)?sh\b", Opts), "下載後直接交給 shell 執行"),
     ];
 
@@ -60,16 +73,105 @@ public static class CommandDetector
         (new(@"(?:^|\s)-(e|ec|enc|encodedcommand)\s+[A-Za-z0-9+/=]{16,}", Opts), "執行 Base64 編碼過的指令"),
         (new(@"\b(iex|invoke-expression)\b", Opts), "把下載內容當程式碼執行（iex）"),
         (new(@"(downloadstring|downloadfile|\biwr\b|\birm\b|invoke-webrequest|invoke-restmethod|net\.webclient)", Opts), "從網路下載內容"),
-        (new(@"#.*(robot|captcha|verif|human|cloudflare|驗證|機器人|人機)", Opts), "誘餌註解（假裝是人機驗證）"),
+        (new(@"#.*(robot|captcha|verif|human|cloudflare|驗證|機器人|人機)", Linear), "誘餌註解（假裝是人機驗證）"),
         (new(@"[✅✔☑]", Opts), "含勾選符號（假驗證常見）"),
-        (new(@"\s{30,}#", Opts), "用大量空白把真正的指令擠出輸入框"),
+        (new(@"(?<!\s)\s{30,}#", Opts), "用大量空白把真正的指令擠出輸入框"),
         (new(@"\bmshta(\.exe)?\s+[""']?https?://", Opts), "mshta 直接執行遠端網址"),
     ];
 
     public static Verdict Analyze(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text) || text.Length > MaxLength)
+        if (string.IsNullOrWhiteSpace(text))
             return Verdict.Clean;
+        if (text.Length <= WindowLength)
+            return AnalyzeSegment(text);
+
+        // 填充多半是空白：先把過長的空白縮短，指令前後或中間塞空白就推不出分析範圍（#19）。
+        text = CollapseLongWhitespace(text);
+        if (text.Length <= WindowLength)
+            return AnalyzeSegment(text);
+
+        // 分段結果取最高等級；理由依出現順序合併、不重複。
+        var level = ThreatLevel.None;
+        var reasons = new List<string>();
+        foreach (var segment in Segments(text))
+        {
+            var v = AnalyzeSegment(segment);
+            if (v.Level == ThreatLevel.None) continue;
+            if (v.Level > level) level = v.Level;
+            foreach (var r in v.Reasons)
+                if (!reasons.Contains(r)) reasons.Add(r);
+        }
+        return level == ThreatLevel.None ? Verdict.Clean : new Verdict(level, reasons);
+    }
+
+    /// <summary>
+    /// 把同一行內超過 <see cref="MaxWhitespaceRun"/> 個的連續空白縮成剛好這麼多個空格，換行保留。
+    /// 縮完仍超過 30 個，「大量空白後接 #」的詐騙訊號不會因此消失。只掃一次，O(n)。
+    /// </summary>
+    internal static string CollapseLongWhitespace(string text)
+    {
+        var sb = new StringBuilder(Math.Min(text.Length, 1 << 20));
+        var run = 0;
+        foreach (var c in text)
+        {
+            if (c is not ('\r' or '\n') && char.IsWhiteSpace(c))
+            {
+                if (++run <= MaxWhitespaceRun) sb.Append(' ');
+                continue;
+            }
+            run = 0;
+            sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 超長文字要分析的片段：開頭一段，再加上開頭那段沒完整涵蓋的每一行。
+    /// 比一段還長的行切成每次前進半段的重疊片段，所以 2048 字以內的指令不管在行內哪個位置，
+    /// 都會完整落在某一段裡（指令前面塞非空白字元也推不走）。
+    /// </summary>
+    internal static IEnumerable<string> Segments(string text)
+    {
+        yield return text[..WindowLength];
+
+        var scanned = WindowLength;
+        var lines = 0;
+        var start = 0;
+        while (start < text.Length && scanned < MaxScannedChars && lines < MaxLines)
+        {
+            var end = text.IndexOf('\n', start);
+            if (end < 0) end = text.Length;
+            // 完全落在開頭那段裡的行已經分析過了。
+            if (end > WindowLength && !IsBlank(text, start, end - start))
+            {
+                lines++;
+                for (var chunk = start; chunk < end && scanned < MaxScannedChars; chunk += WindowLength / 2)
+                {
+                    var length = Math.Min(end - chunk, WindowLength);
+                    if (chunk + length > WindowLength)   // 整段都在開頭那段裡的就跳過
+                    {
+                        scanned += length;
+                        yield return text.Substring(chunk, length);
+                    }
+                    if (chunk + length >= end) break;
+                }
+            }
+            start = end + 1;
+        }
+    }
+
+    private static bool IsBlank(string text, int start, int length)
+    {
+        for (var i = start; i < start + length; i++)
+            if (!char.IsWhiteSpace(text[i])) return false;
+        return true;
+    }
+
+    private static Verdict AnalyzeSegment(string raw)
+    {
+        // 規則只比對正規化後的文字（完整路徑、^、引號拆字、dash 變體…），原文由呼叫端保留。
+        var text = CommandNormalizer.Normalize(raw);
 
         var execution = Matches(ExecutionSignals, text);
         if (execution.Count == 0)

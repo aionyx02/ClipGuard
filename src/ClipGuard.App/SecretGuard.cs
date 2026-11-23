@@ -28,13 +28,23 @@ internal sealed class SecretGuard
         }
     }
 
-    /// <summary>有機密時回傳通知標題與內容（只含遮罩後的字串與標籤），沒有就回傳 null。</summary>
-    public (string Title, string Body)? Check(string text)
+    /// <summary>有沒有登記任何機密；沒有的話，預設設定下貼上攔截不需要裝鍵盤 hook。</summary>
+    public bool HasRegistered => _store is { Entries.Count: > 0 };
+
+    /// <summary>登記的機密優先，偵測到的格式不能跟它重疊。結果只有遮罩字串與位置，不含原文。</summary>
+    public IReadOnlyList<SecretMatch> Find(string text)
     {
         var found = new List<SecretMatch>();
         if (_store is not null) found.AddRange(_store.Find(text));
         found.AddRange(SecretDetector.Find(text).Where(m =>
             !found.Any(r => m.Index < r.Index + r.Length && r.Index < m.Index + m.Length)));
+        found.Sort((a, b) => a.Index.CompareTo(b.Index));
+        return found;
+    }
+
+    /// <summary>有機密時回傳通知標題與內容（只含遮罩後的字串與標籤），沒有就回傳 null。</summary>
+    public static (string Title, string Body)? Describe(IReadOnlyList<SecretMatch> found)
+    {
         if (found.Count == 0) return null;
 
         var lines = found.Take(MaxListed).Select(m =>
@@ -45,7 +55,7 @@ internal sealed class SecretGuard
             string.Join("\n", lines) + more + "\n貼上前請確認對象與網站可信。");
     }
 
-    public void ShowRegisterDialog()
+    public void ShowRegisterDialog(Action? changed = null)
     {
         if (!EnsureStore()) return;
         using var dlg = new RegisterSecretForm();
@@ -55,6 +65,7 @@ internal sealed class SecretGuard
             {
                 _store!.Add(dlg.SecretLabel, dlg.Secret);
                 dlg.ClearSecret();
+                changed?.Invoke();
                 MessageBox.Show("已登記。之後複製到這段文字時會提醒你。", "ClipGuard",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -67,11 +78,12 @@ internal sealed class SecretGuard
         dlg.ClearSecret();
     }
 
-    public void ShowManageDialog()
+    public void ShowManageDialog(Action? changed = null)
     {
         if (!EnsureStore()) return;
         using var dlg = new ManageSecretsForm(_store!);
         dlg.ShowDialog();
+        changed?.Invoke();
     }
 
     private bool EnsureStore()
