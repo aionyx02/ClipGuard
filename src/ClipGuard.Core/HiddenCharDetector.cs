@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace ClipGuard.Core;
 
@@ -12,12 +13,13 @@ namespace ClipGuard.Core;
 /// </summary>
 public static class HiddenCharDetector
 {
-    // 太長的內容多半是文件或程式檔，逐字掃描仍便宜，但通知意義不大。
-    private const int MaxLength = 100_000;
+    // 不因長度整段跳過（#19 的教訓）：每一項都是逐字線性掃描。唯一較貴的是 soft hyphen 那一行要不要
+    // 跑指令判斷，所以最多判斷這麼多行，超過的行只做便宜的網址檢查。
+    private const int MaxSoftHyphenCommandChecks = 256;
 
     public static Verdict Analyze(string? text)
     {
-        if (string.IsNullOrEmpty(text) || text.Length > MaxLength)
+        if (string.IsNullOrEmpty(text))
             return Verdict.Clean;
 
         var reasons = new List<string>();
@@ -25,6 +27,14 @@ public static class HiddenCharDetector
         var zeroWidth = CountZeroWidth(text);
         if (zeroWidth > 0)
             reasons.Add($"含零寬字元 {zeroWidth} 個（看不見，但會改變內容）");
+
+        var tags = CountTagChars(text);
+        if (tags > 0)
+            reasons.Add($"含 Unicode TAG 字元 {tags} 個（看不見，可能藏著給 AI 的指令）");
+
+        var (invisible, samples) = FindOtherInvisible(text);
+        if (invisible > 0)
+            reasons.Add($"含其他看不見的字元 {invisible} 個（{string.Join("、", samples.Select(cp => $"U+{cp:X4}"))}）");
 
         var bidi = text.Count(IsBidiControl);
         if (bidi > 0)
@@ -99,6 +109,149 @@ public static class HiddenCharDetector
         var cat = CharUnicodeInfo.GetUnicodeCategory(cp);
         return cat is UnicodeCategory.OtherLetter or UnicodeCategory.NonSpacingMark
             or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+    }
+
+    // ---------- Unicode TAG（U+E0000–U+E007F） ----------
+
+    // TAG 字元把 ASCII 對應到看不見的 code point（U+E0020 是空白、U+E0061 是 a），整段英文都能藏進去給 AI 讀。
+    // 在 UTF-16 裡都是代理對：高位 U+DB40，低位 U+DC00–U+DC7F。
+    // 唯一的正常用法是 emoji 的區旗：🏴 + TAG 字母 + 結束 TAG（U+E007F）。只放行有標準圖案的三面旗
+    // （英格蘭、蘇格蘭、威爾斯）；其他組合在各平台都只顯示成黑旗，TAG 部分一樣看不見，所以照算。
+    private static readonly HashSet<string> RgiFlagTags = ["gbeng", "gbsct", "gbwls"];
+
+    private static bool IsTagAt(string text, int i) =>
+        i + 1 < text.Length && text[i] == '\uDB40' && text[i + 1] is >= '\uDC00' and <= '\uDC7F';
+
+    private static int CountTagChars(string text)
+    {
+        var count = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            // 🏴 = U+1F3F4 = D83C DFF4
+            if (text[i] == '\uD83C' && i + 1 < text.Length && text[i + 1] == '\uDFF4'
+                && RgiFlagTagLength(text, i + 2) is var flag and > 0)
+            {
+                i += 1 + flag;
+                continue;
+            }
+            if (IsTagAt(text, i))
+            {
+                count++;
+                i++;
+            }
+        }
+        return count;
+    }
+
+    // 從 start 開始若是標準區旗的 TAG 部分（含結束 TAG），回傳它佔的 UTF-16 長度，否則 0。
+    private static int RgiFlagTagLength(string text, int start)
+    {
+        var spec = new StringBuilder(8);
+        for (var i = start; IsTagAt(text, i) && spec.Length <= 8; i += 2)
+        {
+            if (text[i + 1] == '\uDC7F')
+                return RgiFlagTags.Contains(spec.ToString()) ? i + 2 - start : 0;
+            spec.Append((char)(text[i + 1] - 0xDC00));
+        }
+        return 0;
+    }
+
+    // ---------- 其他看不見的字元 ----------
+
+    /// <summary>
+    /// 不像零寬字元那樣常見，但一樣看不見、可以把關鍵字拆開或藏東西的字元：
+    ///   U+00AD soft hyphen —— 只在換行處才顯示。德文等語言用來標斷字點（字母之間），這種情況放行，
+    ///     除非所在的那行是指令或網址；
+    ///   U+180E 蒙古文母音分隔符 —— 只有夾在蒙古文字母之間才放行；
+    ///   U+115F / U+1160 韓文字首、字中填充字元 —— 只有拿來組合韓文字母（後面接母音、前面接子音）才放行；
+    ///   U+3164、U+FFA0 韓文填充字元 —— 顯示成空白，常被拿來做「看不見的名字」，沒有現代的正常用法；
+    ///   變體選擇符 —— 正常用法是一個字後面接一個（emoji 的 U+FE0F、漢字異體字 U+E0100–E01EF）。
+    ///     連續好幾個可以逐 byte 藏資料（variation selector smuggling），所以連續兩個以上（不全是
+    ///     U+FE0E / U+FE0F）、或 U+E0100 以上的接在非漢字後面就算。
+    /// 回傳數量與最多三個不同的 code point（通知只顯示 code point，不顯示原文）。
+    /// </summary>
+    private static (int Count, List<int> Samples) FindOtherInvisible(string text)
+    {
+        var count = 0;
+        var samples = new List<int>(3);
+        void Hit(int cp)
+        {
+            count++;
+            if (samples.Count < 3 && !samples.Contains(cp)) samples.Add(cp);
+        }
+
+        // 先拆成 code point（代理對算一個），offsets 記每個 code point 在原字串的位置。
+        var cps = new List<int>(text.Length);
+        var offsets = new List<int>(text.Length);
+        for (var i = 0; i < text.Length; i++)
+        {
+            offsets.Add(i);
+            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+                cps.Add(char.ConvertToUtf32(text[i], text[++i]));
+            else
+                cps.Add(text[i]);
+        }
+
+        var softHyphenLines = new Dictionary<int, bool>();
+        var lineStart = 0;   // 往前掃時順便記住目前這行的開頭，不必每個 soft hyphen 都往回找
+        for (var k = 0; k < cps.Count; k++)
+        {
+            var cp = cps[k];
+            var prev = k > 0 ? cps[k - 1] : -1;
+            var next = k + 1 < cps.Count ? cps[k + 1] : -1;
+            if (cp is '\r' or '\n') lineStart = offsets[k] + 1;
+
+            if (IsVariationSelector(cp))
+            {
+                var end = k;
+                var allEmojiStyle = true;
+                while (end < cps.Count && IsVariationSelector(cps[end]))
+                    allEmojiStyle &= cps[end++] is 0xFE0E or 0xFE0F;
+                if (end - k >= 2 && !allEmojiStyle)
+                    for (var j = k; j < end; j++) Hit(cps[j]);
+                else if (cp >= 0xE0100 && !IsIdeograph(prev)) Hit(cp);
+                // 整串一次處理完再往後跳，連續很長的變體選擇符也是線性時間。
+                k = end - 1;
+                continue;
+            }
+
+            var suspicious = cp switch
+            {
+                0x00AD => IsSuspiciousSoftHyphen(text, offsets[k], lineStart, prev, next, softHyphenLines),
+                0x180E => !(IsMongolian(prev) && IsMongolian(next)),
+                0x115F => next is not (>= 0x1161 and <= 0x11A7 or >= 0xD7B0 and <= 0xD7C6),
+                0x1160 => prev is not (>= 0x1100 and <= 0x115E or >= 0xA960 and <= 0xA97C),
+                0x3164 or 0xFFA0 => true,
+                _ => false,
+            };
+            if (suspicious) Hit(cp);
+        }
+        return (count, samples);
+    }
+
+    private static bool IsVariationSelector(int cp) => cp is >= 0xFE00 and <= 0xFE0F or >= 0xE0100 and <= 0xE01EF;
+
+    private static bool IsMongolian(int cp) => cp is >= 0x1800 and <= 0x18AF;
+
+    private static bool IsIdeograph(int cp) =>
+        cp is >= 0x3400 and <= 0x4DBF or >= 0x4E00 and <= 0x9FFF or >= 0xF900 and <= 0xFAFF or >= 0x20000 and <= 0x3FFFF;
+
+    private static bool IsLetter(int cp) =>
+        cp >= 0 && Rune.IsValid(cp) && Rune.IsLetter(new Rune(cp));
+
+    private static bool IsSuspiciousSoftHyphen(string text, int i, int lineStart, int prev, int next, Dictionary<int, bool> lineCache)
+    {
+        // 斷字點一定在兩個字母之間；在開頭、結尾、空白或符號旁邊都不是斷字。
+        if (!IsLetter(prev) || !IsLetter(next)) return true;
+
+        // 指令和網址裡不會有斷字點（例如 powe<SHY>rshell、exam<SHY>ple.com）。同一行只判斷一次。
+        if (lineCache.TryGetValue(lineStart, out var cached)) return cached;
+        var lineEnd = text.IndexOfAny(['\r', '\n'], i);
+        var line = text[lineStart..(lineEnd < 0 ? text.Length : lineEnd)].Replace("\u00AD", "").Trim();
+        var result = line.Contains("://") || line.Contains("www.", StringComparison.OrdinalIgnoreCase)
+            || lineCache.Count < MaxSoftHyphenCommandChecks && LooksLikeShellCommand(line);
+        lineCache[lineStart] = result;
+        return result;
     }
 
     // ---------- Bidi ----------
