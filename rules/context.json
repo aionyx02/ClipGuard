@@ -1,0 +1,48 @@
+{
+  "format": 1,
+  "name": "context",
+  "priority": 30,
+  "description": "第 2 層：上下文＋亂度。值前面要有像金鑰的名稱（api_key=、\"token\": 、Authorization: Bearer …），而且值本身夠長、夠亂才算。門檻的校準方式見 docs/detection-rules.md §5.5。",
+  "rules": [
+    {
+      "id": "context-assignment",
+      "kind": "api-key",
+      "label": "疑似金鑰或密碼",
+      "regex": "((?:api[_.-]?key|secret|token|passw(?:or)?d|pwd|credential|(?:private|access|auth|signing|encryption|master|session)[_.-]?key)[A-Za-z0-9_.-]{0,40})[\"'\\]]?[ \\t]{0,5}(?:=|:=|:|=>|\\?=|\\+=)[ \\t]{0,5}[\"'`]?(?:bearer[ \\t]+)?([A-Za-z0-9_+/=.~!@#%^*-]{16,512})(?:[\"'`\\t\\n\\f\\r ;,)}\\]>&]|$)",
+      "ignoreCase": true,
+      "secretGroup": 2,
+      "keywords": ["key", "secret", "token", "passw", "pwd", "credential"],
+      "minLength": 16,
+      "maxLength": 512,
+      "entropy": { "hex": [0.70, 0.49, 3.5], "base36": [0.49, 0.665, 4.2], "base64": [0.19, 0.785, 4.5] },
+      "digitRequiredBelow": 32,
+      "rejectSequential": true,
+      "exclude": [
+        { "target": "key", "ignoreCase": true, "regex": "(?:url|uri|endpoint|path|file|dir|name|type|len|length|count|size|limit|ttl|expires?|expiry|timeout|header|field|prefix|format|version|policy|id|hash|digest|checksum|md5|sha[0-9]*)$" },
+        { "target": "key", "ignoreCase": true, "regex": "tokeniz|csrf|xsrf|public|publishable|page[_.-]?token|max[_.-]?tokens?" }
+      ],
+      "mask": { "keepStart": 0 }
+    },
+    {
+      "id": "context-authorization",
+      "kind": "api-key",
+      "label": "Authorization 權杖",
+      "regex": "authorization[\"']?[ \\t]{0,5}[:=][ \\t]{0,5}[\"']?(?:bearer|token|basic|apikey|api-key)[ \\t]+([A-Za-z0-9_+/=.~-]{16,1024})(?:[\"'`\\t\\n\\f\\r ;,)}\\]>&\\\\]|$)",
+      "ignoreCase": true,
+      "keywords": ["authorization"],
+      "minLength": 16,
+      "maxLength": 1024,
+      "entropy": { "hex": [0.70, 0.49, 3.5], "base36": [0.49, 0.665, 4.2], "base64": [0.19, 0.785, 4.5] },
+      "digitRequiredBelow": 32,
+      "rejectSequential": true,
+      "mask": { "keepStart": 0 }
+    }
+  ],
+  "exclude": [
+    { "ignoreCase": true, "regex": "example|sample|dummy|placeholder|changeme|change[_.-]?me|replace|insert|redacted|xxxx|todo|fixme|fake|not[_.-]?(?:a[_.-]?)?real|your[_.-]|[_.-]here$|<|>|\\$\\{|\\{\\{" },
+    { "regex": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+$" },
+    { "regex": "^(?:/|\\./|\\.\\./|~/)" },
+    { "ignoreCase": true, "regex": "\\.(?:json|ya?ml|toml|txt|pem|key|crt|cer|p12|pfx|jks|js|ts|py|rb|go|cs|env|cfg|conf|ini|xml|html?|md|log|sh|ps1)$" },
+    { "regex": "^[0-9.+/=_-]+$" }
+  ]
+}
