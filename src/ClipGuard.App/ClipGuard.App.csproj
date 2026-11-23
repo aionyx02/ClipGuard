@@ -11,6 +11,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>..\..\assets\clipguard.ico</ApplicationIcon>
+    <!-- 介面文字（#27）：Resources/Strings.resx 是英文（中性語系），翻譯編譯成 zh-TW/ClipGuard.App.resources.dll，放在 exe 旁邊。 -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
