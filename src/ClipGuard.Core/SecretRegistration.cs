@@ -19,14 +19,14 @@ public static class SecretRegistration
         secret ??= "";
         confirm ??= "";
         if (secret.Length == 0)
-            return new(RegistrationField.Secret, "請輸入要登記的機密。");
+            return new(RegistrationField.Secret, CoreStrings.Registration_SecretEmpty);
         if (secret.Length is < RegisteredSecretStore.MinLength or > RegisteredSecretStore.MaxLength)
             return new(RegistrationField.Secret,
-                $"機密長度需 {RegisteredSecretStore.MinLength}–{RegisteredSecretStore.MaxLength} 字元，目前 {secret.Length} 字元。");
+                CoreStrings.Registration_SecretLength(RegisteredSecretStore.MinLength, RegisteredSecretStore.MaxLength, secret.Length));
         if (confirm.Length == 0)
-            return new(RegistrationField.Confirm, "請再輸入一次機密。");
+            return new(RegistrationField.Confirm, CoreStrings.Registration_ConfirmEmpty);
         if (secret != confirm)
-            return new(RegistrationField.Confirm, "兩次輸入的內容不一樣，請重新輸入。");
+            return new(RegistrationField.Confirm, CoreStrings.Registration_Mismatch);
         return null;
     }
 }

@@ -317,6 +317,8 @@ internal sealed class SecretRule
     public required string Id { get; init; }
     public required SecretKind Kind { get; init; }
     public required string Label { get; init; }
+    /// <summary>通知裡顯示的名稱：CoreStrings 有 <c>RuleLabel_&lt;id&gt;</c> 就用它（有翻譯），否則用規則檔的 label。</summary>
+    public string DisplayLabel => CoreStrings.Lookup("RuleLabel_" + Id) ?? Label;
     public required Regex Pattern { get; init; }
     /// <summary>有捕獲群組時，在比對到的範圍裡重新取群組用（見 <c>SecretRules.CompileGroups</c>）。</summary>
     public Regex? GroupPattern { get; init; }

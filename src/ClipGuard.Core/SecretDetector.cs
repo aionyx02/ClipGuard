@@ -138,7 +138,7 @@ public static class SecretDetector
             var rule = Rules[k];
             if (!rule.KeywordsPresent(lower)) continue;
             foreach (var (index, length, secret) in rule.Scan(ascii, text))
-                add(RankRule + k, Make(rule.Kind, rule.Label,
+                add(RankRule + k, Make(rule.Kind, rule.DisplayLabel,
                     rule.PemBlock ? secret : SecretMasker.Mask(secret, rule.KeepStart, 3), index, length));
         }
 
@@ -149,18 +149,18 @@ public static class SecretDetector
             if (!Checksums.IsValidTaiwanId(id)) continue;
             var resident = !(id[1] is '1' or '2');
             add(RankId, Make(resident ? SecretKind.ResidentCertificate : SecretKind.NationalId,
-                resident ? "居留證號" : "身分證字號",
+                resident ? CoreStrings.Label_ResidentCertificate : CoreStrings.Label_NationalId,
                 SecretMasker.Mask(id.ToUpperInvariant()), m.Index, m.Length));
         }
 
         foreach (var (index, length, digits) in CardCandidates(text))
-            add(RankCard, Make(SecretKind.CreditCard, "信用卡號", SecretMasker.Mask(digits, 4, 4), index, length));
+            add(RankCard, Make(SecretKind.CreditCard, CoreStrings.Label_CreditCard, SecretMasker.Mask(digits, 4, 4), index, length));
 
         foreach (Match m in BusinessId.Matches(text))
         {
             var g = m.Groups[1];
             if (Checksums.IsValidBusinessId(g.Value))
-                add(RankBusinessId, Make(SecretKind.BusinessId, "統一編號", SecretMasker.Mask(g.Value), g.Index, g.Length));
+                add(RankBusinessId, Make(SecretKind.BusinessId, CoreStrings.Label_BusinessId, SecretMasker.Mask(g.Value), g.Index, g.Length));
         }
 
         foreach (Match m in Mobile.Matches(text))
@@ -168,7 +168,7 @@ public static class SecretDetector
             var digits = Digits(m.Value);
             if (digits.StartsWith("886", StringComparison.Ordinal))
                 digits = "0" + digits[(digits[3] == '0' ? 4 : 3)..];
-            add(RankMobile, Make(SecretKind.MobilePhone, "手機號碼", SecretMasker.Mask(digits), m.Index, m.Length));
+            add(RankMobile, Make(SecretKind.MobilePhone, CoreStrings.Label_MobilePhone, SecretMasker.Mask(digits), m.Index, m.Length));
         }
     }
 

@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- 介面文字（#27）：Resources/CoreStrings.resx 是英文（中性語系），翻譯放在 CoreStrings.<語系>.resx，編譯成 zh-TW/ClipGuard.Core.resources.dll。 -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>

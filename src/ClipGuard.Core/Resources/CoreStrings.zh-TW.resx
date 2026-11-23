@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Explain_ActionSeparator" xml:space="preserve">
+    <value>；</value>
+  </data>
+  <data name="Explain_Display" xml:space="preserve">
+    <value>白話：{0}</value>
+  </data>
+  <data name="Explain_Decoded" xml:space="preserve">
+    <value>解碼：{0}</value>
+  </data>
+  <data name="Explain_SourceHosts" xml:space="preserve">
+    <value>從 {0} </value>
+  </data>
+  <data name="Explain_SourceInternet" xml:space="preserve">
+    <value>從網路</value>
+  </data>
+  <data name="Explain_DownloadAndRun" xml:space="preserve">
+    <value>{0}下載並執行</value>
+  </data>
+  <data name="Explain_Regsvr32" xml:space="preserve">
+    <value>{0}載入並執行遠端腳本</value>
+  </data>
+  <data name="Explain_Msiexec" xml:space="preserve">
+    <value>{0}下載並安裝套件</value>
+  </data>
+  <data name="Explain_DownloadFile" xml:space="preserve">
+    <value>{0}下載檔案</value>
+  </data>
+  <data name="Explain_MshtaHost" xml:space="preserve">
+    <value>用 mshta 執行 {0} 上的程式</value>
+  </data>
+  <data name="Explain_MshtaScript" xml:space="preserve">
+    <value>用 mshta 執行一段腳本</value>
+  </data>
+  <data name="Explain_Rundll32" xml:space="preserve">
+    <value>用 rundll32 執行一段腳本</value>
+  </data>
+  <data name="Explain_StartProcessAdmin" xml:space="preserve">
+    <value>以系統管理員權限啟動其他程式</value>
+  </data>
+  <data name="Explain_StartProcess" xml:space="preserve">
+    <value>啟動其他程式</value>
+  </data>
+  <data name="Explain_Hidden" xml:space="preserve">
+    <value>隱藏視窗，執行過程你看不到</value>
+  </data>
+  <data name="Explain_Bypass" xml:space="preserve">
+    <value>關閉 PowerShell 的腳本安全限制</value>
+  </data>
+  <data name="Explain_Defender" xml:space="preserve">
+    <value>修改 Windows Defender 設定</value>
+  </data>
+  <data name="Explain_EncodedUndecodable" xml:space="preserve">
+    <value>藏了一段無法解碼的編碼指令</value>
+  </data>
+  <data name="Explain_Encoded" xml:space="preserve">
+    <value>藏了一段編碼過的指令</value>
+  </data>
+  <data name="Explain_Generic" xml:space="preserve">
+    <value>會執行系統指令</value>
+  </data>
+  <data name="Explain_DelayedExpansion" xml:space="preserve">
+    <value>用 cmd 的延遲展開（!變數!）把指令拆開藏起來</value>
+  </data>
+  <data name="Explain_ScriptHost" xml:space="preserve">
+    <value>用 wscript／cscript 執行腳本檔</value>
+  </data>
+  <data name="Explain_HtmlHelp" xml:space="preserve">
+    <value>用 hh 開啟說明檔，裡面可以藏腳本</value>
+  </data>
+  <data name="Explain_Cmstp" xml:space="preserve">
+    <value>用 cmstp 安裝連線設定檔，可藉此執行任意程式</value>
+  </data>
+  <data name="Explain_Pcalua" xml:space="preserve">
+    <value>透過 pcalua 間接啟動其他程式</value>
+  </data>
+  <data name="Explain_Odbcconf" xml:space="preserve">
+    <value>用 odbcconf 載入並執行 DLL</value>
+  </data>
+  <data name="Explain_InstallUtil" xml:space="preserve">
+    <value>用 InstallUtil 執行 .NET 程式</value>
+  </data>
+  <data name="Explain_FtpScript" xml:space="preserve">
+    <value>用 ftp 照一份指令檔執行</value>
+  </data>
+  <data name="Explain_RemoteFileHost" xml:space="preserve">
+    <value>執行 {0} 網路分享上的檔案</value>
+  </data>
+  <data name="Explain_RemoteFile" xml:space="preserve">
+    <value>執行網路分享上的檔案</value>
+  </data>
+  <data name="Explain_WebDavHost" xml:space="preserve">
+    <value>連到 {0} 的 WebDAV 遠端資料夾</value>
+  </data>
+  <data name="Explain_WebDav" xml:space="preserve">
+    <value>連到 WebDAV 遠端資料夾</value>
+  </data>
+  <data name="Explain_NetUse" xml:space="preserve">
+    <value>掛載網路磁碟後執行裡面的程式</value>
+  </data>
+  <data name="Explain_SearchMs" xml:space="preserve">
+    <value>用 search-ms: 開啟搜尋視窗，裡面的檔案可能來自遠端</value>
+  </data>
+  <data name="Explain_MsMsdt" xml:space="preserve">
+    <value>用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）</value>
+  </data>
+  <data name="Entry_RunDialog" xml:space="preserve">
+    <value>「執行」視窗</value>
+  </data>
+  <data name="Entry_FileExplorer" xml:space="preserve">
+    <value>檔案總管</value>
+  </data>
+  <data name="Entry_FileDialog" xml:space="preserve">
+    <value>檔案對話框</value>
+  </data>
+  <data name="Entry_Terminal" xml:space="preserve">
+    <value>終端機</value>
+  </data>
+  <data name="Entry_Malicious_Title" xml:space="preserve">
+    <value>小心！你剛打開了{0}</value>
+  </data>
+  <data name="Entry_Malicious_Quarantined" xml:space="preserve">
+    <value>剛才攔截的指令已從剪貼簿清空。</value>
+  </data>
+  <data name="Entry_Malicious_InClipboard" xml:space="preserve">
+    <value>剪貼簿裡有惡意指令。</value>
+  </data>
+  <data name="Entry_Malicious_Advice" xml:space="preserve">
+    <value>叫你按 Win+R、開檔案總管或終端機貼上指令的「驗證」是詐騙手法，請直接關掉。</value>
+  </data>
+  <data name="Entry_Suspicious_Title" xml:space="preserve">
+    <value>你打開了{0}，剪貼簿裡有會執行程式的指令</value>
+  </data>
+  <data name="Entry_Suspicious_Body" xml:space="preserve">
+    <value>貼上前請確認指令來源可信。網站要你貼上指令「完成驗證」一定是詐騙。</value>
+  </data>
+  <data name="Hidden_ZeroWidth" xml:space="preserve">
+    <value>含零寬字元 {0} 個（看不見，但會改變內容）</value>
+  </data>
+  <data name="Hidden_Tag" xml:space="preserve">
+    <value>含 Unicode TAG 字元 {0} 個（看不見，可能藏著給 AI 的指令）</value>
+  </data>
+  <data name="Hidden_OtherInvisible" xml:space="preserve">
+    <value>含其他看不見的字元 {0} 個（{1}）</value>
+  </data>
+  <data name="Hidden_Bidi" xml:space="preserve">
+    <value>含 Bidi 控制字元 {0} 個（可讓文字顯示順序與實際內容不同）</value>
+  </data>
+  <data name="Hidden_Homoglyph" xml:space="preserve">
+    <value>英文字裡混有長得像英文字母的 {0}字母 {1}（U+{2}）</value>
+  </data>
+  <data name="Hidden_ScriptCyrillic" xml:space="preserve">
+    <value>西里爾</value>
+  </data>
+  <data name="Hidden_ScriptGreek" xml:space="preserve">
+    <value>希臘</value>
+  </data>
+  <data name="Hidden_TrailingNewline" xml:space="preserve">
+    <value>指令結尾有換行，貼進終端機會直接執行</value>
+  </data>
+  <data name="Label_NationalId" xml:space="preserve">
+    <value>身分證字號</value>
+  </data>
+  <data name="Label_ResidentCertificate" xml:space="preserve">
+    <value>居留證號</value>
+  </data>
+  <data name="Label_CreditCard" xml:space="preserve">
+    <value>信用卡號</value>
+  </data>
+  <data name="Label_BusinessId" xml:space="preserve">
+    <value>統一編號</value>
+  </data>
+  <data name="Label_MobilePhone" xml:space="preserve">
+    <value>手機號碼</value>
+  </data>
+  <data name="RuleLabel_sk-api-key" xml:space="preserve">
+    <value>API key（sk-）</value>
+  </data>
+  <data name="RuleLabel_private-key-pem" xml:space="preserve">
+    <value>私鑰（PEM）</value>
+  </data>
+  <data name="RuleLabel_context-assignment" xml:space="preserve">
+    <value>疑似金鑰或密碼</value>
+  </data>
+  <data name="RuleLabel_context-authorization" xml:space="preserve">
+    <value>Authorization 權杖</value>
+  </data>
+  <data name="Store_LengthOutOfRange" xml:space="preserve">
+    <value>長度必須介於 {0} 到 {1} 個字元。</value>
+  </data>
+  <data name="Store_AlreadyRegistered" xml:space="preserve">
+    <value>這個機密已經登記過了。</value>
+  </data>
+  <data name="Store_Untitled" xml:space="preserve">
+    <value>未命名</value>
+  </data>
+  <data name="Store_RegisteredMask" xml:space="preserve">
+    <value>已登記的「{0}」</value>
+  </data>
+  <data name="Registration_SecretEmpty" xml:space="preserve">
+    <value>請輸入要登記的機密。</value>
+  </data>
+  <data name="Registration_SecretLength" xml:space="preserve">
+    <value>機密長度需 {0}–{1} 字元，目前 {2} 字元。</value>
+  </data>
+  <data name="Registration_ConfirmEmpty" xml:space="preserve">
+    <value>請再輸入一次機密。</value>
+  </data>
+  <data name="Registration_Mismatch" xml:space="preserve">
+    <value>兩次輸入的內容不一樣，請重新輸入。</value>
+  </data>
+  <data name="PemBodyMask" xml:space="preserve">
+    <value>（私鑰內容已遮罩）</value>
+  </data>
+</root>
