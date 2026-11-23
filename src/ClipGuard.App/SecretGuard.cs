@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Windows.Forms.Automation;
 using ClipGuard.Core;
 
 namespace ClipGuard.App;
@@ -58,24 +59,27 @@ internal sealed class SecretGuard
     public void ShowRegisterDialog(Action? changed = null)
     {
         if (!EnsureStore()) return;
-        using var dlg = new RegisterSecretForm();
-        while (dlg.ShowDialog() == DialogResult.OK)
-        {
-            try
-            {
-                _store!.Add(dlg.SecretLabel, dlg.Secret);
-                dlg.ClearSecret();
-                changed?.Invoke();
-                MessageBox.Show("已登記。之後複製到這段文字時會提醒你。", "ClipGuard",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException)
-            {
-                MessageBox.Show(ex.Message, "無法登記", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
+        // 所有檢查（含寫入失敗、重複登記）都在對話框裡就地顯示，對話框只在登記成功或取消時才關。
+        // 以前寫入失敗會先關掉對話框、跳一個沒有 owner 的訊息框再重開；那個訊息框可能落在別的視窗後面，
+        // 看起來就像對話框自己消失了（#24 F19）。
+        using var dlg = new RegisterSecretForm(TryAdd);
+        var ok = dlg.ShowDialog() == DialogResult.OK;
         dlg.ClearSecret();
+        if (ok) changed?.Invoke();
+    }
+
+    // 錯誤訊息只描述原因（長度、重複、無法寫檔），不含輸入的內容。成功回傳 null。
+    private string? TryAdd(string label, string secret)
+    {
+        try
+        {
+            _store!.Add(label, secret);
+            return null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            return ex.Message;
+        }
     }
 
     public void ShowManageDialog(Action? changed = null)
@@ -97,18 +101,41 @@ internal sealed class SecretGuard
     }
 }
 
-/// <summary>登記機密：標籤 + 遮罩輸入 + 再輸入一次確認。</summary>
+/// <summary>
+/// 登記機密：標籤 + 遮罩輸入 + 再輸入一次確認。
+///
+/// 無障礙（#24 F19）：每個輸入框都有 AccessibleName，標籤的 TabIndex 緊接在輸入框前面、帶 Alt 快速鍵；
+/// 輸入有問題時，錯誤顯示在欄位旁（ErrorProvider）和按鈕上方的紅字，同時寫進該欄的 AccessibleDescription
+/// 並發出 UIA 通知，焦點留在出錯的欄位，螢幕報讀器會念出錯誤。
+/// </summary>
 internal sealed class RegisterSecretForm : Form
 {
+    private const string LabelDescription = "選填，會顯示在通知裡；留空會存成「未命名」。";
+    private const string ConfirmDescription = "再輸入一次同樣的機密，確認沒有打錯。";
+    private static readonly string SecretDescription =
+        $"只會保存長度與 HMAC，無法還原原文。長度需 {RegisteredSecretStore.MinLength}–{RegisteredSecretStore.MaxLength} 字元。";
+
+    private readonly Func<string, string, string?> _commit;
     private readonly TextBox _label = new() { Width = 260, MaxLength = RegisteredSecretStore.MaxLabelLength, PlaceholderText = "例如：網銀密碼（會顯示在通知裡）" };
     private readonly TextBox _secret = new() { Width = 260, UseSystemPasswordChar = true };
     private readonly TextBox _confirm = new() { Width = 260, UseSystemPasswordChar = true };
+    private readonly Label _error = new()
+    {
+        AutoSize = true,
+        MaximumSize = new Size(380, 0),
+        ForeColor = Color.Firebrick,
+        Visible = false,
+        AccessibleRole = AccessibleRole.Alert,
+        AccessibleName = "錯誤",
+    };
+    private readonly ErrorProvider _errors = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
 
     public string SecretLabel => _label.Text;
-    public string Secret => _secret.Text;
 
-    public RegisterSecretForm()
+    /// <param name="commit">真正寫入；失敗時回傳要顯示的錯誤訊息（例如重複登記），成功回傳 null。</param>
+    public RegisterSecretForm(Func<string, string, string?> commit)
     {
+        _commit = commit;
         Text = "登記機密";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
@@ -117,52 +144,125 @@ internal sealed class RegisterSecretForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         TopMost = true;
 
-        var ok = new Button { Text = "登記", DialogResult = DialogResult.None, AutoSize = true };
-        var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, AutoSize = true };
+        _label.AccessibleName = "標籤";
+        _label.AccessibleDescription = LabelDescription;
+        _secret.AccessibleName = "機密";
+        _secret.AccessibleDescription = SecretDescription;
+        _confirm.AccessibleName = "再輸入一次機密";
+        _confirm.AccessibleDescription = ConfirmDescription;
+
+        // 輸入框右邊留空間給 ErrorProvider 的圖示，不然會被 AutoSize 的版面切掉。
+        foreach (var box in new[] { _label, _secret, _confirm })
+            box.Margin = new Padding(3, 3, 24, 3);
+        _secret.TextChanged += (_, _) => ClearError(_secret);
+        _confirm.TextChanged += (_, _) => ClearError(_confirm);
+
+        // 「登記」不設 DialogResult：只有檢查和寫入都成功時，才在 OnOk 裡關閉。
+        var ok = new Button { Text = "登記(&R)", AutoSize = true, TabIndex = 0 };
+        var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, AutoSize = true, TabIndex = 1 };
         ok.Click += (_, _) => OnOk();
         AcceptButton = ok;
         CancelButton = cancel;
 
-        var hint = new Label
-        {
-            AutoSize = true,
-            MaximumSize = new Size(380, 0),
-            Text = $"只會保存長度與 HMAC，無法還原原文。長度需 {RegisteredSecretStore.MinLength}–{RegisteredSecretStore.MaxLength} 字元。",
-        };
-
         var grid = new TableLayoutPanel { ColumnCount = 2, AutoSize = true, Padding = new Padding(12) };
-        grid.Controls.Add(new Label { Text = "標籤", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
-        grid.Controls.Add(_label, 1, 0);
-        grid.Controls.Add(new Label { Text = "機密", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
-        grid.Controls.Add(_secret, 1, 1);
-        grid.Controls.Add(new Label { Text = "再輸入一次", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
-        grid.Controls.Add(_confirm, 1, 2);
+        var tab = 0;
+        void Row(int row, string caption, TextBox box)
+        {
+            // 標籤的 TabIndex 緊接在輸入框前面：Alt 快速鍵會跳到下一個可取得焦點的控制項，也就是這個輸入框；
+            // 報讀器在沒有 AccessibleName 時也是用前一個標籤當名稱。
+            grid.Controls.Add(new Label { Text = caption, AutoSize = true, Anchor = AnchorStyles.Left, TabIndex = tab++ }, 0, row);
+            box.TabIndex = tab++;
+            grid.Controls.Add(box, 1, row);
+        }
+        Row(0, "標籤(&L)", _label);
+        Row(1, "機密(&S)", _secret);
+        Row(2, "再輸入一次(&C)", _confirm);
+
+        var hint = new Label { AutoSize = true, MaximumSize = new Size(380, 0), Text = SecretDescription, TabIndex = tab++ };
         grid.Controls.Add(hint, 0, 3);
         grid.SetColumnSpan(hint, 2);
+        _error.TabIndex = tab++;
+        grid.Controls.Add(_error, 0, 4);
+        grid.SetColumnSpan(_error, 2);
 
-        var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, AutoSize = true, Dock = DockStyle.Fill };
+        var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, AutoSize = true, Dock = DockStyle.Fill, TabIndex = tab++ };
         buttons.Controls.Add(cancel);
         buttons.Controls.Add(ok);
-        grid.Controls.Add(buttons, 0, 4);
+        grid.Controls.Add(buttons, 0, 5);
         grid.SetColumnSpan(buttons, 2);
 
         Controls.Add(grid);
+        ActiveControl = _label;
     }
 
     private void OnOk()
     {
-        if (_secret.Text.Length == 0) { Warn("請輸入要登記的機密。"); return; }
-        if (_secret.Text != _confirm.Text) { Warn("兩次輸入的內容不一樣。"); _confirm.Clear(); _confirm.Focus(); return; }
+        if (SecretRegistration.Validate(_secret.Text, _confirm.Text) is { } invalid)
+        {
+            var field = invalid.Field switch
+            {
+                RegistrationField.Label => _label,
+                RegistrationField.Confirm => _confirm,
+                _ => _secret,
+            };
+            if (field == _confirm) _confirm.Clear();
+            ShowError(field, invalid.Message);
+            return;
+        }
+
+        if (_commit(_label.Text, _secret.Text) is { } failed)
+        {
+            ShowError(_secret, failed);
+            return;
+        }
+
+        // 有 owner 的訊息框才會跟著置頂的對話框出現在最上層，不會落到別的視窗後面。
+        MessageBox.Show(this, "已登記。之後複製到這段文字時會提醒你。", "ClipGuard",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
         DialogResult = DialogResult.OK;
     }
 
-    private static void Warn(string message) =>
-        MessageBox.Show(message, "登記機密", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    private void ShowError(TextBox field, string message)
+    {
+        ClearError(_secret);
+        ClearError(_confirm);
+        _errors.SetError(field, message);
+        _error.Text = message;
+        _error.AccessibleName = "錯誤：" + message;
+        _error.Visible = true;
+        field.AccessibleDescription = "錯誤：" + message;
+        field.Focus();
+        // 焦點本來就在這一欄時，報讀器不會重念；另外發一個通知讓它念出錯誤。
+        field.AccessibilityObject.RaiseAutomationNotification(
+            AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, message);
+    }
+
+    private void ClearError(TextBox field)
+    {
+        if (_errors.GetError(field).Length == 0) return;
+        _errors.SetError(field, "");
+        field.AccessibleDescription = field == _secret ? SecretDescription : ConfirmDescription;
+        if (_errors.GetError(_secret).Length == 0 && _errors.GetError(_confirm).Length == 0)
+            _error.Visible = false;
+    }
+
+    // 跟確認框一樣：沒按 Alt 的單一字母不觸發快速鍵（焦點在按鈕上時 WinForms 預設會），繼續打字不會誤按「登記」。
+    protected override bool ProcessDialogChar(char charCode) =>
+        (ModifierKeys & Keys.Alt) == 0 || base.ProcessDialogChar(charCode);
+
+    protected override bool ProcessMnemonic(char charCode) =>
+        (ModifierKeys & Keys.Alt) != 0 && base.ProcessMnemonic(charCode);
 
     public void ClearSecret()
     {
         _secret.Clear();
         _confirm.Clear();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _errors.Dispose();
+        base.Dispose(disposing);
     }
 }
 
