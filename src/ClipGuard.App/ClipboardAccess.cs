@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using ClipGuard.Core;
 
 namespace ClipGuard.App;
 
@@ -21,8 +22,47 @@ internal static class ClipboardAccess
         return default;
     }
 
+    /// <summary>讀完整的文字。只在使用者要貼遮罩版、或要隔離超長指令時用；複製時的分析改用 <see cref="TryGetTextPrefix"/>。</summary>
     public static string? TryGetText() =>
         Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : null);
+
+    /// <summary>
+    /// 只讀前 <see cref="ClipboardLimits.MaxAnalyzedChars"/> 字（#24 F20）。直接從 CF_UNICODETEXT 的記憶體複製需要的那一段，
+    /// 不經過 WinForms／OLE：那條路會把整段內容複製好幾份，5 MB 的內容峰值約 250 MB。
+    /// </summary>
+    /// <returns>沒有文字時為 null；<c>Truncated</c> 表示後面還有沒讀的內容。</returns>
+    public static (string Text, bool Truncated)? TryGetTextPrefix() =>
+        Retry(ReadTextPrefix);
+
+    private static (string Text, bool Truncated)? ReadTextPrefix()
+    {
+        const int maxChars = ClipboardLimits.MaxAnalyzedChars;
+        if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) return null;
+        // 被別的程式開著時丟 ExternalException，讓 Retry 等一下再試。
+        if (!OpenClipboard(IntPtr.Zero)) throw new ExternalException("OpenClipboard", Marshal.GetLastWin32Error());
+        try
+        {
+            var handle = GetClipboardData(CF_UNICODETEXT);
+            if (handle == IntPtr.Zero) return null;
+            var ptr = GlobalLock(handle);
+            if (ptr == IntPtr.Zero) return null;
+            try
+            {
+                // 多讀一個字，才分得出「剛好 maxChars 字」和「後面還有」。
+                var available = (long)(ulong)GlobalSize(handle) / sizeof(char);
+                var count = (int)Math.Min(available, maxChars + 1L);
+                var buffer = new char[count];
+                Marshal.Copy(ptr, buffer, 0, count);
+                var length = Array.IndexOf(buffer, '\0');
+                if (length < 0) length = count;
+                var truncated = length > maxChars;
+                if (truncated) length = ClipboardLimits.CutLength(buffer.AsSpan(0, length));
+                return (new string(buffer, 0, length), truncated);
+            }
+            finally { GlobalUnlock(handle); }
+        }
+        finally { CloseClipboard(); }
+    }
 
     public static void TryClear() => Retry(() => { Clipboard.Clear(); return true; });
 
@@ -64,4 +104,27 @@ internal static class ClipboardAccess
 
     [DllImport("user32.dll")]
     private static extern uint GetClipboardSequenceNumber();
+
+    private const uint CF_UNICODETEXT = 13;
+
+    [DllImport("user32.dll")]
+    private static extern bool IsClipboardFormatAvailable(uint format);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool OpenClipboard(IntPtr hwndNewOwner);
+
+    [DllImport("user32.dll")]
+    private static extern bool CloseClipboard();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetClipboardData(uint format);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalLock(IntPtr hMem);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool GlobalUnlock(IntPtr hMem);
+
+    [DllImport("kernel32.dll")]
+    private static extern UIntPtr GlobalSize(IntPtr hMem);
 }

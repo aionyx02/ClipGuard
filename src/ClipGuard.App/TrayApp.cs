@@ -20,6 +20,10 @@ internal sealed class TrayApp : ApplicationContext
     private readonly ClipboardGuardState _state = new();
     private readonly WalletSwapDetector _walletSwap = new();
 
+    // 通知節流（#24 F18）：決策在 Core，這裡只負責顯示與計時。
+    private readonly NotificationThrottle _throttle = new();
+    private readonly System.Windows.Forms.Timer _notifyTimer = new();
+
     public TrayApp()
     {
         _restoreItem = new ToolStripMenuItem("還原被清除的內容", null, (_, _) => Restore()) { Enabled = false };
@@ -55,8 +59,10 @@ internal sealed class TrayApp : ApplicationContext
             Visible = true,
         };
 
+        // 不在 BalloonTipClosed 清掉：撤掉舊通知（ReplaceVisible）時，舊通知的關閉訊息可能晚於新通知才到，
+        // 會把新的「點擊還原」清掉。點擊動作每次顯示都會覆蓋，而且 Restore 自己會檢查還有沒有可還原的內容。
         _tray.BalloonTipClicked += (_, _) => { var a = _balloonClick; _balloonClick = null; a?.Invoke(); };
-        _tray.BalloonTipClosed += (_, _) => _balloonClick = null;
+        _notifyTimer.Tick += (_, _) => { _notifyTimer.Stop(); Apply(_throttle.Flush()); };
 
         _monitor = new ClipboardMonitor();
         _monitor.ClipboardChanged += OnClipboardChanged;
@@ -78,13 +84,17 @@ internal sealed class TrayApp : ApplicationContext
 
     private void OnClipboardChanged(object? sender, EventArgs e)
     {
-        var text = ClipboardAccess.TryGetText();
+        // 只讀前 MaxAnalyzedChars 字（#24 F20）：超大內容不會把整段讀進記憶體好幾份。
+        var read = ClipboardAccess.TryGetTextPrefix();
+        var text = read?.Text;
         // 讀完才取序號：延遲產生格式的程式在被讀取時才寫入，先取的話摘要會一出生就過期。
         var sequence = ClipboardAccess.SequenceNumber;
         if (sequence == _analyzedSequence && sender is not null) return;
+        if (sequence != _analyzedSequence) _throttle.OnClipboardChanged();   // 還沒顯示的舊通知作廢
         _analyzedSequence = sequence;
 
-        var action = _state.OnClipboardText(text);
+        // 截斷過的內容要被清空時，隔離區存完整的原文，還原才不會少一截。
+        var action = _state.OnClipboardText(text, read is { Truncated: true } ? ClipboardAccess.TryGetText : null);
 
         // 貼上攔截只記「有哪些機密」的摘要（種類＋遮罩），不記原文。被清空的指令不算。
         var secrets = text is not null && action != ClipboardAction.Quarantine ? _secrets.Find(text) : [];
@@ -107,7 +117,7 @@ internal sealed class TrayApp : ApplicationContext
                 Notify(ToolTipIcon.Error, "已攔截可疑的「貼上執行」指令",
                     ComposeBody("剪貼簿已清空，正常網站不會要你按 Win+R 貼上指令。", explanation!,
                         "若確定安全，點這則通知或從系統匣選單還原。"),
-                    onClick: Restore);
+                    restorable: true);
                 break;
 
             case ClipboardAction.WarnSuspicious:
@@ -171,17 +181,37 @@ internal sealed class TrayApp : ApplicationContext
         Notify(warning.Level == ThreatLevel.Malicious ? ToolTipIcon.Error : ToolTipIcon.Warning, warning.Title, warning.Body);
     }
 
-    // 點通知時要做的事（例如還原）；每則新通知都會覆蓋，通知關閉後清掉。
+    // 點通知時要做的事（還原）；每則新通知都會覆蓋。
     private Action? _balloonClick;
 
-    private void Notify(ToolTipIcon icon, string title, string body) => Notify(icon, title, body, onClick: null);
-
-    private void Notify(ToolTipIcon icon, string title, string body, Action? onClick)
+    private void Notify(ToolTipIcon icon, string title, string body, bool restorable = false)
     {
-        _balloonClick = onClick;
-        if (title.Length > 63) title = title[..62] + "…";   // szInfoTitle 上限
-        if (body.Length > MaxBodyLength) body = body[..(MaxBodyLength - 1)] + "…";
-        _tray.ShowBalloonTip(8000, title, body, icon);
+        var level = icon == ToolTipIcon.Error ? NotificationLevel.Error : NotificationLevel.Warning;
+        Apply(_throttle.Submit(new TrayNotification(level, title, body, restorable)));
+    }
+
+    private void Apply(NotificationDecision decision)
+    {
+        if (decision.RetryIn is { } wait)
+        {
+            _notifyTimer.Stop();
+            _notifyTimer.Interval = (int)Math.Clamp(Math.Ceiling(wait.TotalMilliseconds), 1, int.MaxValue);
+            _notifyTimer.Start();
+        }
+        if (decision.Show is not { } n) return;
+        if (_throttle.Pending is null) _notifyTimer.Stop();
+
+        // 上一則可能還在畫面上或在 Windows 的佇列裡：移除再加回圖示會把它撤掉，新的才不會排在後面。
+        if (decision.ReplaceVisible)
+        {
+            _tray.Visible = false;
+            _tray.Visible = true;
+        }
+
+        _balloonClick = n.Restorable ? Restore : null;
+        var title = n.Title.Length > 63 ? n.Title[..62] + "…" : n.Title;   // szInfoTitle 上限
+        var body = n.Body.Length > MaxBodyLength ? n.Body[..(MaxBodyLength - 1)] + "…" : n.Body;
+        _tray.ShowBalloonTip(8000, title, body, n.Level == NotificationLevel.Error ? ToolTipIcon.Error : ToolTipIcon.Warning);
     }
 
     private void UpdatePasteSettings(Func<PasteGuardSettings, PasteGuardSettings> change)
@@ -227,6 +257,7 @@ internal sealed class TrayApp : ApplicationContext
         if (disposing)
         {
             _paste.Dispose();
+            _notifyTimer.Dispose();
             _foreground.Dispose();
             _monitor.Dispose();
             _tray.Visible = false;
