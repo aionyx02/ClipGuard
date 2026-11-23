@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <linearGradient id="cg-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#10243A"/>
+    </linearGradient>
+    <linearGradient id="cg-shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+    <pattern id="cg-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#FFFFFF" fill-opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="320" rx="24" fill="url(#cg-bg)"/>
+  <rect width="1280" height="320" rx="24" fill="url(#cg-dots)"/>
+
+  <!-- mark + wordmark, centered as one group -->
+  <g transform="translate(300 64) scale(1.5)">
+    <path d="M30 24H98a8 8 0 0 1 8 8V64c0 26-17 42-42 54C39 106 22 90 22 64V32a8 8 0 0 1 8-8Z" fill="url(#cg-shield)"/>
+    <rect x="42" y="12" width="44" height="22" rx="7" fill="#E2E8F0"/>
+    <rect x="55" y="17" width="18" height="7" rx="3.5" fill="#1E3A8A"/>
+    <path d="M43 68l15 15 28-31" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="520" y="194" font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="104" font-weight="700" fill="#F8FAFC" letter-spacing="-1">Clip<tspan fill="#5EEAD4">Guard</tspan></text>
+</svg>

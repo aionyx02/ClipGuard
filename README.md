@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="ClipGuard" width="100%">
+</p>
+
 # ClipGuard
 
 Windows 剪貼簿守門員：把剪貼簿當成信任邊界，同時防守兩個方向。
@@ -84,6 +88,8 @@ node tools/build-extension-rules.mjs
 - 登記的機密只存「長度 + HMAC-SHA256」，位置在 `%LOCALAPPDATA%\ClipGuard\secrets.json`。HMAC 金鑰是隨機產生的 256 位元，用 DPAPI（目前的 Windows 使用者）保護，存在同一個目錄的 `key.bin`。
 - 不用單純的 SHA-256，因為身分證、手機這類號碼只有約 1e8–1e9 種組合，雜湊值可以被暴力反推。
 
-## 授權聲明
+## 授權
+
+本專案以 [MIT](LICENSE) 授權。
 
 `rules/gitleaks.json`（以及由它產生的 `extension/lib/rules.generated.js`）轉換自 [gitleaks](https://github.com/gitleaks/gitleaks) 的預設規則，以 MIT License 授權，見 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。

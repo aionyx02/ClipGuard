@@ -53,7 +53,7 @@ internal sealed class TrayApp : ApplicationContext
 
         _tray = new NotifyIcon
         {
-            Icon = SystemIcons.Shield,
+            Icon = LoadAppIcon(),
             Text = "ClipGuard：剪貼簿防護中",
             ContextMenuStrip = menu,
             Visible = true,
@@ -80,6 +80,13 @@ internal sealed class TrayApp : ApplicationContext
                 Notify(ToolTipIcon.Warning, "貼上前確認的設定有問題", _paste.HookError ?? "設定檔損毀，已改用預設值。");
         };
         startup.Start();
+    }
+
+    // 系統匣用嵌入的品牌圖示；讀不到時退回系統的盾牌圖示，不讓啟動失敗。
+    private static Icon LoadAppIcon()
+    {
+        using var stream = typeof(TrayApp).Assembly.GetManifestResourceStream("ClipGuard.App.clipguard.ico");
+        return stream is null ? SystemIcons.Shield : new Icon(stream, SystemInformation.SmallIconSize);
     }
 
     private void OnClipboardChanged(object? sender, EventArgs e)
