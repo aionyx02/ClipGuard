@@ -43,7 +43,11 @@ test('規則都編譯得起來、id 不重複、順序與 C# 相同', () => {
   assert.ok(RULES.length > 200, `${RULES.length}`);
   assert.equal(new Set(RULES.map((r) => r.id)).size, RULES.length);
   assert.equal(RULES[0].id, 'jwt');
-  assert.match(RULES[RULES.length - 1].id, /^context-/);
+  assert.match(RULES.filter((r) => r.type === 'api-key').at(-1).id, /^context-/);
+  // 個資包（#27）排在 API key 後面：國家包（40）在通用包（50）前面。
+  assert.equal(RULES.at(-1).pack, 'universal');
+  const ids = RULES.map((r) => r.id);
+  assert.ok(ids.indexOf('tw-mobile') < ids.indexOf('e164-phone'));
   for (const r of RULES) for (const k of r.keywords) assert.equal(k, k.toLowerCase(), r.id);
 });
 

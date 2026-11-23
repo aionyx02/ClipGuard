@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "name": "pii-sg",
+  "pack": "SG",
+  "priority": 40,
+  "description": "新加坡個資包（#27）：NRIC（S、T 開頭，國民）與 FIN（F、G、M 開頭，外國人），字母 + 7 碼 + 檢查字母。格式跟台灣身分證一樣明確，不要求關鍵字。",
+  "rules": [
+    {
+      "id": "sg-nric",
+      "kind": "national-id",
+      "label": "新加坡 NRIC",
+      "regex": "[ST][0-9]{7}[A-Z]",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "sg-nric",
+      "mask": { "keepStart": 1, "keepEnd": 2, "canonical": "alnum-upper" }
+    },
+    {
+      "id": "sg-fin",
+      "kind": "resident-certificate",
+      "label": "新加坡 FIN",
+      "regex": "[FGM][0-9]{7}[A-Z]",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "sg-nric",
+      "mask": { "keepStart": 1, "keepEnd": 2, "canonical": "alnum-upper" }
+    }
+  ]
+}

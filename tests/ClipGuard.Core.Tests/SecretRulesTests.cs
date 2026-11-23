@@ -48,8 +48,12 @@ public class SecretRulesTests(ITestOutputHelper output)
         Assert.True(rules.Count > 200);
         Assert.Equal(rules.Count, rules.Select(r => r.Id).Distinct().Count());
         Assert.Equal("jwt", rules[0].Id);                     // api-keys.json（priority 10）排最前面
-        Assert.StartsWith("context-", rules[^1].Id);           // context.json（priority 30）排最後
-        Assert.All(rules, r => Assert.True((r.Pattern.Options & RegexOptions.NonBacktracking) != 0, r.Id));
+        Assert.StartsWith("context-", rules.Last(r => r.Kind == SecretKind.ApiKey).Id);   // context.json（priority 30）排在 API key 的最後
+        // 個資包（#27）排在 API key 後面：國家包（40）在通用包（50）前面，同一段號碼以國家包的標籤為準。
+        Assert.Equal(SecretPacks.Universal, rules[^1].Pack);
+        var ids = rules.Select(r => r.Id).ToList();
+        Assert.True(ids.IndexOf("tw-mobile") < ids.IndexOf("e164-phone"));
+        Assert.All(rules, r => Assert.True(r.Finder is not null || (r.Pattern!.Options & RegexOptions.NonBacktracking) != 0, r.Id));
         Assert.All(rules, r => Assert.All(r.Keywords, k => Assert.Equal(k.ToLowerInvariant(), k)));
     }
 
