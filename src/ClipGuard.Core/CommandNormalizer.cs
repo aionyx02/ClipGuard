@@ -9,6 +9,7 @@ namespace ClipGuard.Core;
 /// 純函式：不讀環境變數、不碰檔案系統；輸出只拿來比對，原文另外保留給顯示與還原。
 ///
 /// 處理的寫法（依序）：
+///   0. 拿掉看不見的字元：軟連字號、零寬字元、U+180E、韓文填充字元、TAG 區塊
 ///   1. dash 變體（U+2010–2015、U+2212、U+FE58、U+FE63、U+FF0D）→ <c>-</c>
 ///   2. cmd 的 <c>^</c> 跳脫：<c>m^s^h^t^a</c> → <c>mshta</c>，<c>^^</c> → <c>^</c>，行尾 <c>^</c> 接行
 ///   3. <c>set x=…</c> / <c>set "x=…"</c> 之後的 <c>%x%</c>、延遲展開的 <c>!x!</c> 代入（只代入一層，次數有上限）
@@ -79,7 +80,7 @@ public static class CommandNormalizer
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        var s = NormalizeDashes(text);
+        var s = NormalizeDashes(StripInvisible(text));
         s = CaretNewline.Replace(s, "");
         s = Caret.Replace(s, "$1");
         s = ExpandVariables(s);
@@ -87,6 +88,34 @@ public static class CommandNormalizer
         s = QuotedPath.Replace(s, "${p}");
         s = PlainPath.Replace(s, StripDirectory);
         return s;
+    }
+
+    // 看不見、可以把關鍵字拆開的字元（pow<U+00AD>ershell、i<U+200B>ex）：比對前一律拿掉。
+    // 隱藏字元通知（§6.1）允許一般文字裡的軟連字號，所以只能在這裡補上。
+    private static bool IsInvisible(char c) =>
+        c is '­' or (>= '​' and <= '‍') or '⁠' or '﻿' or '᠎'
+            or 'ᅟ' or 'ᅠ' or 'ㅤ' or 'ﾠ';
+
+    // TAG 區塊 U+E0000–E007F 在 UTF-16 是 U+DB40 加 U+DC00–DC7F。
+    private static bool IsTagPair(string s, int i) =>
+        s[i] == '\uDB40' && i + 1 < s.Length && s[i + 1] is >= '\uDC00' and <= '\uDC7F';
+
+    private static string StripInvisible(string s)
+    {
+        var first = -1;
+        for (var i = 0; i < s.Length; i++)
+            if (IsInvisible(s[i]) || IsTagPair(s, i)) { first = i; break; }
+        if (first < 0) return s;
+
+        var sb = new StringBuilder(s.Length);
+        sb.Append(s, 0, first);
+        for (var i = first; i < s.Length; i++)
+        {
+            if (IsInvisible(s[i])) continue;
+            if (IsTagPair(s, i)) { i++; continue; }
+            sb.Append(s[i]);
+        }
+        return sb.ToString();
     }
 
     private static bool IsDash(char c) =>

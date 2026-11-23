@@ -41,6 +41,31 @@ public class CommandNormalizerTests
         Assert.Equal($"set x=ms&set y=hta&call {Hta} u", CommandNormalizer.Normalize("set x=ms&set y=hta&call %x%%y% u"));
     }
 
+    // 看不見的字元一律用 code point 在執行時產生，原始碼裡不放字面字元。
+    public static TheoryData<int> InvisibleCodePoints() =>
+    [
+        0x00AD, 0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x180E,
+        0x115F, 0x1160, 0x3164, 0xFFA0, 0xE0000, 0xE0001, 0xE0041, 0xE007F,
+    ];
+
+    [Theory]
+    [MemberData(nameof(InvisibleCodePoints))]
+    public void 拿掉看不見的字元(int codePoint)
+    {
+        var c = char.ConvertFromUtf32(codePoint);
+        Assert.Equal(Hta, CommandNormalizer.Normalize("ms" + c + "h" + c + c + "ta"));
+        Assert.Equal(Ps, CommandNormalizer.Normalize(c + "pow" + c + "ershell" + c));
+    }
+
+    [Fact]
+    public void TAG區塊外的代理字元對保留()
+    {
+        var emoji = char.ConvertFromUtf32(0x1F600);       // 一般 emoji 不受影響
+        var beyondTag = char.ConvertFromUtf32(0xE0080);   // TAG 區塊之後的字元不拿掉
+        Assert.Equal("a" + emoji + "b", CommandNormalizer.Normalize("a" + emoji + "b"));
+        Assert.Equal("a" + beyondTag + "b", CommandNormalizer.Normalize("a" + beyondTag + "b"));
+    }
+
     [Fact]
     public void 代入延遲展開的變數()
     {
