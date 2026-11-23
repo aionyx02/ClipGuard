@@ -14,6 +14,14 @@ internal sealed class SecretGuard
 
     private RegisteredSecretStore? _store;
     private string? _storeError;
+    // 個資的國家包（#27）：依 Windows 地區設定選，secret-packs.json 可以手動加或關。啟動時決定一次。
+    private readonly IReadOnlySet<string> _packs = LoadPacks();
+
+    private static IReadOnlySet<string> LoadPacks()
+    {
+        var manual = new SecretPackSettingsStore(RegisteredSecretStore.DefaultDirectory).Load(out _);
+        return SecretPacks.ForRegion(System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName, manual.Extra, manual.Disabled);
+    }
 
     public SecretGuard()
     {
@@ -39,7 +47,7 @@ internal sealed class SecretGuard
         // 不能拿正在變長的 found 來比，超長文字命中很多筆時會變成 O(n²)，卡住 UI。
         IReadOnlyList<SecretMatch> registered = _store is not null ? _store.Find(text) : [];
         var found = new List<SecretMatch>(registered);
-        found.AddRange(SecretDetector.Find(text).Where(m =>
+        found.AddRange(SecretDetector.Find(text, _packs).Where(m =>
             !registered.Any(r => m.Index < r.Index + r.Length && r.Index < m.Index + m.Length)));
         found.Sort((a, b) => a.Index.CompareTo(b.Index));
         return found;
