@@ -67,14 +67,15 @@
 
 | 步驟 | 例子 |
 |---|---|
+| 拿掉看不見、可以把關鍵字拆開的字元：軟連字號 U+00AD、零寬字元 U+200B–200D、U+2060、U+FEFF、U+180E、韓文填充字元 U+115F、U+1160、U+3164、U+FFA0，以及 TAG 區塊 U+E0000–E007F（UTF-16 的代理字元對）。隱藏字元通知（§6.1）允許一般文字裡的軟連字號，所以拆開關鍵字的問題只能在這裡處理 | `pow<U+00AD>ershell` → `powershell` |
 | dash 變體換成 `-`：U+2010–2015、U+2212、U+FE58、U+FE63、全形 U+FF0D | `–w hidden` → `-w hidden` |
 | 去掉 cmd 的 `^` 跳脫；`^^` 變 `^`；行尾的 `^` 接下一行 | `m^s^h^t^a` → `mshta` |
-| 代入 `set x=…`、`set "x=…"` 設定的 `%x%`（只代入一層；最多 16 個變數、64 次代入、值最長 1024 字） | `set x=…&& call %x%` |
+| 代入 `set x=…`、`set "x=…"` 設定的 `%x%`，以及延遲展開（`cmd /v:on`）的 `!x!`（只代入一層；最多 16 個變數、64 次代入、值最長 1024 字）。沒設定過的 `!x!` 不動，句子裡的驚嘆號不受影響（#21） | `set x=…&& call %x%`、`call !a!!b!` |
 | 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
 | 合併字中間的引號 | `"m"sh"ta"`、`ms""hta` → `mshta` |
-| 已知程式（powershell、pwsh、mshta、cmd、certutil、bitsadmin、rundll32、regsvr32、msiexec、conhost、curl、wget）的完整路徑只留檔名，有沒有引號、`.exe` 都可以 | `"C:\…\System32\mshta.exe"` → `mshta` |
+| 已知程式（powershell、pwsh、mshta、cmd、certutil、bitsadmin、rundll32、regsvr32、msiexec、conhost、curl、wget，以及 #21 的 wscript、cscript、hh、cmstp、pcalua、odbcconf、installutil、ftp、explorer、net、net1）的完整路徑只留檔名，有沒有引號、`.exe` 都可以 | `"C:\…\System32\mshta.exe"` → `mshta` |
 
-- 只縮短「已知程式」的路徑：其他路徑（例如 `C:\x\a.ps1`）保持原樣，因為 PowerShell 的參數判斷要用到它。#21 新增程式時要一起加進清單。
+- 只縮短「已知程式」的路徑：其他路徑（例如 `C:\x\a.ps1`）保持原樣，因為 PowerShell 的參數判斷要用到它。新增規則用到的程式時要一起加進清單（`CommandNormalizer.KnownPrograms`）。
 - 只有 `/` 的路徑（`github.com/powershell/powershell`）和網址（含 `://`）不算路徑，避免把網址當成指令。
 - 單獨一行的完整路徑（例如只有 `C:\Windows\System32\mshta.exe`）跟只寫 `mshta.exe` 一樣判為 Suspicious，因為貼進 Win+R 就會執行。句子裡提到路徑則不算。
 
@@ -84,19 +85,37 @@
 
 | 訊號 | 成立條件 |
 |---|---|
-| PowerShell | `powershell` / `pwsh`（可帶 `.exe`）出現在行首或分隔字元後，且後面接 `-x` 或 `/x` 參數、引號、`#`、`$`、`&`、括號、cmdlet 或別名（iwr、irm、iex、`Invoke-*`、`Start-*` 等）、腳本路徑或 `.ps1`。也可以單獨出現在管線後面 |
+| PowerShell | `powershell` / `pwsh`（可帶 `.exe`）出現在行首或分隔字元後，且後面接 `-x` 或 `/x` 參數、引號、`#`、`$`、`&`、括號、cmdlet 或別名（iwr、irm、iex、`Invoke-*`、`Start-*` 等）、腳本路徑或 `.ps1`。也可以單獨出現在管線後面，或後面只接 `-`（從標準輸入讀指令，#20 F5） |
 | mshta | 後面接 URL、`vbscript:`、`javascript:`、`about:`，或 `.hta` 檔 |
-| cmd | `cmd /c`、`cmd /k` |
+| cmd | `cmd /c`、`cmd /k`，前面可以先接其他開關（`cmd /q /v:on /c`） |
+| cmd 延遲展開（#21） | `cmd /v:on`、`cmd /v`（可以接在其他開關後面）。`!x!` 由正規化代入，組出來的指令照一般規則判斷 |
 | 下載或執行用的 LOLBin | certutil 加 `-urlcache`、bitsadmin 加 `/transfer`、rundll32 加腳本或 URL、regsvr32 加 `/i:` 和 URL、msiexec 加 URL、conhost 加 `--headless` |
+| #21 的 LOLBin | wscript / cscript 加腳本檔（`.vbs`、`.js`、`.wsf`…）或 `//e:`；hh 加 URL、UNC、`mk:@MSITStore:`、`its:` 或 `.chm`；cmstp 加 `.inf`；pcalua 加 `-a`；odbcconf 加 `/x` 或 `-x` 開關；InstallUtil 加 `.dll` / `.exe`；ftp 加 `-s:檔案` |
+| 執行遠端分享上的檔案（#21） | `\\主機\分享\…` 加可執行的副檔名（exe、lnk、bat、cmd、dll、msi、hta、ps1、vbs、js、cpl、scr、search-ms…），而且在「下指令的位置」：行首、分隔字元後，或 start、explorer、call、rundll32、pcalua、cmd 等程式後面。`\\主機@SSL\DavWWWRoot\` 也一樣 |
+| WebDAV 遠端資料夾（#21） | `\\主機@SSL\…`、`\\主機@埠號\…`、`\\主機\DavWWWRoot`，在下指令的位置，或接在 `net use`、`pushd` 後面 |
+| 掛載網路磁碟後執行（#21） | `net use Z: \\主機\…`（或 `*`）之後，在下指令的位置執行 `Z:\…` 的可執行檔；`*` 時任何磁碟機代號都算 |
+| Protocol handler（#21） | `search-ms:` / `search:` 帶 `query=`、`crumb=`、`displayname=` 等參數；`ms-msdt:` 後面接 `/x` 或 `-x` 參數 |
 | 下載後交給 shell | curl/wget 的輸出 pipe 給 sh、bash 或 zsh |
+| 下載後直接執行（#20） | 見下方說明。本身就是執行訊號：不寫程式名稱、貼進 PowerShell 視窗的寫法也算 |
 
-「像在下指令」這個條件是為了排除一般句子（例如 `I use powershell every day`，#8）和網址路徑（`github.com/powershell/...`）。
+「像在下指令」這個條件是為了排除一般句子（例如 `I use powershell every day`，#8）和網址路徑（`github.com/powershell/...`）。#21 的程式也一樣：只提到程式名稱的句子（`wscript and cscript are …`）、句子中間的 UNC 路徑（`檔案放在 \\fileserver\share\setup.exe`）都不算；單獨一行的 UNC 執行檔算，因為貼進 Win+R 就會執行（同 §3.0）。
+
+**下載後直接執行**（`DownloadExecution.cs`）指的是下面任何一種寫法，只看正規化後的文字：
+
+| 寫法 | 例子（片段） |
+|---|---|
+| 下載結果 pipe 給 iex、Invoke-Expression、powershell、pwsh、cmd、sh / bash / zsh。下載指令後面至少要有一個參數，避免把表格 `\| curl \| cmd \|` 當成指令 | `irm … \| iex`、`curl … \| cmd`、`curl … \| powershell -` |
+| iex 直接包住下載 | `iex(iwr …)`、`iex ((New-Object Net.WebClient).DownloadString(…))`、`iex "& { $(irm …) }"` |
+| 先存進變數，再 iex 那個變數 | `$c = iwr …` 加上 `iex $c` |
+| `[ScriptBlock]::Create` 搭配任何下載 | `&([scriptblock]::Create((irm …)))` |
+| 下載成檔案（`-OutFile`、`DownloadFile`、`curl -o`、`certutil -urlcache`、`bitsadmin /transfer`、`Start-BitsTransfer`）再啟動（`Start-Process`、`start`、`&`、在下指令的位置直接寫 `.exe` / `.bat` / `.msi`…） | `iwr … -OutFile a.exe; Start-Process a.exe` |
 
 **詐騙訊號**：
 
 | 訊號 | 強度 |
 |---|---|
-| 隱藏視窗（`-w` / `-windowstyle` 加 `h` / `hidden`） | 強 |
+| 隱藏視窗：`-WindowStyle` 的任何前綴（`-w`、`-win`、`-WindowSt`…，W 開頭的參數只有它）、`-` 或 `/` 開頭（dash 變體由正規化處理），值是 `hidden`（或它的前綴 `h`、`hid`…）或數字 `1`（ProcessWindowStyle：Normal=0、Hidden=1、Minimized=2、Maximized=3），可加引號，也可以寫成 `-w:hidden`（#20 F3） | 強 |
+| 下載後直接執行，而且來源**不在**官方安裝網站清單（見 §3.2，#20 F4） | 強 |
 | `-enc` 系列參數加 16 字以上的 Base64 | 強 |
 | 註解含 robot、captcha、verif、human、cloudflare、驗證、機器人、人機 | 強 |
 | 勾選符號 ✅ ✔ ☑ | 強 |
@@ -113,10 +132,33 @@
 | 有 | 無（可以有弱訊號） | **Suspicious** | 提醒，不清空 |
 | 有 | 有 | **Malicious** | 清空並隔離，可還原 |
 
-「下載＋iex」只算弱訊號，因為官方安裝指令（scoop、uv、bun）也長這樣（P1）。這個取捨的代價見 #20。
+**下載後直接執行與官方安裝網站清單**（#20 F4、F17）：「下載後直接執行」是 ClickFix 的核心動作，所以本身就判 Malicious，不必等隱藏視窗這類訊號。但官方安裝指令也長這樣，為了不清掉合法內容（P1），來源全部是下表的網站時只判 Suspicious。
+
+| 網站（含子網域） | 用途 |
+|---|---|
+| astral.sh | uv、ruff |
+| bun.sh | Bun |
+| get.scoop.sh、scoop.sh | Scoop |
+| deno.land | Deno |
+| sh.rustup.rs | rustup |
+| get.pnpm.io | pnpm |
+| community.chocolatey.org | Chocolatey |
+| claude.ai | Claude Code |
+| ollama.com | Ollama |
+| dot.net | dotnet-install |
+| aka.ms | 微軟官方短網址（例如 install-powershell） |
+
+- **收錄條件**：官方文件要使用者貼上「下載後執行」的指令，而且網域由專案本身控制。raw.githubusercontent.com 這類任何人都能放檔案的網站不收，所以 Homebrew、nvm 的安裝指令會被攔截（可以點通知還原）。
+- **比對主機名稱，不是子字串**：主機必須等於清單裡的網站，或是它的子網域。`astral.sh.example.invalid`、`notastral.sh` 都不算；網址裡的帳號欄位（`https://astral.sh@主機/`）以真正的主機為準；主機在反斜線處截斷；不是純 ASCII 的主機一律不算。
+- **看哪些行**：下載、執行（iex、ScriptBlock）、設定變數（`$u = …`、`set u=…`）的那幾行裡，每一個主機都要在清單裡；找不到任何主機（例如 `irm $u | iex` 而 `$u` 不在文字裡）就不算。其他行（例如 README 附的 GitHub 連結）不看，官方指令連同說明一起複製時不會被升級。
+- **拼出來的網址不可信**：文字裡有字串串接（`'…'+'…'`）、`-join`、`-f`、`-replace`、`[char]`、反引號、`FromBase64String` 時，不套用清單。
+- **清單只拿掉「下載後直接執行」這一個強訊號**：官方網站的指令如果還有隱藏視窗、誘餌註解等強訊號，一樣判 Malicious。
+- 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
 ### 3.3 白話說明（`CommandExplainer.cs`）
 - 指令被判為 Suspicious 或 Malicious 時，會產生一段 zh-TW 的白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。
+- #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
+- 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
 - `-enc` 系列參數會用 UTF-16LE 解碼並顯示；解出來不是合理文字時就不顯示。
 - 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。
 
@@ -124,10 +166,13 @@
 | 缺口 | Issue |
 |---|---|
 | 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；同一行裡用超過 2048 個非空白字元把執行訊號和詐騙訊號隔開時也一樣；超過 256 KB / 4000 行的部分不分析 | #19 的取捨 |
-| cmd 子字串展開（`%x:~0,3%`）、`set /p`、多層變數代入、`for` 迴圈組字、PowerShell 的變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母 | 尚未開 issue |
-| 延遲展開 `!x!`（`cmd /v:on`） | #21 |
-| `-w 1`、參數縮寫、`/w`，以及沒有 hidden 的「下載＋執行」只會提醒 | #20 |
-| wscript、cscript、hh、cmstp、UNC/WebDAV、`search-ms:` 等沒有涵蓋 | #21 |
+| cmd 子字串展開（`%x:~0,3%`、`!x:~0,3!`）、`set /p`、多層變數代入、`for` 迴圈組字、PowerShell 的變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母 | 尚未開 issue |
+| 官方網站清單以外的合法安裝指令（Homebrew、nvm 等放在 raw.githubusercontent.com 的）會被攔截，要點通知還原 | #20 的取捨（F17） |
+| 官方網站清單只認得常見的字串拼接寫法；用 `[string]::Concat`、`.Insert()`、環境變數等其他方式組出清單外的網址，而且同一行放清單內網址當幌子時，可能只判 Suspicious | #20 的取捨 |
+| 「下載後直接執行」沒涵蓋的寫法：msiexec 直接裝遠端套件、`Invoke-Command`、`.Invoke()`、下載後用相對路徑以外的方式啟動（例如 `rundll32` 載入剛下載的 DLL）仍只提醒 | 尚未開 issue |
+| `setlocal enabledelayedexpansion`（批次檔裡的延遲展開）本身不算訊號；`!x!` 仍會代入 | #21 的取捨 |
+| 遠端檔案只在「下指令的位置」才算：`pushd \\主機\…` 之後用相對路徑執行、`net use` 的磁碟代號前面先寫其他開關（`net use /persistent:no Z: …`）沒有涵蓋 | #21 的取捨 |
+| #21 的 LOLBin、UNC/WebDAV、`search-ms:`、`ms-msdt:` 單獨出現只提醒（P1），要搭配強詐騙訊號才攔截 | #21 的取捨 |
 
 ## 4. 執行入口守衛
 
@@ -256,7 +301,7 @@
 |---|---|---|
 | 居留證第 2 碼 | 1、2、8、9、A–D | 1、2、8、9 |
 | 統編關鍵字距離 | 前 20 字內 | 前 12 字內 |
-| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking） |
+| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler |
 | 指令正規化（§3.0） | 有（`CommandNormalizer`） | 沒有：完整路徑、`^`、引號拆字、dash 變體都認不得 |
 | 貼上提示的 Enter | 取消（§5.3） | 貼遮罩版。插件直接插入文字，不必換剪貼簿，沒有桌面版的副作用 |
 | 貼上攔截的範圍 | 預設只攔登記的機密 | 所有偵測到的機密（插件沒有登記機密） |
