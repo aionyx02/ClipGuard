@@ -11,7 +11,7 @@ namespace ClipGuard.Core;
 /// 處理的寫法（依序）：
 ///   1. dash 變體（U+2010–2015、U+2212、U+FE58、U+FE63、U+FF0D）→ <c>-</c>
 ///   2. cmd 的 <c>^</c> 跳脫：<c>m^s^h^t^a</c> → <c>mshta</c>，<c>^^</c> → <c>^</c>，行尾 <c>^</c> 接行
-///   3. <c>set x=…</c> / <c>set "x=…"</c> 之後的 <c>%x%</c> 代入（只代入一層，次數有上限）
+///   3. <c>set x=…</c> / <c>set "x=…"</c> 之後的 <c>%x%</c>、延遲展開的 <c>!x!</c> 代入（只代入一層，次數有上限）
 ///   4. 常見系統環境變數：<c>%SystemRoot%</c>、<c>%windir%</c>、<c>%ComSpec%</c>、<c>%ProgramFiles%</c>…，
 ///      以及 PowerShell 的 <c>$env:windir</c> 寫法
 ///   5. 用引號拆開的字：<c>"m"sh"ta"</c>、<c>ms""hta</c> → <c>mshta</c>
@@ -25,7 +25,8 @@ public static class CommandNormalizer
     // 規則會比對的程式；完整路徑只對這些程式縮成檔名，其他路徑（例如 C:\x\a.ps1）保持原樣，
     // 免得把「powershell C:\x\tool.exe」這類原本就靠路徑判斷的寫法弄丟。新增規則時一起加進來。
     private const string KnownPrograms =
-        "powershell|pwsh|mshta|cmd|certutil|bitsadmin|rundll32|regsvr32|msiexec|conhost|curl|wget";
+        "powershell|pwsh|mshta|cmd|certutil|bitsadmin|rundll32|regsvr32|msiexec|conhost|curl|wget|" +
+        "wscript|cscript|hh|cmstp|pcalua|odbcconf|installutil|ftp|explorer|net1|net";
 
     // set 代入的上限：避免 %a%%a%%a%… 把短字串放大成很長的文字。
     private const int MaxVariables = 16;
@@ -50,9 +51,12 @@ public static class CommandNormalizer
     private static readonly Regex SetQuoted =
         new(@"(?<=^|[\s&|(;])set\s+""(?<n>[a-z_][\w.#$@-]*)=(?<v>[^""\r\n]*)""", Opts | RegexOptions.Multiline);
     private static readonly Regex SetPlain =
-        new(@"(?<=^|[\s&|(;])set\s+(?<n>[a-z_][\w.#$@-]*)=(?<v>[^&|\r\n""]*)", Opts | RegexOptions.Multiline);
+        new(@"(?<=^|[\s&|(;""])set\s+(?<n>[a-z_][\w.#$@-]*)=(?<v>[^&|\r\n""]*)", Opts | RegexOptions.Multiline);
 
     private static readonly Regex PercentVar = new(@"%(?<n>[^%\s""]{1,64})%", Opts);
+
+    // cmd /v:on 的延遲展開：!x! 跟 %x% 一樣代入（#21）。只代入 set 設定過或已知的變數，句子裡的驚嘆號不受影響。
+    private static readonly Regex BangVar = new(@"!(?<n>[a-z_][\w.#$@-]{0,63})!", Opts);
     private static readonly Regex PsEnvVar = new(@"\$env:(?<n>[a-z_][\w]*(?:\(x86\))?)", Opts);
 
     // 字中間的引號：a"bc"d、ab""c。只收單字字元，不會吃掉 -c "iex(…)" 這種真正的字串參數。
@@ -123,6 +127,7 @@ public static class CommandNormalizer
         }
 
         s = PercentVar.Replace(s, Lookup);
+        s = BangVar.Replace(s, Lookup);
         return PsEnvVar.Replace(s, m => KnownEnv.TryGetValue(m.Groups["n"].Value, out var v) ? v : m.Value);
     }
 

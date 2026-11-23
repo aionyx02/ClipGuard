@@ -42,6 +42,29 @@ public class CommandNormalizerTests
     }
 
     [Fact]
+    public void 代入延遲展開的變數()
+    {
+        Assert.Equal($"set a=ms&& set b=hta&& call {Hta} u", CommandNormalizer.Normalize("set a=ms&& set b=hta&& call !a!!b! u"));
+        // cmd /v:on /c "set x=…" 的 set 前面是引號。
+        Assert.Equal($"cmd /v:on /c \"set x={Hta}&& {Hta} u\"", CommandNormalizer.Normalize($"cmd /v:on /c \"set x={Hta}&& !x! u\""));
+        // 沒設定過的變數、句子裡的驚嘆號不動。
+        Assert.Equal("Hello!World! Wow!", CommandNormalizer.Normalize("Hello!World! Wow!"));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Windows\System32\wscript.exe a.vbs", "wscript a.vbs")]
+    [InlineData(@"""C:\Windows\System32\cscript.exe"" a.js", "cscript a.js")]
+    [InlineData(@"C:\Windows\hh.exe a.chm", "hh a.chm")]
+    [InlineData(@"%windir%\System32\cmstp.exe /au a.inf", "cmstp /au a.inf")]
+    [InlineData(@"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe a.dll", "InstallUtil a.dll")]
+    [InlineData(@"C:\Windows\explorer.exe x", "explorer x")]
+    [InlineData(@"C:\Windows\System32\net.exe use x", "net use x")]
+    public void 新增的程式也縮短完整路徑(string text, string expected)
+    {
+        Assert.Equal(expected, CommandNormalizer.Normalize(text));
+    }
+
+    [Fact]
     public void 變數代入有上限()
     {
         var text = "set a=" + new string('x', 1000) + "&" + string.Concat(Enumerable.Repeat("%a%", 1000));
