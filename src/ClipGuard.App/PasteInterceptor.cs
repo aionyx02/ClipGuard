@@ -92,8 +92,9 @@ internal sealed class PasteInterceptor : IDisposable
         return _selfWrites.Any(w => w.Text == text);
     }
 
+    // TrayApp 比對的是讀進來的前綴（ClipboardLimits.MaxAnalyzedChars），這裡記同樣長度才對得上。
     private void MarkSelfWrite(string text) =>
-        _selfWrites.Add((text, Environment.TickCount64 + SelfWriteWindowMs));
+        _selfWrites.Add((ClipboardLimits.Prefix(text), Environment.TickCount64 + SelfWriteWindowMs));
 
     // ---------------------------------------------------------------- hook 回呼（要快、不能丟例外）
 
