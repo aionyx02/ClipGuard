@@ -11,7 +11,7 @@ Phase 0 要在動工前驗證的技術風險。剩下的 spike 怎麼做見 [`HO
 | S3 | Windows 剪貼簿監聽、鍵盤 hook、前景視窗 | **Windows 實機** | B | 待執行 | |
 | S4 | macOS 監聽與 CGEventTap 授權 | macOS | B | ✅ 可行 | [`s4-macos-monitor.md`](s4-macos-monitor.md) |
 | S5 | Linux X11 / Wayland | **Linux 實機**（GNOME + KDE 或 Sway） | B | ⚠️ 有條件可行（GNOME / KDE 待 VM 實測） | [`s5-linux-monitor.md`](s5-linux-monitor.md) |
-| S6 | Tauri v2 Android：`PROCESS_TEXT`、分享 intent | **Android 手機或模擬器** | B | 待執行 | |
+| S6 | Tauri v2 Android：`PROCESS_TEXT`、分享 intent | **Android 手機或模擬器** | B | ✅ 有條件可行 | [`s6-android.md`](s6-android.md) |
 | S7 | Agent 介接：Claude Code / opencode hook、rmcp MCP server | macOS | D | ✅ 可行 | [`s7-agent-integration.md`](s7-agent-integration.md) |
 | S8 | 不執行的語法驗證：`pwsh` AST、`bash -n`、cmd 替代方案 | 任意（需要 `pwsh`） | D | ✅ 有條件可行 | [`s8-syntax-validation.md`](s8-syntax-validation.md) |
 | S9 | Native Messaging：host manifest 安裝、互相發現、身分驗證 | Windows + macOS，Chrome + Firefox | B、C | macOS ✅ 可行；Windows 待執行 | [`s9-native-messaging.md`](s9-native-messaging.md) |
