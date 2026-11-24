@@ -9,7 +9,7 @@ Phase 0 要在動工前驗證的技術風險。每個 spike 完成後，在這�
 | S1 | WASM 大小與速度 | 任意（需要 rustup 的 wasm32 target） | A | ✅ 可行（gzip 250 KiB） | [`s1-wasm-size.md`](s1-wasm-size.md) |
 | S2 | CSP 環境下的 WASM（擴充功能、userscript） | Chrome、Firefox | C | ✅ 可行 | [`s2-wasm-csp.md`](s2-wasm-csp.md) |
 | S3 | Windows 剪貼簿監聽、鍵盤 hook、前景視窗 | **Windows 實機** | B | 待執行 | |
-| S4 | macOS 監聽與 CGEventTap 授權 | macOS | B | 待執行 | |
+| S4 | macOS 監聽與 CGEventTap 授權 | macOS | B | ✅ 可行 | [`s4-macos-monitor.md`](s4-macos-monitor.md) |
 | S5 | Linux X11 / Wayland | **Linux 實機**（GNOME + KDE 或 Sway） | B | 待執行 | |
 | S6 | Tauri v2 Android：`PROCESS_TEXT`、分享 intent | **Android 手機或模擬器** | B | 待執行 | |
 | S7 | Agent 介接：Claude Code / opencode hook、rmcp MCP server | macOS | D | ✅ 可行 | [`s7-agent-integration.md`](s7-agent-integration.md) |
