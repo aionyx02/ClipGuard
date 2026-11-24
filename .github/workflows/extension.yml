@@ -1,0 +1,86 @@
+name: extension
+
+# Browser extension (apps/extension, WXT) and userscript (apps/userscript):
+# lint, unit tests, build the Chrome zip / Firefox xpi / userscript as artifacts, and run the
+# Playwright e2e (docs/plan/phase-3.md §3.7) on Linux headless with Playwright's own Chromium and
+# Firefox against local pages without CSP, with script-src 'self' and with a strict nonce CSP.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extension-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install   # rust-toolchain.toml adds wasm32
+      - uses: Swatinem/rust-cache@v2
+      - name: install wasm-bindgen-cli (same version as the crate in Cargo.lock)
+        run: |
+          v=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/,"",$3); print $3; exit}' Cargo.lock)
+          curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${v}/wasm-bindgen-${v}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/wasm-bindgen-${v}-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: build @paste-warden/core (WASM + wasm2js)
+        run: pnpm --filter @paste-warden/core build
+      - name: wxt prepare (generated tsconfig / types)
+        run: pnpm --filter @paste-warden/extension exec wxt prepare
+
+      - name: lint (Biome + tsc)
+        run: |
+          pnpm --filter @paste-warden/extension lint
+          pnpm --filter @paste-warden/userscript lint
+      - name: unit tests (Vitest)
+        run: |
+          pnpm --filter @paste-warden/extension test
+          pnpm --filter @paste-warden/userscript test
+
+      - name: build (Chrome zip, Firefox xpi, userscript)
+        run: pnpm --filter @paste-warden/extension build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paste-warden-browser
+          path: |
+            apps/extension/dist/paste-warden-chrome.zip
+            apps/extension/dist/paste-warden-firefox.xpi
+            apps/extension/dist/paste-warden-firefox-sources.zip
+            apps/extension/dist/paste-warden.user.js
+            apps/userscript/dist/paste-warden.meta.js
+          if-no-files-found: error
+
+      - name: install Playwright browsers (Chromium, Firefox)
+        run: pnpm --filter @paste-warden/extension exec playwright install --with-deps chromium firefox
+      - name: e2e — extension (Chromium + Firefox × 3 CSPs)
+        run: pnpm --filter @paste-warden/extension e2e
+      - name: e2e — userscript (Chromium + Firefox × 3 CSPs)
+        run: pnpm --filter @paste-warden/userscript e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/extension/playwright-report
+            apps/extension/test-results
+            apps/userscript/test-results
+          if-no-files-found: ignore

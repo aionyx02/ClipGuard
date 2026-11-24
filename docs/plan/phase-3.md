@@ -85,3 +85,21 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
 - [ ] 文件網站第一批頁面上線，繁中與 English 都有。
 - [ ] 深淺色、語言切換在擴充功能、網頁、文件網站都能用。
 - [ ] CI：`js` job 跑 Biome、Vitest、Playwright。
+
+## 3.9 擴充功能與 userscript：實作紀錄與偏離（`phase3/extension`）
+
+說明書在 `apps/extension/README.md`。和上面規格不同、或規格沒寫清楚而自己決定的地方：
+
+| 項目 | 做法 | 原因 |
+|---|---|---|
+| UI 字串 | 放在 `locales/{zh-TW,en}/ui-extension.ftl`（`ui-ext-` 前綴），不是 §3.3 寫的 `ui.ftl` | 各工作流各自一個檔，避免互相衝突；`ui-` 前綴不變，`messages()` 和 `@paste-warden/ui` 都讀得到 |
+| Pastejacking | `apps/extension/src/lib/pastejack.ts` 移植 `crates/core/src/pastejack`，資料同一份 `rules/pastejack/*.json`，Vitest 跑 `corpus/cases/pastejack*.jsonl` 全部通過 | `@paste-warden/core` 的 WASM API 沒有匯出 pastejack。之後若在 `crates/wasm` 加匯出，可以換成引擎版本 |
+| 網頁寫入剪貼簿時的分析 | `detect_secrets: false` | 網站自己的「複製 API key」按鈕不是攻擊；機密在**貼上**時才攔（§7 的舊版行為） |
+| `warn` 的通知 | 擴充功能自己的小型 Shadow DOM 通知（`src/lib/toast.ts`） | `@paste-warden/overlay` 只有兩個對話框，沒有不擋操作的通知 |
+| 子 frame 的對話框 | 經 background 轉到最上層 frame 顯示（隱藏或很小的 iframe 裡的對話框使用者看不到）；UI 一律在網頁的寫入完成後才顯示 | 先搶焦點會讓 frame 裡的 `writeText` 因「Document is not focused」失敗 |
+| 最近紀錄 | 除了攔下的指令，也記警告、pastejacking 和攔下的機密貼上（`kind`），一樣只有網域、時間、種類、遮罩字串 | 彈出視窗才看得出最近發生什麼 |
+| T17 通道 | 握手在 `document_start`、頁面任何 script 之前完成；isolated 端接受多個名稱（頁面搶先握手也無法讓真正的 hook 失效）；已配對但沒有回應時 MAIN 端寫入提示文字（fail closed） | — |
+| T18 | Firefox 版只設 `match_about_blank`（`match_origin_as_fallback` 在 Firefox 的支援沒有驗證，先不開）；兩邊都另外在 `contentWindow`／`contentDocument` 取用和插入 iframe 時替同源子 frame 裝 hook。`window.frames[i]` 直接取用、`innerHTML` 插入後立即使用仍是缺口 | — |
+| Userscript 大小 | 單檔 3.3 MiB（gzip 1.3 MiB），超過 §3.4「盡量 < 2 MB」 | WASM 用 gzip + base64 內嵌（約 0.75 MB），wasm2js 必須是一般 JS 才能在 WASM 和 eval 都被 CSP 擋的地方執行（約 2.6 MB，只解析、需要時才建立） |
+| Userscript 的 page hook | 以 inline `<script>` 注入；被 CSP 擋時改用頁面第一個 nonce 重試，並在自己的 world 也裝 hook（manager 以 page 模式執行時就是真正的 hook）；在這之前只能從 content world 檢查 copy 事件，`navigator.clipboard` 攔不到 | `@inject-into content` 無法直接碰頁面的 JS |
+| 測試 | Playwright e2e：擴充功能 Chromium + Firefox × 三種 CSP（48 + 4 個）；userscript 以 init script 在 page world 執行（b、c 用 wasm2js）。另外手動用 Violentmonkey 2.50（Chromium MV3）驗證 `@inject-into content`：a、b、c 三種 CSP 都攔下，引擎是 WASM | Violentmonkey 是第三方程式，不放進 CI |
