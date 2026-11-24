@@ -39,7 +39,7 @@ paste-warden hook install claude-code           # 安裝 agent hook（也支援 
 paste-warden mcp                                # 唯讀的 stdio MCP server
 ```
 
-CLI 不讀剪貼簿。Hook 和 MCP 預設不安裝，說明見 [`docs/integrations/agent-hooks.md`](docs/integrations/agent-hooks.md) 和 [`docs/integrations/mcp.md`](docs/integrations/mcp.md)。
+CLI 不讀剪貼簿。Hook 和 MCP 預設不安裝，說明見 [`docs/integrations/agent-hooks.md`](docs/integrations/agent-hooks.md) 和 [`docs/integrations/mcp.md`](docs/integrations/mcp.md)。瀏覽器與 Python 用的引擎見 [`docs/integrations/wasm.md`](docs/integrations/wasm.md)。
 
 ## 開發
 

@@ -114,11 +114,16 @@ export const ENGINE_VERSION: string;
 
 ## 2.8 完成條件
 
-- [ ] `paste-warden scan / mask / bench` 有整合測試（`assert_cmd` 或直接呼叫）；exit code 符合 §2.3。
-- [ ] Claude Code hook：真實 `claude -p` 測試（只用無害指令）能擋下語料裡的一筆 ClickFix 樣本、放行 `echo hello`；fail-closed 三種情況有測試。
-- [ ] opencode plugin 實測擋下同一筆樣本。
-- [ ] MCP guard profile 四個工具可被 Claude Code 呼叫；輸出不含原文（測試）。
+- [x] `paste-warden scan / mask / bench` 有整合測試（`assert_cmd` 或直接呼叫）；exit code 符合 §2.3。
+- [x] Claude Code hook：真實 `claude -p` 測試（只用無害指令）能擋下語料裡的一筆 ClickFix 樣本、放行 `echo hello`；fail-closed 三種情況有測試。
+- [x] opencode plugin 實測擋下同一筆樣本。
+- [x] MCP guard profile 四個工具可被 Claude Code 呼叫；輸出不含原文（測試）。
 - [x] `@paste-warden/core`：Node 測試通過；gzip 大小在 CI 檢查；wasm2js 版本能跑同一組測試。
 - [x] `paste_warden`（Python）能 import 並通過 smoke test。
-- [ ] 文件：`docs/integrations/agent-hooks.md`、`docs/integrations/mcp.md`（繁中），README 加上連結。
-- [ ] CI：新增 `js` job（pnpm、Biome、node 測試、wasm 大小）與 `py` job（maturin build + smoke）。
+- [x] 文件：`docs/integrations/agent-hooks.md`、`docs/integrations/mcp.md`（繁中），README 加上連結。
+- [x] CI：`js-core.yml`（pnpm、Biome、node 測試、wasm 大小）、`py.yml`（maturin build + smoke，三個 OS）、`cli.yml`（hook / install / MCP 整合測試，三個 OS）。
+
+## 2.9 後續
+
+- CLI 的 `report_json` 和共用的 `crates/report` 目前是兩份實作，由 `crates/cli/tests/report_parity.rs` 保證輸出一致（合併時抓到 CLI 的 span 用了 `[起點, 終點]`）。Phase 4 前把 CLI 改成直接使用 `crates/report`。
+- 已知仍會 fail-open 的情況（執行檔不存在、行程被終止、使用者關閉 hook、`--bare`）寫在 `docs/integrations/agent-hooks.md`。agent 改寫自己的設定來關掉 hook 的情境，列入 Phase 5 紅隊題目。
