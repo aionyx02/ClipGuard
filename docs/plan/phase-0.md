@@ -9,8 +9,8 @@
 ## 0.1 前置步驟
 
 - [x] GitHub repo 已改名為 `aionyx02/paste-warden`，本機 remote 也已更新。
-- [ ] 本機目錄 `ClipGuard/` 改名為 `paste-warden/`。
-- [ ] 啟用 GitHub Pages（來源選 GitHub Actions）。
+- [x] 本機目錄 `ClipGuard/` 改名為 `paste-warden/`。
+- [ ] 啟用 GitHub Pages（來源選 GitHub Actions）：移到 Phase 3（第一次部署網站時）。
 - PR #35（integrate/wave4）已經合併進 `dev`，所以舊測試也包含國家個資包和中英文介面，一併抽成語料。
 
 ## 0.2 語料（corpus）：一次性抽取，抽完就刪 C#
