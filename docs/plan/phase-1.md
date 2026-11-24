@@ -110,6 +110,12 @@ pub struct Report {
 | gitleaks | 重新加入舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user` |
 | `risk_score` | 0–100，由訊號推算出來，給 UI 和報表用。**判定結果仍然以離散的判定表為準**，維持可解釋性 |
 
+### 1b 待辦（1a 移植時發現）
+
+- `hidden` 的「這一行像不像指令」目前用 `pastejack::command_signals` 代替；舊版是呼叫 `CommandDetector.Analyze`。command 合併後改成 `command::analyze(line).level != None`，並刪掉重複的實作。
+- `hidden` 的 shell 指令清單、同形字清單，以及 `pastejack` 的訊號樣式還寫在程式裡（`const`），要搬到 `rules/`。
+- 良性語料 `benign.text.126`（馬拉雅拉姆文 ZWJ 後面接空白）被判為隱藏字元，和舊版行為一致；1b 決定要不要放寬例外。
+
 ## 1.6 品質要求
 
 | 種類 | 內容 |
