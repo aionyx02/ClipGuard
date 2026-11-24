@@ -44,10 +44,9 @@ pub fn run(op: &str, ctx: &Ctx<'_>, exp: &mut Expect) -> Option<Result<()>> {
 
 // ---------------------------------------------------------------- cross-area hooks
 
-/// The command analyzer (`command::analyze`), once merged.
-// TODO(phase1 merge): wire command::analyze.
-fn analyze_command(_text: &str) -> Option<Verdict> {
-    None
+/// The command analyzer used by the clipboard guard and `limits.prefix`.
+fn analyze_command(text: &str) -> Option<Verdict> {
+    Some(paste_warden_core::command::analyze(text))
 }
 
 /// Secret matches for `paste.mask` with `matches: "detect"`: (kind, masked, byte range).
