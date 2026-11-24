@@ -10,6 +10,8 @@ use fluent_bundle::{FluentArgs, FluentResource, FluentValue};
 use paste_warden_core::{Arg, Message};
 use unic_langid::LanguageIdentifier;
 
+pub mod locale;
+
 mod embedded {
     include!(concat!(env!("OUT_DIR"), "/locales.rs"));
 }
