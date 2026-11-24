@@ -61,7 +61,7 @@ pub struct Report {
 | `SecretRules`、`SecretDetector` | `secret/engine.rs`；規則格式放在 `crates/rules` |
 | `Checksums` | `secret/checksum.rs`（tw-id、tw-ubn、luhn、各國包的檢查碼） |
 | `SecretMasker` | `secret/mask.rs` |
-| `RegisteredSecretStore` 的比對 | `secret/registered.rs`（HMAC 滑動視窗、常數時間比較）；儲存在 Phase 4 |
+| `RegisteredSecretStore` 的比對 | `policy/registered.rs`（HMAC 滑動視窗、常數時間比較，金鑰由呼叫端提供）；儲存在 Phase 4 |
 | `HiddenCharDetector` | `hidden.rs` |
 | `WalletAddress`、`WalletSwapDetector` | `wallet/` |
 | `ExecutionEntryGuard`、`ClipboardGuardState`、`PasteGuard`、`NotificationThrottle` | `policy/` |

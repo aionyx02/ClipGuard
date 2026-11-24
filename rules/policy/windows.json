@@ -1,0 +1,46 @@
+{
+  "format": 1,
+  "description": "Windows window classes and process names used by the execution-entry guard (detection-rules.md §4) and the paste guard allowlist (§5.3). Measured on Windows 11 (zh-TW and en). Process names are compared without a trailing .exe.",
+  "entry": {
+    "dialog_class": "#32770",
+    "shell_process": "explorer",
+    "run_dialog_titles": ["執行", "Run", "运行"],
+    "file_dialog_titles": [
+      "開啟",
+      "開啟檔案",
+      "上傳檔案",
+      "選擇要上傳的檔案",
+      "Open",
+      "Open File",
+      "File Upload",
+      "Choose File to Upload",
+      "打开"
+    ],
+    "file_explorer_classes": ["CabinetWClass", "ExploreWClass"],
+    "terminal_classes": [
+      "CASCADIA_HOSTING_WINDOW_CLASS",
+      "ConsoleWindowClass",
+      "org.wezfurlong.wezterm",
+      "mintty"
+    ],
+    "terminal_processes": ["WindowsTerminal", "wezterm-gui", "alacritty", "mintty", "powershell_ise"]
+  },
+  "paste": {
+    "allowed_apps": [
+      "1Password",
+      "KeePass",
+      "KeePassXC",
+      "Bitwarden",
+      "Dashlane",
+      "Enpass",
+      "Keeper",
+      "RoboForm",
+      "NordPass",
+      "ProtonPass",
+      "LastPass",
+      "CredentialUIBroker",
+      "consent"
+    ],
+    "allowed_window_classes": ["Credential Dialog Xaml Host"]
+  }
+}

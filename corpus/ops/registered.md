@@ -2,7 +2,7 @@
 
 使用者登記的機密（§5.1）：只存標籤、長度與 **HMAC-SHA256**，不存原文，**禁止**改用單純的 SHA-256。金鑰的產生與保存（舊版 DPAPI + `key.bin`，新版 OS keyring）是平台層的事（Phase 4），這裡由案例注入金鑰，所以 HMAC 值可以精確比對。
 
-長度一律以 **UTF-16 code unit** 計算（和舊版一致；`🔑` 算 2）。
+長度以 **char（Unicode scalar）** 計算（phase-1.md §1.8；舊版用 UTF-16，`🔑` 算 2）。只在兩種算法結果不同的案例才需要寫進 `corpus/divergences/registered.toml`。
 
 ## `registered.run`
 
