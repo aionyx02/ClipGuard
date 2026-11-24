@@ -33,8 +33,7 @@ pub fn run(op: &str, ctx: &Ctx<'_>, exp: &mut Expect) -> Option<Result<()>> {
         "paste.settings_load" => Some(paste_settings_load(ctx, exp)),
         "paste.settings_save" => Some(paste_settings_save(ctx, exp)),
         "paste.mask" => paste_mask(ctx, exp),
-        // TODO(phase1 merge): wire secret::find (snapshot of the detected secrets).
-        "paste.snapshot" => None,
+        "paste.snapshot" => Some(paste_snapshot(ctx, exp)),
         "limits.prefix" => limits_prefix(ctx, exp),
         "registered.run" => Some(registered_run(ctx, exp)),
         "registered.validate" => Some(registered_validate(ctx, exp)),
@@ -50,9 +49,41 @@ fn analyze_command(text: &str) -> Option<Verdict> {
 }
 
 /// Secret matches for `paste.mask` with `matches: "detect"`: (kind, masked, byte range).
-// TODO(phase1 merge): wire secret::find (default packs).
-fn detect_secrets(_text: &str) -> Option<Vec<(String, String, std::ops::Range<usize>)>> {
-    None
+fn detect_secrets(text: &str) -> Option<Vec<(String, String, std::ops::Range<usize>)>> {
+    use paste_warden_core::secret::{self, PackSet};
+    Some(
+        secret::find(text, &PackSet::default())
+            .into_iter()
+            .map(|m| (m.kind.as_str().to_owned(), m.masked, m.span))
+            .collect(),
+    )
+}
+
+/// `paste.snapshot`: summary of the detected secrets (kinds, labels, masks, sequence).
+fn paste_snapshot(ctx: &Ctx<'_>, exp: &mut Expect) -> Result<()> {
+    use paste_warden_core::policy::paste::{ClipboardSecretSnapshot, SecretSummary};
+    use paste_warden_core::secret::{self, PackSet};
+    let sequence = u32::try_from(ctx.arg_i64("sequence").unwrap_or(0)).context("args.sequence")?;
+    let summaries = secret::find(&ctx.input, &PackSet::default())
+        .into_iter()
+        .map(|m| SecretSummary {
+            kind: m.kind.as_str().to_owned(),
+            label: ctx.render(&m.label),
+            masked: m.masked,
+        })
+        .collect();
+    let snap = ClipboardSecretSnapshot::new(sequence, summaries);
+    exp.eq("sequence", snap.sequence);
+    let actual: Vec<Value> = snap
+        .secrets
+        .iter()
+        .map(|s| json!({"kind": s.kind, "label": s.label, "masked": s.masked}))
+        .collect();
+    exp.list_exact("secrets", &actual);
+    let masks: Vec<String> = snap.secrets.iter().map(|s| s.masked.clone()).collect();
+    exp.contain_in_none("masked_not_contain", &masks);
+    exp.eq("kinds", snap.kinds());
+    Ok(())
 }
 
 // ---------------------------------------------------------------- helpers
