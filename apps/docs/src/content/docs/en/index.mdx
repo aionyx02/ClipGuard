@@ -1,0 +1,34 @@
+---
+title: PasteWarden
+description: Treat the clipboard as a trust boundary. Stop ClickFix fake-verification commands and pastejacking, and keep secrets from being pasted out.
+template: splash
+hero:
+  title: PasteWarden
+  tagline: The clipboard is a trust boundary. Commands a web page sneaks in are stopped; secrets you are about to paste get masked first. Everything is decided on your own machine.
+  image:
+    file: ../../../assets/logo.svg
+  actions:
+    - text: Install the extension
+      link: user/install/chrome-edge/
+      icon: right-arrow
+    - text: What is PasteWarden?
+      link: user/intro/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Stops fake verification" icon="warning">
+    "Press Win+R, paste, hit Enter to verify you are human" is a ClickFix attack. PasteWarden judges what a page writes to the clipboard at the moment it writes it, so a dangerous command never stays there.
+  </Card>
+  <Card title="Onion view" icon="magnifier">
+    Attack commands are often wrapped in several layers of obfuscation. PasteWarden peels them one by one and shows what the command really does.
+  </Card>
+  <Card title="Secrets stay in" icon="seti:lock">
+    Before an ID number, card number or API key is pasted into a page, PasteWarden asks first and pastes a masked version by default.
+  </Card>
+  <Card title="Runs on your machine" icon="laptop">
+    The engine is local WebAssembly: nothing is uploaded, the original text is never logged, and there is no telemetry. AI features are off by default.
+  </Card>
+</CardGrid>

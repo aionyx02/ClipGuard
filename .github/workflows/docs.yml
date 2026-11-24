@@ -1,0 +1,86 @@
+name: docs
+
+# Builds the shared UI packages and the documentation site on every PR that touches them.
+# Deploys to GitHub Pages only from pushes to dev/main (or a manual run), and only once Pages is
+# enabled: set the repository variable PAGES_ENABLED=true (Settings → Pages → Source: GitHub
+# Actions). Without a custom domain the site lives under /<repo>/, so also set
+# DOCS_BASE=/paste-warden/docs/ until a custom domain exists.
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - apps/docs/**
+      - apps/web/**
+      - packages/ui/**
+      - packages/overlay/**
+      - locales/**
+      - docs/**
+      - pnpm-lock.yaml
+      - .github/workflows/docs.yml
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy to GitHub Pages after building
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCS_BASE: ${{ vars.DOCS_BASE || '/docs/' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: lint
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run lint
+      - name: unit tests
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run test
+      - name: build (overlay size budget is checked here)
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run build
+      - name: browser checks (overlay keyboard/top layer, axe incl. contrast)
+        run: |
+          pnpm --filter @paste-warden/overlay exec playwright install --with-deps chromium firefox
+          pnpm --filter @paste-warden/overlay run test:browser
+          pnpm --filter @paste-warden/ui run test:browser
+      - name: assemble site (playground at /, docs at /docs/)
+        run: |
+          mkdir -p _site/docs
+          if [ -d apps/web/dist ]; then cp -r apps/web/dist/. _site/; fi
+          cp -r apps/docs/dist/. _site/docs/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: >-
+      vars.PAGES_ENABLED == 'true' &&
+      ((github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy))
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

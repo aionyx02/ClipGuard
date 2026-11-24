@@ -1,0 +1,6 @@
+dist/
+.astro/
+node_modules/
+# Copied from ../../docs at build time by scripts/sync-docs.mjs — edit the originals.
+src/content/docs/dev/generated/
+src/content/docs/en/dev/generated/
