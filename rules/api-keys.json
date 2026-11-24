@@ -123,5 +123,8 @@
       "keywords": ["-----begin"],
       "mask": "pem-block"
     }
+  ],
+  "exclude": [
+    { "regex": "^[A-Za-z]+(?:[_-][A-Za-z]+)*[_-](?:x{6,}|X{6,})$" }
   ]
 }

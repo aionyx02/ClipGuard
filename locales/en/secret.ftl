@@ -22,6 +22,10 @@ secret-rule-label = { $id ->
     [sg-nric] Singapore NRIC
     [sg-fin] Singapore FIN
     [us-ssn] US Social Security number (SSN)
+    [context-assignment-cjk] Possible key or password
+    [conn-string-url] Database password (connection string)
+    [conn-string-odbc] Database password (connection string)
+    [bip39-mnemonic] Wallet recovery phrase ({ $words } words)
    *[other] { $label }
 }
 

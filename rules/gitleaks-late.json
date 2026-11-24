@@ -1,0 +1,108 @@
+{
+  "format": 1,
+  "name": "gitleaks-late",
+  "priority": 35,
+  "description": "由 cargo xtask rules gitleaks 從 gitleaks 預設規則轉換產生，不要手動修改。比第 2 層（context.json）更泛的規則（curl 的標頭與帳密），排在它後面，重疊時以第 2 層的標籤為準。授權見 THIRD_PARTY_NOTICES.md。",
+  "source": {
+    "project": "https://github.com/gitleaks/gitleaks",
+    "file": "config/gitleaks.toml",
+    "license": "MIT",
+    "version": "v8.30.1",
+    "commit": "5f6ec56cfa6f8c67648d863582c7ae2f206d5c1c"
+  },
+  "exclude": [
+    {
+      "regex": "^true|false|null$",
+      "ignoreCase": true
+    },
+    {
+      "regex": "^(?:[Aa]+|[Bb]+|[Cc]+|[Dd]+|[Ee]+|[Ff]+|[Gg]+|[Hh]+|[Ii]+|[Jj]+|[Kk]+|[Ll]+|[Mm]+|[Nn]+|[Oo]+|[Pp]+|[Qq]+|[Rr]+|[Ss]+|[Tt]+|[Uu]+|[Vv]+|[Ww]+|[Xx]+|[Yy]+|[Zz]+|\\*+|\\.+)$"
+    },
+    {
+      "regex": "^\\$(?:[0-9]+|\\{[0-9]+\\})$"
+    },
+    {
+      "regex": "^\\$(?:[A-Z_]+|[_a-z]+)$"
+    },
+    {
+      "regex": "^\\$\\{(?:[A-Z_]+|[_a-z]+)\\}$"
+    },
+    {
+      "regex": "^\\{\\{[\\t ]*[ ().0-9A-Z_a-z|]+[\\t ]*\\}\\}$"
+    },
+    {
+      "regex": "^\\$\\{\\{[\\t ]*(?:(?:env|github|secrets|vars)(?:\\.[A-Za-z][A-Za-z0-9_]+)+[ \"&'./0-9=A-Z_a-z|]*)[\\t ]*\\}\\}$"
+    },
+    {
+      "regex": "^%(?:[A-Z_]+|[_a-z]+)%$"
+    },
+    {
+      "regex": "^%[ #+\\-0]?[E-GOTUXb-go-qstvx]$"
+    },
+    {
+      "regex": "^\\{[0-9]{0,2}\\}$"
+    },
+    {
+      "regex": "^@(?:[A-Z_]+|[_a-z]+)@$"
+    },
+    {
+      "regex": "^/Users/[0-9A-Za-z]+/[ ./0-9A-Z_a-z]+$"
+    },
+    {
+      "regex": "^/(?:bin|etc|home|opt|tmp|usr|var)/[ \\-./0-9A-Z_a-z]+$"
+    }
+  ],
+  "stopwords": [
+    "014df517-39d1-4453-b7b3-9930c563627c",
+    "abcdefghijklmnopqrstuvwxyz"
+  ],
+  "skipped": [],
+  "rules": [
+    {
+      "id": "gitleaks.curl-auth-header",
+      "kind": "api-key",
+      "label": "Curl auth header",
+      "regex": "\\bcurl\\b(?:[^\\n]*?|[^\\n]*?(?:[\\n\\r]{1,2}[^\\n]*?){1,5})[\\t\\n\\r ](?:-H|--header)(?:=|[\\t ]{0,5})(?:\"(?:[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]:[\\t ]{0,5}(?:[Bb][Aa][Ss][Ii][Cc][\\t ]([+/0-9A-Za-z]{8,}={0,3})|(?:[Bb][Ee][Aa][Rr][Ee][Rr]|(?:[Aa][Pp][Ii]-)?[Tt][Oo][Kk][Ee][Nn])[\\t ]([+\\-./0-9=@A-Z_a-z~]{8,})|([+\\-./0-9=@A-Z_a-z~]{8,}))|(?:(?:[Xx]-(?:[A-Za-z]+-)?)?(?:[Aa][Pp][Ii]-?)?(?:[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn])):[\\t ]{0,5}([+\\-./0-9=@A-Z_a-z~]{8,}))\"|'(?:[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]:[\\t ]{0,5}(?:[Bb][Aa][Ss][Ii][Cc][\\t ]([+/0-9A-Za-z]{8,}={0,3})|(?:[Bb][Ee][Aa][Rr][Ee][Rr]|(?:[Aa][Pp][Ii]-)?[Tt][Oo][Kk][Ee][Nn])[\\t ]([+\\-./0-9=@A-Z_a-z~]{8,})|([+\\-./0-9=@A-Z_a-z~]{8,}))|(?:(?:[Xx]-(?:[A-Za-z]+-)?)?(?:[Aa][Pp][Ii]-?)?(?:[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn])):[\\t ]{0,5}([+\\-./0-9=@A-Z_a-z~]{8,}))')(?:\\B|[\\t\\n\\f\\r ]|$)",
+      "keywords": [
+        "curl"
+      ],
+      "entropy": 2.75,
+      "mask": {
+        "keepStart": 0
+      }
+    },
+    {
+      "id": "gitleaks.curl-auth-user",
+      "kind": "api-key",
+      "label": "Curl auth user",
+      "regex": "\\bcurl\\b(?:[^\\n]*|[^\\n]*(?:[\\n\\r]{1,2}[^\\n]*){1,5})[\\t\\n\\r ](?:-u|--user)(?:=|[\\t ]{0,5})(\"(:[^\"]{3,}|[^\":]{3,}:|[^\":]{3,}:[^\"]{3,})\"|'([^':]{3,}:[^']{3,})'|((?:\"[^\"]{3,}\"|'[^']{3,}'|[$\\-.0-9@A-Z_a-z]+):(?:\"[^\"]{3,}\"|'[^']{3,}'|[$\\-.0-9@A-Z_a-z{}]+)))(?:[\\t\\n\\f\\r ]|$)",
+      "keywords": [
+        "curl"
+      ],
+      "entropy": 2,
+      "exclude": [
+        {
+          "regex": "[^:]+:(?:change(?:it|me)|pass(?:word)?|pwd|test|token|\\*+|x+)"
+        },
+        {
+          "regex": "[\"']?<[^>]+>[\"']?:[\"']?<[^>]+>|<[^:]+:[^>]+>[\"']?"
+        },
+        {
+          "regex": "[^:]+:\\[[^\\]]+[\\]]"
+        },
+        {
+          "regex": "[\"']?[^:]+[\"']?:[\"']?\\$(?:[0-9]|[A-Za-z0-9_]+|\\{(?:[0-9]|[A-Za-z0-9_]+)\\})[\"']?"
+        },
+        {
+          "regex": "\\$\\([^)]+\\):\\$\\([^)]+\\)"
+        },
+        {
+          "regex": "[\"']?\\$?\\{\\{[^}]+\\}\\}[\"']?:[\"']?\\$?\\{\\{[^}]+\\}\\}[\"']?"
+        }
+      ],
+      "mask": {
+        "keepStart": 1
+      }
+    }
+  ]
+}

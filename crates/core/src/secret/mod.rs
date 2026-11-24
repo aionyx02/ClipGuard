@@ -14,6 +14,7 @@
 pub mod checksum;
 pub mod engine;
 pub mod mask;
+pub mod mnemonic;
 pub mod normalize;
 pub mod packs;
 pub mod pii;
@@ -45,6 +46,8 @@ pub enum SecretKind {
     PhoneNumber,
     /// Bank account (IBAN).
     BankAccount,
+    /// Wallet recovery phrase (BIP-39), phase 1b.
+    Mnemonic,
 }
 
 impl SecretKind {
@@ -60,6 +63,7 @@ impl SecretKind {
             SecretKind::Registered => "registered",
             SecretKind::PhoneNumber => "phone_number",
             SecretKind::BankAccount => "bank_account",
+            SecretKind::Mnemonic => "mnemonic",
         }
     }
 }
@@ -75,6 +79,7 @@ impl From<RuleKind> for SecretKind {
             RuleKind::MobilePhone => SecretKind::MobilePhone,
             RuleKind::PhoneNumber => SecretKind::PhoneNumber,
             RuleKind::BankAccount => SecretKind::BankAccount,
+            RuleKind::Mnemonic => SecretKind::Mnemonic,
         }
     }
 }
@@ -141,6 +146,37 @@ mod tests {
         assert_eq!(m[0].kind, SecretKind::NationalId);
         assert_eq!(m[0].masked, "A12****789");
         assert_eq!(&text[m[0].span.clone()], "Ａ１２３４５６７８９");
+    }
+
+    #[test]
+    fn mnemonic_match_keeps_only_the_word_count() {
+        let phrase = format!("{}about", "abandon ".repeat(11));
+        let text = format!("seed: {phrase}\n");
+        let m = find(&text, &PackSet::default());
+        assert_eq!(m.len(), 1);
+        assert_eq!(m[0].kind, SecretKind::Mnemonic);
+        assert_eq!(m[0].kind.as_str(), "mnemonic");
+        assert_eq!(m[0].masked, "******** (12)");
+        assert!(
+            m[0].label
+                .args
+                .iter()
+                .any(|(k, v)| k == "words" && *v == crate::Arg::Num(12))
+        );
+        assert_eq!(&text[m[0].span.clone()], phrase);
+        assert_eq!(mask_text(&text, &m, "x"), "seed: ******** (12)\n");
+    }
+
+    #[test]
+    fn connection_string_masks_only_the_password() {
+        let text = "postgres://app:hunter2@db.example.invalid/app";
+        let m = find(text, &PackSet::default());
+        assert_eq!(m.len(), 1);
+        assert_eq!(&text[m[0].span.clone()], "hunter2");
+        assert_eq!(
+            mask_text(text, &m, "x"),
+            "postgres://app:*******@db.example.invalid/app"
+        );
     }
 
     #[test]

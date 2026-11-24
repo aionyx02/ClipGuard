@@ -39,10 +39,22 @@ pub const EMBEDDED: &[(&str, &str)] = &[
         "api-keys.json",
         include_str!("../../../rules/api-keys.json"),
     ),
+    (
+        "connection-strings.json",
+        include_str!("../../../rules/connection-strings.json"),
+    ),
     ("context.json", include_str!("../../../rules/context.json")),
+    (
+        "gitleaks-late.json",
+        include_str!("../../../rules/gitleaks-late.json"),
+    ),
     (
         "gitleaks.json",
         include_str!("../../../rules/gitleaks.json"),
+    ),
+    (
+        "mnemonic.json",
+        include_str!("../../../rules/mnemonic.json"),
     ),
     ("pii-cn.json", include_str!("../../../rules/pii-cn.json")),
     ("pii-hk.json", include_str!("../../../rules/pii-hk.json")),
@@ -57,6 +69,42 @@ pub const EMBEDDED: &[(&str, &str)] = &[
     ("pii-us.json", include_str!("../../../rules/pii-us.json")),
 ];
 
+/// The official BIP-39 English word list (`rules/secret/bip39-english.txt`, MIT, from
+/// bitcoin/bips; see THIRD_PARTY_NOTICES.md): 2048 lines, sorted, so a word's index
+/// is its 11-bit value.
+pub const BIP39_ENGLISH: &str = include_str!("../../../rules/secret/bip39-english.txt");
+
+/// Number of words in a BIP-39 word list.
+pub const BIP39_WORD_COUNT: usize = 2048;
+
+/// Parses and validates a BIP-39 word list: exactly [`BIP39_WORD_COUNT`] lines of
+/// 3–8 lower-case ASCII letters, strictly ascending (so binary search gives the
+/// index), with a trailing newline at most.
+pub fn parse_bip39_words(text: &str) -> Result<Vec<&str>, String> {
+    let words: Vec<&str> = text
+        .strip_suffix('\n')
+        .unwrap_or(text)
+        .split('\n')
+        .collect();
+    if words.len() != BIP39_WORD_COUNT {
+        return Err(format!(
+            "BIP-39 word list must have {BIP39_WORD_COUNT} words, has {}",
+            words.len()
+        ));
+    }
+    for (i, w) in words.iter().enumerate() {
+        if !(3..=8).contains(&w.len()) || !w.bytes().all(|b| b.is_ascii_lowercase()) {
+            return Err(format!(
+                "BIP-39 word {i} is not 3–8 lower-case letters: {w:?}"
+            ));
+        }
+        if i > 0 && words[i - 1] >= *w {
+            return Err(format!("BIP-39 word list is not sorted at {i}: {w:?}"));
+        }
+    }
+    Ok(words)
+}
+
 /// What a rule detects (rule-file `kind`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RuleKind {
@@ -68,6 +116,8 @@ pub enum RuleKind {
     MobilePhone,
     PhoneNumber,
     BankAccount,
+    /// BIP-39 recovery phrase (phase 1b).
+    Mnemonic,
 }
 
 impl RuleKind {
@@ -81,6 +131,7 @@ impl RuleKind {
             "mobile-phone" => RuleKind::MobilePhone,
             "phone-number" => RuleKind::PhoneNumber,
             "bank-account" => RuleKind::BankAccount,
+            "mnemonic" => RuleKind::Mnemonic,
             _ => return None,
         })
     }
@@ -91,6 +142,9 @@ impl RuleKind {
 pub enum FinderKind {
     /// Credit-card digit groups (legacy `PiiFormats.CardCandidates`).
     CardGroups,
+    /// Runs of 12/15/18/21/24 BIP-39 words with a valid checksum (phase 1b; word
+    /// list [`BIP39_ENGLISH`]).
+    Bip39,
 }
 
 /// Extra validation (`validate`).
@@ -158,6 +212,8 @@ pub enum MaskSpec {
     },
     /// PEM header: shown as is; "paste masked" masks up to the END line.
     PemBlock,
+    /// Nothing of the value is kept, only its word count (BIP-39 phrases).
+    WordCount,
 }
 
 /// How candidates are found.
@@ -425,6 +481,7 @@ fn read_rule(
             canonical: None,
         },
         Some(Value::String(s)) if s == "pem-block" => MaskSpec::PemBlock,
+        Some(Value::String(s)) if s == "word-count" => MaskSpec::WordCount,
         Some(Value::String(s)) => return Err(format!("unknown mask: {s}")),
         Some(Value::Object(m)) => MaskSpec::Keep {
             keep_start: opt_usize(m, "keepStart", 0)?,
@@ -449,6 +506,7 @@ fn read_rule(
         },
         (None, Some(f)) => match f {
             "card-groups" => Matcher::Finder(FinderKind::CardGroups),
+            "bip39" => Matcher::Finder(FinderKind::Bip39),
             _ => return Err(format!("unknown finder: {f}")),
         },
         _ => return Err("needs exactly one of `regex` or `finder`".into()),
@@ -695,6 +753,14 @@ mod tests {
                 r.id
             );
         }
+    }
+
+    #[test]
+    fn bip39_list_is_valid() {
+        let w = parse_bip39_words(BIP39_ENGLISH).expect("valid list");
+        assert_eq!(w[0], "abandon");
+        assert_eq!(w[2047], "zoo");
+        assert!(parse_bip39_words("abc\nabd\n").is_err());
     }
 
     #[test]
