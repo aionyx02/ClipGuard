@@ -24,3 +24,6 @@ dist/
 __pycache__/
 .ruff_cache/
 .pytest_cache/
+
+# Claude Code worktrees
+/.claude/worktrees/
