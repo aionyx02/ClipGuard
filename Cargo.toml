@@ -19,7 +19,7 @@ paste-warden-i18n = { path = "crates/i18n" }
 paste-warden-corpus = { path = "crates/corpus" }
 paste-warden-conformance = { path = "crates/conformance" }
 anyhow = "1"
-regex = "1"
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-gencat", "unicode-perl"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 assert_cmd = "2"

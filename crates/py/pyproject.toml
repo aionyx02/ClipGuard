@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "paste-warden"
+description = "PasteWarden detection engine (Rust) for the red-team tooling."
+requires-python = ">=3.10"
+license = "MIT"
+classifiers = [
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["version"]
+
+[dependency-groups]
+dev = ["maturin>=1.9,<2", "pytest>=8"]
+
+[tool.maturin]
+module-name = "paste_warden"
+features = ["python", "pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.format]
+quote-style = "single"
