@@ -1,0 +1,4411 @@
+{
+ "generated_from_commit": "a4ac6964aba57d01f40d18c1ea15de1b25f92d75",
+ "note": "Every legacy test case. Each id must be referenced by a corpus case `source` (prefix \"legacy:\") or by corpus/legacy-properties.jsonl.",
+ "entries": [
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法身分證與居留證[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法身分證[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法統一編號[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法統一編號[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法統一編號[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法統一編號[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#合法統一編號[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法統一編號[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法統一編號[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法統一編號[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法統一編號[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#不合法統一編號[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn合法[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn合法[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn合法[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn合法[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn合法[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn不合法[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn不合法[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ChecksumsTests.cs#Luhn不合法[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#惡意內容被隔離且保留攔截狀態",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#可疑內容只提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#使用者複製別的文字後不再算剛攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#還原後不會再被攔截_即使通知來了很多次",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#還原通知沒來也不會吃掉下一次真正的複製",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#還原後複製別的內容_同一段惡意指令再出現仍會攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#還原失敗時保留隔離內容也不信任它",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#沒有隔離內容時不能還原",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#每次內容變動都換世代",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#截斷過的惡意內容_隔離區存完整原文_還原後不再攔",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#讀不到完整內容時隔離截斷後的內容",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardGuardStateTests.cs#不需要隔離時不讀完整內容",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardLimitsTests.cs#上限遠大於指令偵測的分析量",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardLimitsTests.cs#不超過上限就原樣保留",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardLimitsTests.cs#超過上限就截斷",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardLimitsTests.cs#不把代理對切成一半",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ClipboardLimitsTests.cs#截斷後指令偵測仍看得到開頭的指令",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#基本指令本身只是提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[16]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[17]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[18]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[19]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[20]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[21]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[22]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#誘餌註解[23]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#一般註解不算誘餌[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#沒有指令的句子不處理[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#沒有指令的句子不處理[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBaitTests.cs#沒有指令的句子不處理[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#基本樣本本身會被攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#惡意指令後面補空白仍攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#惡意指令後面補空白仍攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#惡意指令後面補空白仍攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#惡意指令後面換行再補註解仍攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#惡意指令前面補空行或放在長文字中間仍攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#同一行指令前面補空白仍攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#同一行指令前面補空白仍攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#同一行指令前面補空白仍攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#第二行指令前面補空白仍攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#cmd與指令中間補空白仍攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#指令前面補非空白字元仍攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#指令前面補非空白字元仍攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#縮短空白不會讓大量空白接井號的訊號消失",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#超長的一般文字仍是乾淨",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#超大剪貼簿不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的mshta會被攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的PowerShell會被攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的PowerShell會被攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的PowerShell會被攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#完整路徑的PowerShell會被攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#單獨一行的完整路徑跟只寫程式名稱同等級",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#ComSpec會被當成cmd",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#拆開的mshta會被攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#拆開的mshta會被攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#拆開的mshta會被攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#拆開的mshta會被攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#插入號拆開的PowerShell與參數會被攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#set再call的寫法會被攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#set再call的寫法會被攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#set再call的寫法會被攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#set再call的寫法會被攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#dash變體的參數會被攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#看不見的字元拆開關鍵字仍攔截[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#一般文字裡的軟連字號仍是乾淨",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#提到程式或路徑的一般文字仍是乾淨[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#官方安裝指令維持提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#官方安裝指令維持提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#官方安裝指令維持提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#官方安裝指令加長仍維持提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#隔離區保存原文而不是正規化後的文字",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandBypassTests.cs#說明也認得完整路徑與dash變體",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#官方安裝指令不判為惡意[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#官方安裝指令不判為惡意[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#官方安裝指令不判為惡意[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#下載即執行的安裝指令判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#下載即執行的安裝指令判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#下載即執行的安裝指令判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#一般文字判為乾淨[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#真正的呼叫仍判為有執行訊號[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#結果附上可讀理由",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#各種寫法的隱藏視窗都會攔截[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#不是隱藏視窗的參數只提醒[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[16]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#下載後執行本身就會攔截[17]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#curl_pipe給cmd或PowerShell會攔截[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#pipe給PowerShell的減號也算呼叫PowerShell",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令只提醒[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方安裝指令連同說明文字一起複製仍只提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#真正的網址放在變數那一行仍會攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#scoop的寫法跟uv和bun一樣提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方網站清單比對的是主機名稱[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#繞過官方網站清單仍會攔截[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#官方主機比對[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[16]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[17]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[18]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[19]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[20]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[21]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#常被濫用的系統程式會提醒[22]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#延遲展開組出的程式名稱會代入後再判斷",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#執行遠端分享上的檔案會提醒[16]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#遠端檔案搭配強詐騙訊號才攔截",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#protocol_handler會提醒[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[16]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[17]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[18]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[19]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[20]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[21]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[22]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[23]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[24]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[25]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#提到這些工具的一般文字仍是乾淨[26]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#超大剪貼簿不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#新訊號有白話說明[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#掛載網路磁碟再執行有白話說明",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandDownloadLolbinTests.cs#說明也認得新的隱藏視窗寫法",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開EncodedCommand的Base64[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開EncodedCommand的Base64[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開EncodedCommand的Base64[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開EncodedCommand的Base64[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開EncodedCommand的Base64[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解開缺少補位的Base64",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#沒有可解碼內容時回傳null[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#沒有可解碼內容時回傳null[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#沒有可解碼內容時回傳null[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#沒有可解碼內容時回傳null[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#沒有可解碼內容時回傳null[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#下載並執行說明來源網域",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#編碼指令先解碼再說明",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#無法解碼的編碼指令也要說明",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#主要行為用白話說明[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#多個網域都列出",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#其他危險設定",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#看不出行為時給通用說明",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#摘要用分號串起來",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#顯示文字包含白話與解碼內容",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#顯示文字超過上限時截斷",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandExplainerTests.cs#解碼內容的換行壓成一行",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#各種dash變體換成連字號",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#去掉cmd的插入號跳脫",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#合併用引號拆開的字[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#合併用引號拆開的字[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#合併用引號拆開的字[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#合併用引號拆開的字[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#代入set設定的變數",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#拿掉看不見的字元",
+   "kind": "memberdata",
+   "member": [
+    "InvisibleCodePoints"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#TAG區塊外的代理字元對保留",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#代入延遲展開的變數",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#新增的程式也縮短完整路徑[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#變數代入有上限",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#完整路徑只留程式名稱[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#PowerShell的各種路徑",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#其他文字保持原樣[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#字串參數裡的路徑只縮短路徑本身",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/CommandNormalizerTests.cs#空字串",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#認得執行入口[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#一般視窗不是執行入口[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#剪貼簿乾淨時不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#不是執行入口時即使剪貼簿惡意也不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#可疑指令開Run提醒",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#惡意指令已清空後開Run仍提示是詐騙",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#惡意指令沒清掉時開終端機也警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#檔案總管FileFix警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#同一份內容同一個視窗只警告一次",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#不同視窗各自警告一次",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/ExecutionEntryGuardTests.cs#剪貼簿換內容後重新警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#零寬字元判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#零寬字元判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#零寬字元判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#零寬字元判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#零寬字元判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#正常的連接字元不算零寬攻擊[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#Bidi控制字元判為可疑[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#英文裡混入同形字判為可疑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#合法的西里爾希臘文字不誤判[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#合法的西里爾希臘文字不誤判[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#合法的西里爾希臘文字不誤判[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#合法的西里爾希臘文字不誤判[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#合法的西里爾希臘文字不誤判[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#指令結尾換行判為可疑[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#非指令或沒有結尾換行不提醒[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#非指令或沒有結尾換行不提醒[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#非指令或沒有結尾換行不提醒[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#非指令或沒有結尾換行不提醒[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#非指令或沒有結尾換行不提醒[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#一般文字判為乾淨[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#多種問題同時列出",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/HiddenCharDetectorTests.cs#理由不包含原文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#TAG字元藏的指令判為可疑而且依字元數計算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#標準的區旗emoji不誤判[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#標準的區旗emoji不誤判[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#標準的區旗emoji不誤判[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#沒有標準圖案的區旗仍算TAG",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#區旗後面多接的TAG照算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#黑旗後面接TAG但沒有結束TAG照算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#只有半個代理對不算TAG",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#字母之間的斷字點不誤判[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#字母之間的斷字點不誤判[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#字母之間的斷字點不誤判[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#指令網址或不在字母之間的soft_hyphen判為可疑[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#大量斷字點不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#看不見的填充或分隔字元判為可疑[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的蒙古文與韓文組合不誤判[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的蒙古文與韓文組合不誤判[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的蒙古文與韓文組合不誤判[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的蒙古文與韓文組合不誤判[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#連續變體選擇符藏資料判為可疑",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#補充區變體選擇符接在非漢字後面判為可疑",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的變體選擇符不誤判[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的變體選擇符不誤判[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的變體選擇符不誤判[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的變體選擇符不誤判[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#正常的變體選擇符不誤判[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#超長內容結尾的隱藏字元也抓得到",
+   "kind": "memberdata",
+   "member": [
+    "HiddenNearEnd"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#超長的一般文字判為乾淨",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#最壞情況的輸入也是線性時間",
+   "kind": "memberdata",
+   "member": [
+    "WorstCaseInputs"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/InvisibleCharTests.cs#理由只列code_point不列原文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#找得到兩個專案的resx",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#翻譯檔的key跟英文一致而且都有值",
+   "kind": "memberdata",
+   "member": [
+    "NeutralResx"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#翻譯檔的格式參數跟英文一致",
+   "kind": "memberdata",
+   "member": [
+    "NeutralResx"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#存取類別是最新的",
+   "kind": "memberdata",
+   "member": [
+    "NeutralResx"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#每個Core字串在兩種語系都取得到",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#衛星組件真的載入zh_TW",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#App的通知標題不超過上限[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#App的通知標題不超過上限[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#攔截通知留給白話說明的空間夠[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#攔截通知留給白話說明的空間夠[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#錢包掉包通知不會被截斷[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#錢包掉包通知不會被截斷[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#執行入口警告不超過通知上限[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#執行入口警告不超過通知上限[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#英文環境的執行入口警告是英文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#英文環境的白話說明是英文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#英文環境的隱藏字元說明是英文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#英文環境的機密名稱與登記訊息是英文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#規則檔的名稱有翻譯就用翻譯_沒有就用規則檔的",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#每個有翻譯的規則名稱都對得到規則id",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#系統語系對應到有翻譯的語系[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#命令列優先於環境變數_環境變數優先於系統",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/LocalizationTests.cs#不認得的語系名稱忽略",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#第一則立刻顯示且不用撤掉任何東西",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#間隔內的通知先等_到期才顯示並取代畫面上的那則",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#連續複製只留最新一則",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#剪貼簿換了內容_還沒顯示的通知作廢",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#過了顯示時間就不用撤掉舊的",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#攔截通知一律立刻顯示",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#攔截通知顯示期間_Warning要等它顯示完",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#攔截通知顯示期間_等著的Warning在剪貼簿換掉後作廢",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#攔截通知顯示期間_Error只要等一般間隔",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#新的攔截通知取代舊的攔截通知",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#攔截通知不會因為剪貼簿換掉而作廢",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#等待中的Error不會被Warning蓋掉",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#到期後才進來的通知直接顯示_連同等待中的較高等級",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/NotificationThrottleTests.cs#沒有等待中的通知時Flush什麼都不做",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NoSecrets_Allows",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_InterceptRegisteredSecret",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Defaults_DoNotInterceptDetectedSecrets[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#OptIn_InterceptsDetectedSecrets",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#RegisteredOff_DetectedOn_OnlyDetectedIntercepted",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BothOff_NeverIntercepts",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MixedRegisteredAndDetected_DefaultsIntercept",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BuiltInPasswordManagers_Allowed[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BuiltInPasswordManagers_Allowed[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BuiltInPasswordManagers_Allowed[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BuiltInPasswordManagers_Allowed[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#BuiltInPasswordManagers_Allowed[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#CredentialDialogClass_AllowedFromAnyProcess",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#OwnProcess_AlwaysAllowed",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#UserAllowlist_MatchesNormalizedNames[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#UserAllowlist_MatchesNormalizedNames[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#UserAllowlist_MatchesNormalizedNames[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#UserAllowlist_MatchesNormalizedNames[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Allowlist_IsExactName_NotSubstring",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#UnknownProcessName_IsNotAllowlisted",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#CanIntercept_ReflectsSettingsAndStore[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#CanIntercept_ReflectsSettingsAndStore[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#CanIntercept_ReflectsSettingsAndStore[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Snapshot_KeepsOnlyKindsAndMasks",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_ReplacesDetectedSecretsInPlace",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_RegisteredSecret_UsesFixedStarsWithoutLabel",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_PemPrivateKey_MasksBodyUntilEndLine",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_PemWithoutEnd_MasksToEndOfText",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_NoMatches_ReturnsOriginal",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MaskText_IgnoresOverlappingAndOutOfRangeMatches",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_ToPasteTarget_WhilePending_IsSwallowed",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_ToOtherApp_WhilePending_PassesThrough",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_ToOwnDialog_PassesThrough",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_NotPending_PassesThrough",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_AfterPendingTimeout_PassesThrough",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Enter_UnknownTarget_PassesThrough",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#PendingTimeout_IsBounded",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NormalizeAppName[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NormalizeAppName[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NormalizeAppName[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NormalizeAppName[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#NormalizeAppName[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#MissingFile_ReturnsDefaults_AndDoesNotCreateFile",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#SaveThenLoad_RoundTrips_AndNormalizesApps",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#CorruptFile_ReturnsDefaultsWithError",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#PartialFile_UsesDefaultsForMissingFields",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/PasteGuardTests.cs#Save_CapsAllowlistSize",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#登記後在文字中找得到_只回報標籤",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#沒登記或差一個字都不會命中",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#多個不同長度的項目都能比對",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#檔案只存長度與HMAC_不存原文也不是SHA256",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#重新開啟後仍可比對_金鑰只產生一次",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#不同金鑰的HMAC不同",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#移除後不再命中",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#太短不接受[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#太短不接受[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#重複登記拒絕",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#金鑰解不開時丟例外而不是默默重建",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#金鑰遺失時舊項目一起清掉",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#非ASCII機密也能比對",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/RegisteredSecretStoreTests.cs#DPAPI可以往返",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#從句子中找出身分證並遮罩",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#居留證[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#居留證[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#檢查碼錯或邊界不對不算身分證[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#檢查碼錯或邊界不對不算身分證[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#檢查碼錯或邊界不對不算身分證[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#信用卡[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#信用卡[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#信用卡[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#信用卡[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#信用卡[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是信用卡[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是信用卡[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是信用卡[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#手機[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#手機[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#手機[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#手機[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#手機[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是手機[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是手機[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不是手機[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#統編要有關鍵字[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#統編要有關鍵字[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#統編要有關鍵字[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不算統編[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不算統編[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#API_key前綴",
+   "kind": "memberdata",
+   "member": [
+    "ApiKeys"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#私鑰標頭",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不像API_key[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不像API_key[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不像API_key[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#不像API_key[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一段文字裡多種機密依位置排序",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一般文字沒有結果[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一般文字沒有結果[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一般文字沒有結果[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一般文字沒有結果[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#一般文字沒有結果[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretDetectorTests.cs#遮罩結果從不包含完整原文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#預設保留頭尾[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#長字串星號有上限且不含原文",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#至少遮住四個字元[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#至少遮住四個字元[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretMaskerTests.cs#至少遮住四個字元[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_分隔符號與零寬字元[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_全形",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_全形空白分隔",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#身分證_不該命中[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_分隔符號[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_全形",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#信用卡_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_各種寫法[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_全形",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_括號區碼",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#手機_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#數字組合不該誤報[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#全形標點的中文不會誤報",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#貼遮罩版_全形與零寬字元整段換掉",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_命中並遮罩",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_句尾句點與沒有簽章",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_header不對不算[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_header不對不算[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_header不對不算[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_不像的字串不算[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_不像的字串不算[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#JWT_五段的JWE不算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#超長文字結尾的機密也找得到",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#中間開頭結尾都在上限內就全部分析",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#超過上限時分析頭尾",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#跨段邊界的機密只算一次而且位置正確",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#跨段邊界的長_JWT",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretNormalizationTests.cs#超大或病態的剪貼簿不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_官方範例[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_官方範例[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_官方範例[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_執行時產生",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#IBAN_不該命中[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#國際電話_不該命中[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#台灣手機優先於國際電話",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#中國居民身分證",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#中國居民身分證_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#中國居民身分證_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#中國居民身分證_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#中國居民身分證_日期要是真的",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#個人番號要有關鍵字",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#住民登錄番號要有關鍵字",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#香港身分證",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_NRIC_FIN[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_NRIC_FIN[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_NRIC_FIN[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_NRIC_FIN[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_NRIC_FIN[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#新加坡_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN要有關鍵字[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN要有關鍵字[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN要有關鍵字[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN要有關鍵字[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN要有關鍵字[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#SSN_不該命中[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#上下文_全形與大小寫",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#統編_關鍵字在單字裡不算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[12]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[13]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[14]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區對應國家包[15]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#包的選擇",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#地區是美國時不偵測台灣身分證",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#包設定檔",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#規則檔的新欄位格式錯誤會報錯[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#所有包都開時的誤報樣本",
+   "kind": "memberdata",
+   "member": [
+    "PiiFalsePositives"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#共用誤報樣本在所有包都開時也不該命中",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#個資規則在_1Mi_病態輸入上都是線性時間",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretPacksTests.cs#所有包都開時_1Mi_不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#兩次輸入一致且長度合法就通過",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#機密空白時標在機密欄[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#機密空白時標在機密欄[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#機密空白時標在機密欄[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#長度不合法時標在機密欄並說明範圍[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#長度不合法時標在機密欄並說明範圍[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#長度邊界值可以登記[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#長度邊界值可以登記[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#確認欄空白時標在確認欄",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#兩次不一致時標在確認欄",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRegistrationTests.cs#錯誤訊息不含輸入內容",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#規則檔都載得進來而且_id_不重複",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#規則檔格式錯誤會報出檔名和規則",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號換成字串結尾[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號換成字串結尾[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號換成字串結尾[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號換成字串結尾[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號換成字串結尾[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#錢字號在最後一個換行前面不成立",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#ASCII版本長度不變",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#規則檔本身沒有長得像_key_的字串",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#gitleaks規則",
+   "kind": "memberdata",
+   "member": [
+    "GitleaksSamples"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#手寫規則排在_gitleaks_前面",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#中文緊貼著_key_也找得到",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度",
+   "kind": "memberdata",
+   "member": [
+    "ContextSamples"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#有明確的金鑰名稱時_UUID_和_SHA_也算",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#上下文加亂度_不算[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#誤報樣本",
+   "kind": "memberdata",
+   "member": [
+    "FalsePositives"
+   ]
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#每條規則在_1Mi_病態輸入上都是線性時間",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/SecretRulesTests.cs#所有關鍵字都出現時_1Mi_不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#找出句子裡的地址與位置",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#地址緊鄰中文字也找得到",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#不是地址的英數字串不算[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#超長內容只掃前段而且不會卡住",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#短時間內換成另一個地址就警告[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#短時間內換成另一個地址就警告[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#短時間內換成另一個地址就警告[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#短時間內換成另一個地址就警告[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#短時間內換成另一個地址就警告[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#一秒內被換掉就警告_即使使用者有輸入[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#一秒內被換掉就警告_即使使用者有輸入[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#一秒內被換掉就警告_即使使用者有輸入[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#換成不同幣種也警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#中間夾了其他內容仍然拿上一個地址比",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#超過一秒但使用者沒有任何輸入就警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#超過一秒而且使用者有操作就不警告_刻意複製自己的兩個地址",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#超過一秒但不知道輸入狀態就不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#剛好在寬限邊界內的輸入仍算沒有操作",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#超過三秒一律不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#句子裡只有地址被換掉就警告_即使使用者有輸入[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#句子裡只有地址被換掉就警告_即使使用者有輸入[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#句子裡只有地址被換掉就警告_即使使用者有輸入[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#句子裡只有地址被換掉就警告_即使使用者有輸入[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#前後文字不同就不算掉包[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#前後文字不同就不算掉包[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#前後文字不同就不算掉包[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#前後文字不同就不算掉包[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#含多個不同地址的合法文字不誤報",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#地址清單只有一行被換掉也警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#同一個地址再出現不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#無效檢查碼的假地址不觸發",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#連續掉包每次都警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#時間倒退不警告",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletSwapDetectorTests.cs#時間窗常數",
+   "kind": "fact"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#辨識有效地址[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[0]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[1]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[2]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[3]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[4]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[5]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[6]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[7]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[8]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[9]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[10]",
+   "kind": "inline"
+  },
+  {
+   "id": "tests/ClipGuard.Core.Tests/WalletTests.cs#拒絕無效或非地址[11]",
+   "kind": "inline"
+  },
+  {
+   "id": "extension/test/i18n.test.js#_locales 只有 en 和 zh_TW，key 一致、都有內容、placeholder 一致",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#manifest 的名稱與說明來自 _locales，長度在 Chrome 的上限內",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#程式裡用到的訊息都存在",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#規則名稱的翻譯對得到規則 id，而且跟桌面版的 CoreStrings 一樣",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#displayLabel：有翻譯用翻譯，沒有就用偵測器的 label",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#英文環境的 pastejacking 說明是英文",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/i18n.test.js#t()：在 Chrome 裡用 chrome.i18n.getMessage，替換規則同 Chrome",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#IBAN：官方範例與執行時產生的號碼，不管地區都開",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#IBAN：不該命中",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#國際電話：要以 + 開頭、國碼和長度合理",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#台灣手機優先於國際電話；沒開台灣包時用國際電話提醒",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#中國居民身分證",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#個人番號要有關鍵字",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#住民登錄番號要有關鍵字",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#香港身分證：括號不需要關鍵字，沒括號要有",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#新加坡 NRIC／FIN",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#SSN 要有關鍵字，排除不會發的範圍",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#統編：關鍵字在單字裡不算，表格換行算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#舊式居留證（第 2 碼 A–D）插件也偵測（#27 以前只有桌面版）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#地區對應國家包（與 C# 相同）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#地區是美國時不偵測台灣身分證，通用包照常",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#maskText 用跟 C# 一樣的遮罩",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#規則檔的新欄位格式錯誤會報錯",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#所有包都開時的誤報樣本（與 C# 相同）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#個資規則在 1 Mi 病態輸入上都是線性時間",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/packs.test.js#所有包都開時 1 Mi 也不會卡住",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#內容一致：不警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#只有空白、換行、不換行空白差異視為一致",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#內容被換掉：警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#附加出處文字：不警告（新聞網站常見）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#經典 pastejacking：選取的指令後面被偷加惡意指令與換行",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#寫入內容含看不見的字元：警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#使用者自己選取的就是指令（教學文件）：不警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#沒有選取文字、網頁自行寫入一般文字（複製按鈕）：不警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#沒有選取文字、網頁寫入 PowerShell 下載執行指令：警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#網頁寫入空字串（擋複製）：不算 pastejacking",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#commandSignals 不把一般句子當指令",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#normalize 去掉零寬字元",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#preview 標示看不見的字元並截斷",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#網頁偷加 Unicode TAG 字元（藏給 AI 的指令）：警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#使用者自己選取的區旗 emoji：不警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#網頁偷加 soft hyphen、韓文填充字元、蒙古文分隔符、變體選擇符：警告",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#normalize 去掉 TAG 字元（代理對整個去掉）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/pastejack.test.js#preview 用完整 code point 標示 TAG 字元",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#rules.generated.js 是最新的（改了 rules/ 要執行 node tools/build-extension-rules.mjs）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#規則都編譯得起來、id 不重複、順序與 C# 相同",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#ASCII 版本長度不變",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#$ 只在整段結尾成立",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#convert-gitleaks：RE2 語法轉成兩邊都一樣的子集合",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#gitleaks 規則（與 C# 相同的樣本）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#手寫規則排在 gitleaks 前面",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#中文緊貼著 key 也找得到",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#PEM：通知顯示標頭，貼遮罩版遮到 END 行（以前只有桌面版有）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#上下文加亂度：.env、curl、JSON、YAML 等（與 C# 相同的樣本）",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#有明確的金鑰名稱時 UUID 和 SHA 也算；沒有或名稱是 id、commit 不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#上下文加亂度：不算的情況",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#誤報樣本：hash、UUID、git SHA、Base64 圖片、程式碼、lockfile、minified JS 都不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#每條規則在 1 Mi 病態輸入上都是線性時間",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/rules.test.js#所有關鍵字都出現時 1 Mi 也不會卡住",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#身分證：合法號碼通過檢查碼",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#身分證：新式居留證（第二碼 8/9）同一套檢查碼",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#身分證：檢查碼錯、第二碼不合法、長度不對都不通過",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#身分證：在句子中找得到，小寫字母也算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#身分證：檢查碼錯或黏在更長的英數字串裡不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#統編：舊規則（可被 10 整除）的號碼在新規則下仍合法",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#統編：2023 年起的新號碼（只可被 5 整除）合法",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#統編：第 7 碼為 7 時，28 的 2+8=10 可取 1 或 0",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#統編：不合法",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#統編：要有「統編」等關鍵字才偵測，避免日期、訂單號碼誤判",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#Luhn",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#信用卡：各發卡組織測試卡號，含空白或連字號分隔",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#信用卡：Luhn 不過或開頭不像卡號不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#手機：各種寫法",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#手機：市話或更長的數字不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#API key：各前綴都抓得到，並標示正確種類",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#API key：太短或只是單字不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#多筆機密依位置排序",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#沒有機密的一般文字回傳空陣列",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#超長文字：結尾的機密也找得到，而且不會卡住",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#超長文字：超過上限時分析頭尾，中間刻意不分析",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#病態的超大內容不會卡住",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#正規化：全形、分隔符號、換行、零寬字元的身分證",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#正規化：信用卡點號分隔、全形、折行",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#正規化：手機 886、(09)、全形",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#分隔符號不能把不相干的數字湊成機密",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#maskText：全形與零寬字元的原文整段換掉",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#JWT：命中並遮罩",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#JWT：header 不對、不像、五段的 JWE 都不算",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#遮罩：身分證保留前 3 後 3，分隔符號去掉",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#遮罩：信用卡保留前 4 後 4",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#遮罩：手機、統編",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#遮罩：API key 保留前綴與末 3 碼，中間壓成 8 個星號",
+   "kind": "js"
+  },
+  {
+   "id": "extension/test/secrets.test.js#maskText 只換掉機密，其他文字不動",
+   "kind": "js"
+  }
+ ]
+}

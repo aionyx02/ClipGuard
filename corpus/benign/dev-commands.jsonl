@@ -1,0 +1,451 @@
+{"id":"benign.cmd.001","area":"command","op":"command.analyze","source":"new","input":"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.002","area":"command","op":"command.analyze","source":"new","input":"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.003","area":"command","op":"command.analyze","source":"new","input":"curl -LsSf https://astral.sh/uv/install.sh | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.004","area":"command","op":"command.analyze","source":"new","input":"wget -qO- https://astral.sh/uv/install.sh | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.005","area":"command","op":"command.analyze","source":"new","input":"curl -LsSf https://astral.sh/ruff/install.sh | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.006","area":"command","op":"command.analyze","source":"new","input":{"parts":["power","shell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\""]},"expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.007","area":"command","op":"command.analyze","source":"new","input":{"parts":["power","shell -ExecutionPolicy ByPass -c \"irm https://astral.sh/ruff/install.ps1 | iex\""]},"expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.008","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://bun.sh/install | bash","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.009","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://bun.sh/install | bash -s \"bun-v1.1.30\"","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.010","area":"command","op":"command.analyze","source":"new","input":{"parts":["power","shell -c \"irm bun.sh/install.ps1 | iex\""]},"expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.011","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://deno.land/install.sh | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.012","area":"command","op":"command.analyze","source":"new","input":"irm https://deno.land/install.ps1 | iex","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.013","area":"command","op":"command.analyze","source":"new","input":"Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.014","area":"command","op":"command.analyze","source":"new","input":"iwr -useb get.scoop.sh | iex","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.015","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://get.pnpm.io/install.sh | sh -","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.016","area":"command","op":"command.analyze","source":"new","input":"wget -qO- https://get.pnpm.io/install.sh | sh -","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.017","area":"command","op":"command.analyze","source":"new","input":"Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.018","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://ollama.com/install.sh | sh","expect":{"clean":true},"tags":["linux","installer"]}
+{"id":"benign.cmd.019","area":"command","op":"command.analyze","source":"new","input":"irm https://ollama.com/install.ps1 | iex","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.020","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://claude.ai/install.sh | bash","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.021","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://claude.ai/install.sh | bash -s latest","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.022","area":"command","op":"command.analyze","source":"new","input":"irm https://claude.ai/install.ps1 | iex","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.023","area":"command","op":"command.analyze","source":"new","input":"curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.024","area":"command","op":"command.analyze","source":"new","input":"curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.025","area":"command","op":"command.analyze","source":"new","input":"wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && chmod +x ./dotnet-install.sh && ./dotnet-install.sh --version latest","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.026","area":"command","op":"command.analyze","source":"new","input":"&([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://dot.net/v1/dotnet-install.ps1'))) -Channel 8.0","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.027","area":"command","op":"command.analyze","source":"new","input":"Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))","expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.028","area":"command","op":"command.analyze","source":"new","input":{"parts":["iex \"& { $(irm https://aka.ms/install-power","shell.ps1) } -UseMSI\""]},"expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.029","area":"command","op":"command.analyze","source":"new","input":{"parts":["power","shell -NoProfile -ExecutionPolicy Bypass -Command \"iex \\\"& { $(irm https://aka.ms/install-power","shell.ps1) } -UseMSI -Quiet\\\"\""]},"expect":{"clean":true},"tags":["windows","installer"]}
+{"id":"benign.cmd.030","area":"command","op":"command.analyze","source":"new","input":"curl -LsSf https://astral.sh/uv/0.4.20/install.sh | sh","expect":{"clean":true},"tags":["linux","macos","installer"]}
+{"id":"benign.cmd.031","area":"command","op":"command.analyze","source":"new","input":"uv pip install -r requirements.txt","expect":{"clean":true},"tags":["linux","macos","package"]}
+{"id":"benign.cmd.032","area":"command","op":"command.analyze","source":"new","input":"uv venv && source .venv/bin/activate","expect":{"clean":true},"tags":["linux","macos","package"]}
+{"id":"benign.cmd.033","area":"command","op":"command.analyze","source":"new","input":"uv sync --frozen","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.034","area":"command","op":"command.analyze","source":"new","input":"uv add httpx pydantic","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.035","area":"command","op":"command.analyze","source":"new","input":"uv run pytest -q","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.036","area":"command","op":"command.analyze","source":"new","input":"uv tool install ruff","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.037","area":"command","op":"command.analyze","source":"new","input":"uv python install 3.12","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.038","area":"command","op":"command.analyze","source":"new","input":"uvx ruff check --fix .","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.039","area":"command","op":"command.analyze","source":"new","input":"npm install","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.040","area":"command","op":"command.analyze","source":"new","input":"npm ci --omit=dev","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.041","area":"command","op":"command.analyze","source":"new","input":"npm install --save-dev typescript @types/node","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.042","area":"command","op":"command.analyze","source":"new","input":"npm run build","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.043","area":"command","op":"command.analyze","source":"new","input":"npm test -- --watch=false","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.044","area":"command","op":"command.analyze","source":"new","input":"npm outdated","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.045","area":"command","op":"command.analyze","source":"new","input":"npm audit fix","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.046","area":"command","op":"command.analyze","source":"new","input":"npm publish --access public","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.047","area":"command","op":"command.analyze","source":"new","input":"npx create-vite@latest my-app -- --template react-ts","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.048","area":"command","op":"command.analyze","source":"new","input":"npm install -g pnpm@9","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.049","area":"command","op":"command.analyze","source":"new","input":"pnpm install --frozen-lockfile","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.050","area":"command","op":"command.analyze","source":"new","input":"pnpm add -D vitest","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.051","area":"command","op":"command.analyze","source":"new","input":"pnpm -r build","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.052","area":"command","op":"command.analyze","source":"new","input":"pnpm --filter @acme/web dev","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.053","area":"command","op":"command.analyze","source":"new","input":"pnpm dlx shadcn@latest init","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.054","area":"command","op":"command.analyze","source":"new","input":"yarn install --immutable","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.055","area":"command","op":"command.analyze","source":"new","input":"yarn add react react-dom","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.056","area":"command","op":"command.analyze","source":"new","input":"yarn workspace web build","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.057","area":"command","op":"command.analyze","source":"new","input":"corepack enable && corepack prepare yarn@stable --activate","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.058","area":"command","op":"command.analyze","source":"new","input":"cargo build --release","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.059","area":"command","op":"command.analyze","source":"new","input":"cargo test --workspace -- --nocapture","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.060","area":"command","op":"command.analyze","source":"new","input":"cargo add serde --features derive","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.061","area":"command","op":"command.analyze","source":"new","input":"cargo install cargo-nextest --locked","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.062","area":"command","op":"command.analyze","source":"new","input":"cargo clippy --all-targets -- -D warnings","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.063","area":"command","op":"command.analyze","source":"new","input":"cargo fmt --all","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.064","area":"command","op":"command.analyze","source":"new","input":"cargo run -p xtask -- corpus lint","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.065","area":"command","op":"command.analyze","source":"new","input":"cargo update -p regex","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.066","area":"command","op":"command.analyze","source":"new","input":"rustup target add wasm32-unknown-unknown","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.067","area":"command","op":"command.analyze","source":"new","input":"rustup toolchain install nightly --component rustfmt","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.068","area":"command","op":"command.analyze","source":"new","input":"pip install --upgrade pip","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.069","area":"command","op":"command.analyze","source":"new","input":"pip install -r requirements-dev.txt","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.070","area":"command","op":"command.analyze","source":"new","input":"python -m pip install \"django>=5.0,<5.1\"","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.071","area":"command","op":"command.analyze","source":"new","input":"pip freeze > requirements.txt","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.072","area":"command","op":"command.analyze","source":"new","input":"python3 -m venv .venv","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.073","area":"command","op":"command.analyze","source":"new","input":".\\.venv\\Scripts\\Activate.ps1","expect":{"clean":true},"tags":["windows","package"]}
+{"id":"benign.cmd.074","area":"command","op":"command.analyze","source":"new","input":"pipx install poetry","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.075","area":"command","op":"command.analyze","source":"new","input":"poetry install --no-root","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.076","area":"command","op":"command.analyze","source":"new","input":"go mod tidy","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.077","area":"command","op":"command.analyze","source":"new","input":"go build -o bin/server ./cmd/server","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.078","area":"command","op":"command.analyze","source":"new","input":"go test ./... -race -count=1","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.079","area":"command","op":"command.analyze","source":"new","input":"go install golang.org/x/tools/gopls@latest","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.080","area":"command","op":"command.analyze","source":"new","input":"go get github.com/spf13/cobra@v1.8.0","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.081","area":"command","op":"command.analyze","source":"new","input":"go run main.go","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.082","area":"command","op":"command.analyze","source":"new","input":"deno run --allow-net server.ts","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.083","area":"command","op":"command.analyze","source":"new","input":"bun install","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.084","area":"command","op":"command.analyze","source":"new","input":"bun run dev","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.085","area":"command","op":"command.analyze","source":"new","input":"dotnet new console -o HelloApp","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.086","area":"command","op":"command.analyze","source":"new","input":"dotnet build -c Release","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.087","area":"command","op":"command.analyze","source":"new","input":"dotnet test --logger \"console;verbosity=detailed\"","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.088","area":"command","op":"command.analyze","source":"new","input":"dotnet add package Newtonsoft.Json --version 13.0.3","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.089","area":"command","op":"command.analyze","source":"new","input":"dotnet tool install --global dotnet-ef","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.090","area":"command","op":"command.analyze","source":"new","input":"gem install bundler && bundle install","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.091","area":"command","op":"command.analyze","source":"new","input":"composer install --no-dev --optimize-autoloader","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.092","area":"command","op":"command.analyze","source":"new","input":"mvn clean package -DskipTests","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.093","area":"command","op":"command.analyze","source":"new","input":"./gradlew assembleRelease","expect":{"clean":true},"tags":["cross-platform","package"]}
+{"id":"benign.cmd.094","area":"command","op":"command.analyze","source":"new","input":"gradlew.bat build","expect":{"clean":true},"tags":["windows","package"]}
+{"id":"benign.cmd.095","area":"command","op":"command.analyze","source":"new","input":"git status","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.096","area":"command","op":"command.analyze","source":"new","input":"git add -A && git commit -m \"fix: handle empty input\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.097","area":"command","op":"command.analyze","source":"new","input":"git commit --amend --no-edit","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.098","area":"command","op":"command.analyze","source":"new","input":"git push -u origin feature/login-page","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.099","area":"command","op":"command.analyze","source":"new","input":"git pull --rebase origin main","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.100","area":"command","op":"command.analyze","source":"new","input":"git fetch --all --prune","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.101","area":"command","op":"command.analyze","source":"new","input":"git checkout -b hotfix/1.4.2","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.102","area":"command","op":"command.analyze","source":"new","input":"git switch main","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.103","area":"command","op":"command.analyze","source":"new","input":"git log --oneline --graph --decorate -20","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.104","area":"command","op":"command.analyze","source":"new","input":"git diff --stat HEAD~3","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.105","area":"command","op":"command.analyze","source":"new","input":"git stash push -m \"wip: parser\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.106","area":"command","op":"command.analyze","source":"new","input":"git stash pop","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.107","area":"command","op":"command.analyze","source":"new","input":"git rebase origin/dev","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.108","area":"command","op":"command.analyze","source":"new","input":"git cherry-pick 3f9a2c1","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.109","area":"command","op":"command.analyze","source":"new","input":"git reset --soft HEAD~1","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.110","area":"command","op":"command.analyze","source":"new","input":"git restore --staged src/main.rs","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.111","area":"command","op":"command.analyze","source":"new","input":"git tag -a v2.3.0 -m \"Release 2.3.0\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.112","area":"command","op":"command.analyze","source":"new","input":"git push origin --tags","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.113","area":"command","op":"command.analyze","source":"new","input":"git clone https://example.invalid/acme/widgets.git","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.114","area":"command","op":"command.analyze","source":"new","input":"git clone --depth 1 git@example.invalid:acme/widgets.git","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.115","area":"command","op":"command.analyze","source":"new","input":"git remote add upstream https://example.invalid/upstream/widgets.git","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.116","area":"command","op":"command.analyze","source":"new","input":"git submodule update --init --recursive","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.117","area":"command","op":"command.analyze","source":"new","input":"git config --global user.name \"Mei Lin\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.118","area":"command","op":"command.analyze","source":"new","input":"git config --global core.autocrlf input","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.119","area":"command","op":"command.analyze","source":"new","input":"git blame -L 40,60 src/lib.rs","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.120","area":"command","op":"command.analyze","source":"new","input":"git bisect start && git bisect bad && git bisect good v2.1.0","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.121","area":"command","op":"command.analyze","source":"new","input":"git worktree add ../widgets-review review/pr-512","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.122","area":"command","op":"command.analyze","source":"new","input":"git clean -fdx","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.123","area":"command","op":"command.analyze","source":"new","input":"git lfs install && git lfs track \"*.psd\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.124","area":"command","op":"command.analyze","source":"new","input":"gh pr create --base dev --title \"feat: add parser\" --body \"See issue #42\"","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.125","area":"command","op":"command.analyze","source":"new","input":"gh pr checkout 512","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.126","area":"command","op":"command.analyze","source":"new","input":"gh run watch","expect":{"clean":true},"tags":["cross-platform","git"]}
+{"id":"benign.cmd.127","area":"command","op":"command.analyze","source":"new","input":"docker build -t acme/api:1.2.0 .","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.128","area":"command","op":"command.analyze","source":"new","input":"docker run --rm -it -p 8080:80 nginx:1.27","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.129","area":"command","op":"command.analyze","source":"new","input":"docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.130","area":"command","op":"command.analyze","source":"new","input":"docker ps -a","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.131","area":"command","op":"command.analyze","source":"new","input":"docker logs -f --tail 100 api","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.132","area":"command","op":"command.analyze","source":"new","input":"docker exec -it api /bin/sh","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.133","area":"command","op":"command.analyze","source":"new","input":"docker compose up -d","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.134","area":"command","op":"command.analyze","source":"new","input":"docker compose down -v","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.135","area":"command","op":"command.analyze","source":"new","input":"docker compose logs -f web","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.136","area":"command","op":"command.analyze","source":"new","input":"docker compose -f docker-compose.prod.yml pull","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.137","area":"command","op":"command.analyze","source":"new","input":"docker system prune -af","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.138","area":"command","op":"command.analyze","source":"new","input":"docker image ls --filter dangling=true","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.139","area":"command","op":"command.analyze","source":"new","input":"docker volume create pgdata","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.140","area":"command","op":"command.analyze","source":"new","input":"docker network create backend","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.141","area":"command","op":"command.analyze","source":"new","input":"docker buildx build --platform linux/amd64,linux/arm64 -t acme/api:latest --push .","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.142","area":"command","op":"command.analyze","source":"new","input":"docker login ghcr.io -u octocat","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.143","area":"command","op":"command.analyze","source":"new","input":"docker tag acme/api:1.2.0 registry.example.invalid/acme/api:1.2.0","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.144","area":"command","op":"command.analyze","source":"new","input":"podman run --rm -it docker.io/library/alpine:3.20 sh","expect":{"clean":true},"tags":["cross-platform","container"]}
+{"id":"benign.cmd.145","area":"command","op":"command.analyze","source":"new","input":"kubectl get pods -A","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.146","area":"command","op":"command.analyze","source":"new","input":"kubectl get svc -n production","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.147","area":"command","op":"command.analyze","source":"new","input":"kubectl describe pod api-7d9f8c6b5-x2k4p","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.148","area":"command","op":"command.analyze","source":"new","input":"kubectl logs -f deploy/api -n staging --since=10m","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.149","area":"command","op":"command.analyze","source":"new","input":"kubectl apply -f k8s/deployment.yaml","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.150","area":"command","op":"command.analyze","source":"new","input":"kubectl delete pod api-7d9f8c6b5-x2k4p --grace-period=0","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.151","area":"command","op":"command.analyze","source":"new","input":"kubectl rollout restart deployment/api","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.152","area":"command","op":"command.analyze","source":"new","input":"kubectl rollout status deployment/api --timeout=120s","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.153","area":"command","op":"command.analyze","source":"new","input":"kubectl scale deployment web --replicas=3","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.154","area":"command","op":"command.analyze","source":"new","input":"kubectl port-forward svc/grafana 3000:80 -n monitoring","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.155","area":"command","op":"command.analyze","source":"new","input":"kubectl exec -it deploy/api -- /bin/sh","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.156","area":"command","op":"command.analyze","source":"new","input":"kubectl config use-context prod-cluster","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.157","area":"command","op":"command.analyze","source":"new","input":"kubectl create secret generic db-creds --from-literal=username=app --from-file=password=./db-password.txt","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.158","area":"command","op":"command.analyze","source":"new","input":"kubectl top nodes","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.159","area":"command","op":"command.analyze","source":"new","input":"kubectl get events --sort-by=.metadata.creationTimestamp","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.160","area":"command","op":"command.analyze","source":"new","input":"helm repo add bitnami https://charts.example.invalid/bitnami","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.161","area":"command","op":"command.analyze","source":"new","input":"helm repo update","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.162","area":"command","op":"command.analyze","source":"new","input":"helm install my-redis bitnami/redis --namespace cache --create-namespace","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.163","area":"command","op":"command.analyze","source":"new","input":"helm upgrade --install api ./charts/api -f values.prod.yaml","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.164","area":"command","op":"command.analyze","source":"new","input":"helm uninstall my-redis -n cache","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.165","area":"command","op":"command.analyze","source":"new","input":"minikube start --driver=docker","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.166","area":"command","op":"command.analyze","source":"new","input":"kind create cluster --name dev","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.167","area":"command","op":"command.analyze","source":"new","input":"k9s -n production","expect":{"clean":true},"tags":["cross-platform","k8s"]}
+{"id":"benign.cmd.168","area":"command","op":"command.analyze","source":"new","input":"ssh deploy@10.0.12.34","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.169","area":"command","op":"command.analyze","source":"new","input":"ssh -i ~/.ssh/id_ed25519 -p 2222 admin@bastion.example.invalid","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.170","area":"command","op":"command.analyze","source":"new","input":"ssh -L 5432:localhost:5432 user@db.example.invalid","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.171","area":"command","op":"command.analyze","source":"new","input":"ssh-keygen -t ed25519 -C \"mei@example.invalid\"","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.172","area":"command","op":"command.analyze","source":"new","input":"ssh-copy-id -i ~/.ssh/id_ed25519.pub deploy@10.0.12.34","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.173","area":"command","op":"command.analyze","source":"new","input":"scp ./dist.tar.gz deploy@10.0.12.34:/srv/app/","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.174","area":"command","op":"command.analyze","source":"new","input":"scp -r deploy@10.0.12.34:/var/log/nginx ./logs","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.175","area":"command","op":"command.analyze","source":"new","input":"rsync -avz --delete ./public/ deploy@web01.example.invalid:/var/www/html/","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.176","area":"command","op":"command.analyze","source":"new","input":"rsync -av --progress --exclude node_modules ~/projects/ /Volumes/Backup/projects/","expect":{"clean":true},"tags":["linux","macos","ssh"]}
+{"id":"benign.cmd.177","area":"command","op":"command.analyze","source":"new","input":"eval \"$(ssh-agent -s)\" && ssh-add --apple-use-keychain ~/.ssh/id_ed25519","expect":{"clean":true},"tags":["macos","ssh"]}
+{"id":"benign.cmd.178","area":"command","op":"command.analyze","source":"new","input":"sudo systemctl restart nginx","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.179","area":"command","op":"command.analyze","source":"new","input":"sudo systemctl enable --now docker","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.180","area":"command","op":"command.analyze","source":"new","input":"systemctl status sshd","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.181","area":"command","op":"command.analyze","source":"new","input":"sudo systemctl daemon-reload","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.182","area":"command","op":"command.analyze","source":"new","input":"journalctl -u nginx -f","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.183","area":"command","op":"command.analyze","source":"new","input":"journalctl -xe --since \"1 hour ago\"","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.184","area":"command","op":"command.analyze","source":"new","input":"journalctl --vacuum-time=7d","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.185","area":"command","op":"command.analyze","source":"new","input":"sudo apt update && sudo apt upgrade -y","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.186","area":"command","op":"command.analyze","source":"new","input":"sudo apt install -y build-essential git curl","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.187","area":"command","op":"command.analyze","source":"new","input":"sudo apt-get install --no-install-recommends ca-certificates","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.188","area":"command","op":"command.analyze","source":"new","input":"sudo dnf install -y htop","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.189","area":"command","op":"command.analyze","source":"new","input":"sudo pacman -Syu","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.190","area":"command","op":"command.analyze","source":"new","input":"sudo snap install code --classic","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.191","area":"command","op":"command.analyze","source":"new","input":"df -h","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.192","area":"command","op":"command.analyze","source":"new","input":"du -sh * | sort -h","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.193","area":"command","op":"command.analyze","source":"new","input":"free -m","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.194","area":"command","op":"command.analyze","source":"new","input":"top -o %MEM","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.195","area":"command","op":"command.analyze","source":"new","input":"ps aux | grep python","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.196","area":"command","op":"command.analyze","source":"new","input":"sudo lsof -i :8080","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.197","area":"command","op":"command.analyze","source":"new","input":"ss -tulpn","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.198","area":"command","op":"command.analyze","source":"new","input":"sudo ufw allow 443/tcp","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.199","area":"command","op":"command.analyze","source":"new","input":"sudo chown -R www-data:www-data /var/www/html","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.200","area":"command","op":"command.analyze","source":"new","input":"chmod 600 ~/.ssh/id_ed25519","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.201","area":"command","op":"command.analyze","source":"new","input":"tail -n 200 /var/log/syslog","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.202","area":"command","op":"command.analyze","source":"new","input":"find . -name \"*.log\" -mtime +30 -delete","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.203","area":"command","op":"command.analyze","source":"new","input":"grep -rn \"TODO\" src/ --include=\"*.ts\"","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.204","area":"command","op":"command.analyze","source":"new","input":"tar -czvf backup-2024-06-01.tar.gz /etc/nginx","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.205","area":"command","op":"command.analyze","source":"new","input":"tar -xzf node-v20.15.0-linux-x64.tar.gz","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.206","area":"command","op":"command.analyze","source":"new","input":"crontab -e","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.207","area":"command","op":"command.analyze","source":"new","input":"sudo useradd -m -s /bin/bash deploy","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.208","area":"command","op":"command.analyze","source":"new","input":"sudo usermod -aG docker $USER","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.209","area":"command","op":"command.analyze","source":"new","input":"uname -a && cat /etc/os-release","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.210","area":"command","op":"command.analyze","source":"new","input":"sudo timedatectl set-timezone Asia/Taipei","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.211","area":"command","op":"command.analyze","source":"new","input":"ip addr show","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.212","area":"command","op":"command.analyze","source":"new","input":"ping -c 4 1.1.1.1","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.213","area":"command","op":"command.analyze","source":"new","input":"dig +short example.invalid","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.214","area":"command","op":"command.analyze","source":"new","input":"sudo certbot --nginx -d example.invalid -d www.example.invalid","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.215","area":"command","op":"command.analyze","source":"new","input":"wget https://example.invalid/releases/app-1.4.2.tar.gz","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.216","area":"command","op":"command.analyze","source":"new","input":"curl -I https://example.invalid/health","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.217","area":"command","op":"command.analyze","source":"new","input":"curl -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"test\"}' https://api.example.invalid/v1/items","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.218","area":"command","op":"command.analyze","source":"new","input":"sed -i 's/listen 80/listen 8080/' /etc/nginx/sites-available/default","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.219","area":"command","op":"command.analyze","source":"new","input":"awk -F, '{sum += $3} END {print sum}' sales.csv","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.220","area":"command","op":"command.analyze","source":"new","input":"xargs -n1 -P4 gzip < files.txt","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.221","area":"command","op":"command.analyze","source":"new","input":"watch -n 2 'kubectl get pods'","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.222","area":"command","op":"command.analyze","source":"new","input":"htop","expect":{"clean":true},"tags":["linux","sysadmin"]}
+{"id":"benign.cmd.223","area":"command","op":"command.analyze","source":"new","input":"brew install git","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.224","area":"command","op":"command.analyze","source":"new","input":"brew install --cask visual-studio-code","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.225","area":"command","op":"command.analyze","source":"new","input":"brew update && brew upgrade","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.226","area":"command","op":"command.analyze","source":"new","input":"brew services start postgresql@16","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.227","area":"command","op":"command.analyze","source":"new","input":"brew doctor","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.228","area":"command","op":"command.analyze","source":"new","input":"brew tap hashicorp/tap && brew install hashicorp/tap/terraform","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.229","area":"command","op":"command.analyze","source":"new","input":"brew list --versions","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.230","area":"command","op":"command.analyze","source":"new","input":"brew cleanup --prune=all","expect":{"clean":true},"tags":["macos","brew"]}
+{"id":"benign.cmd.231","area":"command","op":"command.analyze","source":"new","input":"xcode-select --install","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.232","area":"command","op":"command.analyze","source":"new","input":"softwareupdate --list","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.233","area":"command","op":"command.analyze","source":"new","input":"defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.234","area":"command","op":"command.analyze","source":"new","input":"sudo spctl --master-disable","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.235","area":"command","op":"command.analyze","source":"new","input":"pmset -g batt","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.236","area":"command","op":"command.analyze","source":"new","input":"mdfind -name \"invoice.pdf\"","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.237","area":"command","op":"command.analyze","source":"new","input":"open -a \"Visual Studio Code\" .","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.238","area":"command","op":"command.analyze","source":"new","input":"pbpaste | jq .","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.239","area":"command","op":"command.analyze","source":"new","input":"diskutil list","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.240","area":"command","op":"command.analyze","source":"new","input":"sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.241","area":"command","op":"command.analyze","source":"new","input":"caffeinate -dims","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.242","area":"command","op":"command.analyze","source":"new","input":"lsof -nP -iTCP:3000 -sTCP:LISTEN","expect":{"clean":true},"tags":["macos","sysadmin"]}
+{"id":"benign.cmd.243","area":"command","op":"command.analyze","source":"new","input":"winget install --id Git.Git -e --source winget","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.244","area":"command","op":"command.analyze","source":"new","input":"winget install Microsoft.PowerShell","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.245","area":"command","op":"command.analyze","source":"new","input":"winget upgrade --all","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.246","area":"command","op":"command.analyze","source":"new","input":"winget search vscode","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.247","area":"command","op":"command.analyze","source":"new","input":"winget uninstall --id Mozilla.Firefox","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.248","area":"command","op":"command.analyze","source":"new","input":"scoop install git nodejs-lts","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.249","area":"command","op":"command.analyze","source":"new","input":"scoop bucket add extras","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.250","area":"command","op":"command.analyze","source":"new","input":"choco install -y 7zip googlechrome","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.251","area":"command","op":"command.analyze","source":"new","input":"choco upgrade all -y","expect":{"clean":true},"tags":["windows","winget"]}
+{"id":"benign.cmd.252","area":"command","op":"command.analyze","source":"new","input":"Get-Process | Sort-Object CPU -Descending | Select-Object -First 10","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.253","area":"command","op":"command.analyze","source":"new","input":"Get-ChildItem -Path C:\\Users\\Public -Recurse -Filter *.log","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.254","area":"command","op":"command.analyze","source":"new","input":"Get-ChildItem Env:","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.255","area":"command","op":"command.analyze","source":"new","input":"Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.256","area":"command","op":"command.analyze","source":"new","input":"Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.257","area":"command","op":"command.analyze","source":"new","input":"Get-ExecutionPolicy -List","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.258","area":"command","op":"command.analyze","source":"new","input":"Test-NetConnection -ComputerName db01 -Port 1433","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.259","area":"command","op":"command.analyze","source":"new","input":"Test-Connection 8.8.8.8 -Count 4","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.260","area":"command","op":"command.analyze","source":"new","input":"Get-Service | Where-Object {$_.Status -eq 'Running'}","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.261","area":"command","op":"command.analyze","source":"new","input":"Restart-Service -Name Spooler -Force","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.262","area":"command","op":"command.analyze","source":"new","input":"Stop-Process -Name notepad","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.263","area":"command","op":"command.analyze","source":"new","input":"Get-EventLog -LogName System -Newest 50","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.264","area":"command","op":"command.analyze","source":"new","input":"Get-WinEvent -LogName Application -MaxEvents 20","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.265","area":"command","op":"command.analyze","source":"new","input":"Get-NetIPAddress -AddressFamily IPv4","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.266","area":"command","op":"command.analyze","source":"new","input":"Get-NetTCPConnection -State Listen | Sort-Object LocalPort","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.267","area":"command","op":"command.analyze","source":"new","input":"Resolve-DnsName example.invalid","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.268","area":"command","op":"command.analyze","source":"new","input":"Clear-DnsClientCache","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.269","area":"command","op":"command.analyze","source":"new","input":"Get-ComputerInfo | Select-Object OsName, OsVersion, CsTotalPhysicalMemory","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.270","area":"command","op":"command.analyze","source":"new","input":"Get-CimInstance Win32_LogicalDisk | Format-Table DeviceID, FreeSpace, Size","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.271","area":"command","op":"command.analyze","source":"new","input":"Get-Content .\\app.log -Tail 50 -Wait","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.272","area":"command","op":"command.analyze","source":"new","input":"Select-String -Path *.cs -Pattern \"TODO\"","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.273","area":"command","op":"command.analyze","source":"new","input":"New-Item -ItemType Directory -Path C:\\Projects\\demo","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.274","area":"command","op":"command.analyze","source":"new","input":"Remove-Item -Recurse -Force .\\node_modules","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.275","area":"command","op":"command.analyze","source":"new","input":"Copy-Item -Path .\\dist\\* -Destination \\\\fileserver\\share\\releases -Recurse","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.276","area":"command","op":"command.analyze","source":"new","input":"Compress-Archive -Path .\\build\\* -DestinationPath release.zip","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.277","area":"command","op":"command.analyze","source":"new","input":"Expand-Archive .\\tools.zip -DestinationPath C:\\tools","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.278","area":"command","op":"command.analyze","source":"new","input":"Get-FileHash .\\setup.exe -Algorithm SHA256","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.279","area":"command","op":"command.analyze","source":"new","input":"Install-Module -Name PSReadLine -Scope CurrentUser -Force","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.280","area":"command","op":"command.analyze","source":"new","input":"Update-Help -UICulture en-US","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.281","area":"command","op":"command.analyze","source":"new","input":"Get-Command -Module Microsoft.PowerShell.Management","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.282","area":"command","op":"command.analyze","source":"new","input":"$PSVersionTable","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.283","area":"command","op":"command.analyze","source":"new","input":"[Environment]::SetEnvironmentVariable(\"JAVA_HOME\", \"C:\\Program Files\\Java\\jdk-21\", \"User\")","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.284","area":"command","op":"command.analyze","source":"new","input":"$env:Path -split ';'","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.285","area":"command","op":"command.analyze","source":"new","input":"Get-LocalUser | Where-Object Enabled","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.286","area":"command","op":"command.analyze","source":"new","input":"Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.287","area":"command","op":"command.analyze","source":"new","input":"Get-AppxPackage *xbox* | Remove-AppxPackage","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.288","area":"command","op":"command.analyze","source":"new","input":"Invoke-WebRequest -Uri https://example.invalid/report.csv -OutFile report.csv","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.289","area":"command","op":"command.analyze","source":"new","input":"Invoke-RestMethod -Uri https://api.example.invalid/v1/status | ConvertTo-Json -Depth 5","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.290","area":"command","op":"command.analyze","source":"new","input":"Measure-Command { npm run build }","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.291","area":"command","op":"command.analyze","source":"new","input":"Get-Acl C:\\inetpub\\wwwroot | Format-List","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.292","area":"command","op":"command.analyze","source":"new","input":"New-NetFirewallRule -DisplayName \"Allow 8080\" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.293","area":"command","op":"command.analyze","source":"new","input":"Start-Process pwsh -Verb RunAs","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.294","area":"command","op":"command.analyze","source":"new","input":"pwsh -NoProfile -File .\\scripts\\build.ps1 -Configuration Release","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.295","area":"command","op":"command.analyze","source":"new","input":"powershell -NoProfile -ExecutionPolicy Bypass -File .\\setup-dev.ps1","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.296","area":"command","op":"command.analyze","source":"new","input":"wsl --install -d Ubuntu-24.04","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.297","area":"command","op":"command.analyze","source":"new","input":"wsl --list --verbose","expect":{"clean":true},"tags":["windows","powershell"]}
+{"id":"benign.cmd.298","area":"command","op":"command.analyze","source":"new","input":"dir /s /b *.txt","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.299","area":"command","op":"command.analyze","source":"new","input":"ipconfig /all","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.300","area":"command","op":"command.analyze","source":"new","input":"ipconfig /flushdns","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.301","area":"command","op":"command.analyze","source":"new","input":"ping -n 4 192.168.1.1","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.302","area":"command","op":"command.analyze","source":"new","input":"tracert example.invalid","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.303","area":"command","op":"command.analyze","source":"new","input":"netstat -ano | findstr :3000","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.304","area":"command","op":"command.analyze","source":"new","input":"tasklist /fi \"imagename eq node.exe\"","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.305","area":"command","op":"command.analyze","source":"new","input":"taskkill /f /pid 13244","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.306","area":"command","op":"command.analyze","source":"new","input":"systeminfo | findstr /B /C:\"OS Name\" /C:\"OS Version\"","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.307","area":"command","op":"command.analyze","source":"new","input":"sfc /scannow","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.308","area":"command","op":"command.analyze","source":"new","input":"DISM /Online /Cleanup-Image /RestoreHealth","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.309","area":"command","op":"command.analyze","source":"new","input":"chkdsk C: /f","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.310","area":"command","op":"command.analyze","source":"new","input":"where python","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.311","area":"command","op":"command.analyze","source":"new","input":"set PATH=%PATH%;C:\\tools\\bin","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.312","area":"command","op":"command.analyze","source":"new","input":"setx JAVA_HOME \"C:\\Program Files\\Java\\jdk-21\"","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.313","area":"command","op":"command.analyze","source":"new","input":"robocopy C:\\src D:\\backup\\src /MIR /R:2 /W:5","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.314","area":"command","op":"command.analyze","source":"new","input":"xcopy /E /I .\\assets .\\dist\\assets","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.315","area":"command","op":"command.analyze","source":"new","input":"mklink /D C:\\data D:\\data","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.316","area":"command","op":"command.analyze","source":"new","input":"icacls C:\\shared /grant Users:(OI)(CI)M","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.317","area":"command","op":"command.analyze","source":"new","input":"net user","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.318","area":"command","op":"command.analyze","source":"new","input":"net use Z: \\\\fileserver\\projects /persistent:yes","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.319","area":"command","op":"command.analyze","source":"new","input":"nslookup example.invalid","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.320","area":"command","op":"command.analyze","source":"new","input":"shutdown /r /t 0","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.321","area":"command","op":"command.analyze","source":"new","input":"cmd /c npm run build","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.322","area":"command","op":"command.analyze","source":"new","input":"cmd /k \"cd /d C:\\Projects\\demo && code .\"","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.323","area":"command","op":"command.analyze","source":"new","input":"gpupdate /force","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.324","area":"command","op":"command.analyze","source":"new","input":"whoami /groups","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.325","area":"command","op":"command.analyze","source":"new","input":"type .env.example","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.326","area":"command","op":"command.analyze","source":"new","input":"echo %USERPROFILE%","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.327","area":"command","op":"command.analyze","source":"new","input":"cls && cd /d %USERPROFILE%\\Downloads","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.328","area":"command","op":"command.analyze","source":"new","input":"msiexec /i C:\\Installers\\node-v20.15.0-x64.msi /qn","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.329","area":"command","op":"command.analyze","source":"new","input":"certutil -hashfile setup.exe SHA256","expect":{"clean":true},"tags":["windows","cmd"]}
+{"id":"benign.cmd.330","area":"command","op":"command.analyze","source":"new","input":"make","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.331","area":"command","op":"command.analyze","source":"new","input":"make -j8 all","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.332","area":"command","op":"command.analyze","source":"new","input":"make clean && make test","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.333","area":"command","op":"command.analyze","source":"new","input":"cmake -S . -B build -DCMAKE_BUILD_TYPE=Release","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.334","area":"command","op":"command.analyze","source":"new","input":"cmake --build build --config Release --parallel","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.335","area":"command","op":"command.analyze","source":"new","input":"ctest --test-dir build --output-on-failure","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.336","area":"command","op":"command.analyze","source":"new","input":"ninja -C out/Default chrome","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.337","area":"command","op":"command.analyze","source":"new","input":"meson setup builddir && meson compile -C builddir","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.338","area":"command","op":"command.analyze","source":"new","input":"bazel build //src:app","expect":{"clean":true},"tags":["cross-platform","build"]}
+{"id":"benign.cmd.339","area":"command","op":"command.analyze","source":"new","input":"ffmpeg -i input.mov -c:v libx264 -crf 23 -preset medium -c:a aac output.mp4","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.340","area":"command","op":"command.analyze","source":"new","input":"ffmpeg -i video.mp4 -vn -acodec libmp3lame -q:a 2 audio.mp3","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.341","area":"command","op":"command.analyze","source":"new","input":"ffmpeg -ss 00:01:30 -to 00:02:45 -i talk.mp4 -c copy clip.mp4","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.342","area":"command","op":"command.analyze","source":"new","input":"ffmpeg -i in.mp4 -vf \"scale=1280:-2,fps=30\" -an out.mp4","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.343","area":"command","op":"command.analyze","source":"new","input":"ffmpeg -framerate 24 -i frame_%04d.png -pix_fmt yuv420p timelapse.mp4","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.344","area":"command","op":"command.analyze","source":"new","input":"ffprobe -v error -show_entries format=duration -of csv=p=0 input.mp4","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.345","area":"command","op":"command.analyze","source":"new","input":"magick convert logo.png -resize 512x512 logo-512.png","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.346","area":"command","op":"command.analyze","source":"new","input":"yt-dlp -f \"bv*+ba/b\" -o \"%(title)s.%(ext)s\" https://example.invalid/watch?v=abc123","expect":{"clean":true},"tags":["cross-platform","media"]}
+{"id":"benign.cmd.347","area":"command","op":"command.analyze","source":"new","input":"terraform init","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.348","area":"command","op":"command.analyze","source":"new","input":"terraform plan -out=tfplan","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.349","area":"command","op":"command.analyze","source":"new","input":"terraform apply tfplan","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.350","area":"command","op":"command.analyze","source":"new","input":"terraform fmt -recursive","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.351","area":"command","op":"command.analyze","source":"new","input":"terraform workspace select staging","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.352","area":"command","op":"command.analyze","source":"new","input":"terraform state list","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.353","area":"command","op":"command.analyze","source":"new","input":"terraform import aws_s3_bucket.logs acme-logs-bucket","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.354","area":"command","op":"command.analyze","source":"new","input":"ansible-playbook -i inventory/prod site.yml --limit web --check","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.355","area":"command","op":"command.analyze","source":"new","input":"pulumi up --stack dev","expect":{"clean":true},"tags":["cross-platform","iac"]}
+{"id":"benign.cmd.356","area":"command","op":"command.analyze","source":"new","input":"aws s3 ls s3://acme-backups/","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.357","area":"command","op":"command.analyze","source":"new","input":"aws s3 cp ./dist s3://acme-web/ --recursive --acl public-read","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.358","area":"command","op":"command.analyze","source":"new","input":"aws s3 sync ./build s3://acme-web --delete","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.359","area":"command","op":"command.analyze","source":"new","input":"aws sts get-caller-identity","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.360","area":"command","op":"command.analyze","source":"new","input":"aws configure --profile staging","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.361","area":"command","op":"command.analyze","source":"new","input":"aws ec2 describe-instances --filters \"Name=tag:Env,Values=prod\" --query \"Reservations[].Instances[].InstanceId\"","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.362","area":"command","op":"command.analyze","source":"new","input":"aws logs tail /aws/lambda/api --follow","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.363","area":"command","op":"command.analyze","source":"new","input":"aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.364","area":"command","op":"command.analyze","source":"new","input":"aws lambda invoke --function-name hello --payload '{}' out.json","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.365","area":"command","op":"command.analyze","source":"new","input":"aws cloudfront create-invalidation --distribution-id E2ABCDEF123456 --paths \"/*\"","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.366","area":"command","op":"command.analyze","source":"new","input":"gcloud auth login","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.367","area":"command","op":"command.analyze","source":"new","input":"gcloud config set project acme-prod-412","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.368","area":"command","op":"command.analyze","source":"new","input":"gcloud compute instances list","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.369","area":"command","op":"command.analyze","source":"new","input":"gcloud run deploy api --image gcr.io/acme-prod-412/api:1.2.0 --region asia-east1","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.370","area":"command","op":"command.analyze","source":"new","input":"gcloud container clusters get-credentials prod --zone asia-east1-b","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.371","area":"command","op":"command.analyze","source":"new","input":"gsutil cp gs://acme-data/export.csv .","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.372","area":"command","op":"command.analyze","source":"new","input":"az login","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.373","area":"command","op":"command.analyze","source":"new","input":"az account set --subscription \"Pay-As-You-Go\"","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.374","area":"command","op":"command.analyze","source":"new","input":"az group create --name rg-demo --location eastasia","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.375","area":"command","op":"command.analyze","source":"new","input":"az vm list -o table","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.376","area":"command","op":"command.analyze","source":"new","input":"az webapp deploy --resource-group rg-demo --name acme-web --src-path app.zip","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.377","area":"command","op":"command.analyze","source":"new","input":"az aks get-credentials --resource-group rg-demo --name aks-demo","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.378","area":"command","op":"command.analyze","source":"new","input":"fly deploy","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.379","area":"command","op":"command.analyze","source":"new","input":"vercel --prod","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.380","area":"command","op":"command.analyze","source":"new","input":"wrangler deploy","expect":{"clean":true},"tags":["cross-platform","cloud"]}
+{"id":"benign.cmd.381","area":"command","op":"command.analyze","source":"new","input":"psql -h localhost -U postgres -d appdb","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.382","area":"command","op":"command.analyze","source":"new","input":"pg_dump -Fc appdb > appdb-2024-06-01.dump","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.383","area":"command","op":"command.analyze","source":"new","input":"mysql -u root -p -e \"SHOW DATABASES;\"","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.384","area":"command","op":"command.analyze","source":"new","input":"redis-cli -h 127.0.0.1 -p 6379 ping","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.385","area":"command","op":"command.analyze","source":"new","input":"sqlite3 app.db \".tables\"","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.386","area":"command","op":"command.analyze","source":"new","input":"mongosh \"mongodb://localhost:27017/test\"","expect":{"clean":true},"tags":["cross-platform","db"]}
+{"id":"benign.cmd.387","area":"command","op":"command.analyze","source":"new","input":"code --install-extension rust-lang.rust-analyzer","expect":{"clean":true},"tags":["cross-platform","editor"]}
+{"id":"benign.cmd.388","area":"command","op":"command.analyze","source":"new","input":"vim ~/.zshrc","expect":{"clean":true},"tags":["cross-platform","editor"]}
+{"id":"benign.cmd.389","area":"command","op":"command.analyze","source":"new","input":"nano /etc/hosts","expect":{"clean":true},"tags":["cross-platform","editor"]}
+{"id":"benign.cmd.390","area":"command","op":"command.analyze","source":"new","input":"jq '.items[] | {name, version}' package.json","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.391","area":"command","op":"command.analyze","source":"new","input":"openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj \"/CN=localhost\"","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.392","area":"command","op":"command.analyze","source":"new","input":"openssl s_client -connect example.invalid:443 -servername example.invalid","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.393","area":"command","op":"command.analyze","source":"new","input":"python -m http.server 8000","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.394","area":"command","op":"command.analyze","source":"new","input":"node -e \"console.log(process.versions)\"","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.395","area":"command","op":"command.analyze","source":"new","input":"nvm install --lts && nvm use --lts","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.396","area":"command","op":"command.analyze","source":"new","input":"nvm alias default 20","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.397","area":"command","op":"command.analyze","source":"new","input":"fnm use --install-if-missing","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.398","area":"command","op":"command.analyze","source":"new","input":"asdf install nodejs 20.15.0","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.399","area":"command","op":"command.analyze","source":"new","input":"pyenv install 3.12.4 && pyenv global 3.12.4","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.400","area":"command","op":"command.analyze","source":"new","input":"sdk install java 21.0.3-tem","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.401","area":"command","op":"command.analyze","source":"new","input":"tmux new -s work","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.402","area":"command","op":"command.analyze","source":"new","input":"direnv allow","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.403","area":"command","op":"command.analyze","source":"new","input":"pre-commit run --all-files","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.404","area":"command","op":"command.analyze","source":"new","input":"ollama run llama3.1","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.405","area":"command","op":"command.analyze","source":"new","input":"ollama pull qwen2.5-coder:7b","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.406","area":"command","op":"command.analyze","source":"new","input":"claude --version","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.407","area":"command","op":"command.analyze","source":"new","input":"claude mcp list","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.408","area":"command","op":"command.analyze","source":"new","input":"hugo server -D","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.409","area":"command","op":"command.analyze","source":"new","input":"mkdocs serve","expect":{"clean":true},"tags":["cross-platform","misc"]}
+{"id":"benign.cmd.410","area":"command","op":"command.analyze","source":"new","input":"/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"","expect":{"clean":true},"tags":["linux","macos","installer","spec-escalates"],"note":"download-and-run from a host not on the §3.2 official list; the spec intentionally escalates it, kept to measure the cost"}
+{"id":"benign.cmd.411","area":"command","op":"command.analyze","source":"new","input":"curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash","expect":{"clean":true},"tags":["linux","macos","installer","spec-escalates"],"note":"download-and-run from a host not on the §3.2 official list; the spec intentionally escalates it, kept to measure the cost"}
+{"id":"benign.cmd.412","area":"command","op":"command.analyze","source":"new","input":"wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash","expect":{"clean":true},"tags":["linux","macos","installer","spec-escalates"],"note":"download-and-run from a host not on the §3.2 official list; the spec intentionally escalates it, kept to measure the cost"}
+{"id":"benign.cmd.413","area":"command","op":"command.analyze","source":"new","input":"sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"","expect":{"clean":true},"tags":["linux","macos","installer","spec-escalates"],"note":"download-and-run from a host not on the §3.2 official list; the spec intentionally escalates it, kept to measure the cost"}
+{"id":"benign.cmd.414","area":"command","op":"command.analyze","source":"new","input":"# Install uv\ncurl -LsSf https://astral.sh/uv/install.sh | sh\n\n# Then restart your shell or run:\nsource $HOME/.local/bin/env","expect":{"clean":true},"tags":["linux","macos","installer","multiline"]}
+{"id":"benign.cmd.415","area":"command","op":"command.analyze","source":"new","input":{"parts":["# On Windows.\npower","shell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\"\n\n# With pip.\npip install uv"]},"expect":{"clean":true},"tags":["windows","installer","multiline"]}
+{"id":"benign.cmd.416","area":"command","op":"command.analyze","source":"new","input":"## Installation\n\n```sh\ncurl -fsSL https://bun.sh/install | bash\n```\n\nTo upgrade later: `bun upgrade`","expect":{"clean":true},"tags":["linux","macos","installer","multiline"]}
+{"id":"benign.cmd.417","area":"command","op":"command.analyze","source":"new","input":{"parts":["```power","shell\n> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser\n> Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression\n```"]},"expect":{"clean":true},"tags":["windows","installer","multiline"]}
+{"id":"benign.cmd.418","area":"command","op":"command.analyze","source":"new","input":"Install Rust:\n\n    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\n\nThen add the wasm target:\n\n    rustup target add wasm32-unknown-unknown","expect":{"clean":true},"tags":["linux","macos","installer","multiline"]}
+{"id":"benign.cmd.419","area":"command","op":"command.analyze","source":"new","input":"# macOS, Linux, WSL\ncurl -fsSL https://claude.ai/install.sh | bash\n\n# then\ncd your-project\nclaude","expect":{"clean":true},"tags":["linux","macos","installer","multiline"]}
+{"id":"benign.cmd.420","area":"command","op":"command.analyze","source":"new","input":{"parts":["# Windows Power","Shell\nirm https://claude.ai/install.ps1 | iex\n\n# Windows CMD\ncurl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd"]},"expect":{"clean":true},"tags":["windows","installer","multiline"]}
+{"id":"benign.cmd.421","area":"command","op":"command.analyze","source":"new","input":"### Linux\n\n```shell\ncurl -fsSL https://ollama.com/install.sh | sh\n```\n\nManual install instructions are in docs/linux.md.","expect":{"clean":true},"tags":["linux","installer","multiline"]}
+{"id":"benign.cmd.422","area":"command","op":"command.analyze","source":"new","input":"Using the install script:\n\ncurl -fsSL https://deno.land/install.sh | sh\n\nUsing Homebrew:\n\nbrew install deno","expect":{"clean":true},"tags":["linux","macos","installer","multiline"]}
+{"id":"benign.cmd.423","area":"command","op":"command.analyze","source":"new","input":"Run as administrator:\n\nSet-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))\n\nThen: choco install git -y","expect":{"clean":true},"tags":["windows","installer","multiline"]}
+{"id":"benign.cmd.424","area":"command","op":"command.analyze","source":"new","input":"git clone https://example.invalid/acme/widgets.git\ncd widgets\nnpm install\nnpm run dev","expect":{"clean":true},"tags":["cross-platform","git","multiline"]}
+{"id":"benign.cmd.425","area":"command","op":"command.analyze","source":"new","input":"git checkout dev\ngit pull\ngit checkout -b feature/phase-1-engine\n# ...edit...\ngit add -A\ngit commit -m \"feat(core): add normalizer\"\ngit push -u origin HEAD","expect":{"clean":true},"tags":["cross-platform","git","multiline"]}
+{"id":"benign.cmd.426","area":"command","op":"command.analyze","source":"new","input":"$ git log --oneline -5\na1b2c3d (HEAD -> main) docs: update README\n9f8e7d6 fix: off-by-one in span\n5c4b3a2 feat: add masker\n1a2b3c4 chore: bump deps\n0f1e2d3 init","expect":{"clean":true},"tags":["cross-platform","git","multiline"]}
+{"id":"benign.cmd.427","area":"command","op":"command.analyze","source":"new","input":"version: \"3.9\"\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_DB: app\n    ports:\n      - \"5432:5432\"\n  web:\n    build: .\n    depends_on: [db]","expect":{"clean":true},"tags":["cross-platform","container","multiline"]}
+{"id":"benign.cmd.428","area":"command","op":"command.analyze","source":"new","input":"FROM node:20-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --omit=dev\nCOPY . .\nEXPOSE 3000\nCMD [\"node\", \"server.js\"]","expect":{"clean":true},"tags":["cross-platform","container","multiline"]}
+{"id":"benign.cmd.429","area":"command","op":"command.analyze","source":"new","input":"FROM python:3.12-slim\nRUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt","expect":{"clean":true},"tags":["cross-platform","container","multiline"]}
+{"id":"benign.cmd.430","area":"command","op":"command.analyze","source":"new","input":"kubectl create namespace monitoring\nhelm repo add prometheus-community https://charts.example.invalid/prometheus-community\nhelm repo update\nhelm install kps prometheus-community/kube-prometheus-stack -n monitoring","expect":{"clean":true},"tags":["cross-platform","k8s","multiline"]}
+{"id":"benign.cmd.431","area":"command","op":"command.analyze","source":"new","input":"apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n        - name: api\n          image: acme/api:1.2.0\n          ports:\n            - containerPort: 8080","expect":{"clean":true},"tags":["cross-platform","k8s","multiline"]}
+{"id":"benign.cmd.432","area":"command","op":"command.analyze","source":"new","input":"sudo apt update\nsudo apt install -y nginx\nsudo systemctl enable --now nginx\nsudo ufw allow 'Nginx Full'","expect":{"clean":true},"tags":["linux","sysadmin","multiline"]}
+{"id":"benign.cmd.433","area":"command","op":"command.analyze","source":"new","input":"#!/usr/bin/env bash\nset -euo pipefail\n\nfor f in logs/*.log; do\n  gzip -9 \"$f\"\ndone\necho \"done\"","expect":{"clean":true},"tags":["linux","sysadmin","multiline"]}
+{"id":"benign.cmd.434","area":"command","op":"command.analyze","source":"new","input":"[Unit]\nDescription=Acme API\nAfter=network.target\n\n[Service]\nExecStart=/usr/local/bin/acme-api --port 8080\nRestart=on-failure\nUser=acme\n\n[Install]\nWantedBy=multi-user.target","expect":{"clean":true},"tags":["linux","sysadmin","multiline"]}
+{"id":"benign.cmd.435","area":"command","op":"command.analyze","source":"new","input":"brew install pyenv\necho 'eval \"$(pyenv init -)\"' >> ~/.zshrc\nexec \"$SHELL\"\npyenv install 3.12","expect":{"clean":true},"tags":["macos","brew","multiline"]}
+{"id":"benign.cmd.436","area":"command","op":"command.analyze","source":"new","input":"$ErrorActionPreference = \"Stop\"\nGet-ChildItem -Path .\\logs -Filter *.log |\n  Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |\n  Remove-Item -WhatIf","expect":{"clean":true},"tags":["windows","powershell","multiline"]}
+{"id":"benign.cmd.437","area":"command","op":"command.analyze","source":"new","input":"param(\n  [string]$Configuration = \"Debug\"\n)\ndotnet restore\ndotnet build -c $Configuration\nif ($LASTEXITCODE -ne 0) { throw \"build failed\" }","expect":{"clean":true},"tags":["windows","powershell","multiline"]}
+{"id":"benign.cmd.438","area":"command","op":"command.analyze","source":"new","input":"PS C:\\Users\\mei> Get-Process -Name chrome | Measure-Object WorkingSet -Sum\n\nCount    : 24\nSum      : 2147483648","expect":{"clean":true},"tags":["windows","powershell","multiline"]}
+{"id":"benign.cmd.439","area":"command","op":"command.analyze","source":"new","input":"@echo off\nsetlocal\ncd /d %~dp0\ncall npm ci\nif errorlevel 1 exit /b 1\ncall npm run build\nendlocal","expect":{"clean":true},"tags":["windows","cmd","multiline"]}
+{"id":"benign.cmd.440","area":"command","op":"command.analyze","source":"new","input":"C:\\> ipconfig\n\nWindows IP Configuration\n\nEthernet adapter Ethernet:\n   IPv4 Address. . . . . . . . . . . : 192.168.1.23\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . . . : 192.168.1.1","expect":{"clean":true},"tags":["windows","cmd","multiline"]}
+{"id":"benign.cmd.441","area":"command","op":"command.analyze","source":"new","input":"mkdir build && cd build\ncmake .. -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo\nninja\nctest","expect":{"clean":true},"tags":["cross-platform","build","multiline"]}
+{"id":"benign.cmd.442","area":"command","op":"command.analyze","source":"new","input":".PHONY: build test\n\nbuild:\n\tcargo build --release\n\ntest:\n\tcargo test --workspace","expect":{"clean":true},"tags":["cross-platform","build","multiline"]}
+{"id":"benign.cmd.443","area":"command","op":"command.analyze","source":"new","input":"resource \"aws_s3_bucket\" \"logs\" {\n  bucket = \"acme-logs\"\n  tags = {\n    Env = \"prod\"\n  }\n}","expect":{"clean":true},"tags":["cross-platform","iac","multiline"]}
+{"id":"benign.cmd.444","area":"command","op":"command.analyze","source":"new","input":"cd infra/envs/staging\nterraform init -backend-config=backend.hcl\nterraform plan -var-file=staging.tfvars\nterraform apply -auto-approve","expect":{"clean":true},"tags":["cross-platform","iac","multiline"]}
+{"id":"benign.cmd.445","area":"command","op":"command.analyze","source":"new","input":"aws configure sso\naws sso login --profile dev\naws s3 ls --profile dev","expect":{"clean":true},"tags":["cross-platform","cloud","multiline"]}
+{"id":"benign.cmd.446","area":"command","op":"command.analyze","source":"new","input":"# Getting started\n\n```bash\npnpm install\npnpm dev\n```\n\nOpen http://localhost:5173 in your browser.","expect":{"clean":true},"tags":["cross-platform","package","multiline"]}
+{"id":"benign.cmd.447","area":"command","op":"command.analyze","source":"new","input":"python -m venv .venv\nsource .venv/bin/activate  # Windows: .venv\\Scripts\\activate\npip install -e \".[dev]\"\npytest","expect":{"clean":true},"tags":["cross-platform","package","multiline"]}
+{"id":"benign.cmd.448","area":"command","op":"command.analyze","source":"new","input":"# .github/workflows/ci.yml\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: cargo test --workspace","expect":{"clean":true},"tags":["cross-platform","misc","multiline"]}
+{"id":"benign.cmd.449","area":"command","op":"command.analyze","source":"new","input":"for f in *.mov; do\n  ffmpeg -i \"$f\" -c:v libx264 -crf 22 \"${f%.mov}.mp4\"\ndone","expect":{"clean":true},"tags":["cross-platform","media","multiline"]}
+{"id":"benign.cmd.450","area":"command","op":"command.analyze","source":"new","input":"winget install -e --id Microsoft.VisualStudioCode\nwinget install -e --id Python.Python.3.12\nwinget install -e --id OpenJS.NodeJS.LTS","expect":{"clean":true},"tags":["windows","winget","multiline"]}
+{"id":"benign.cmd.451","area":"command","op":"command.analyze","source":"new","input":"psql -U postgres <<SQL\nCREATE DATABASE app;\nCREATE USER app WITH ENCRYPTED PASSWORD 'changeme';\nGRANT ALL PRIVILEGES ON DATABASE app TO app;\nSQL","expect":{"clean":true},"tags":["cross-platform","db","multiline"]}

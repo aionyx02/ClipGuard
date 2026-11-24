@@ -1,11 +1,11 @@
 # 第三方授權聲明
 
-ClipGuard 內含以下第三方專案的內容。
+PasteWarden 內含以下第三方專案的內容。
 
 ## gitleaks
 
 - 專案：https://github.com/gitleaks/gitleaks
-- 使用的部分：預設規則 `config/gitleaks.toml`（v8.30.1，commit 5f6ec56cfa6f8c67648d863582c7ae2f206d5c1c），由 `tools/convert-gitleaks.mjs` 轉換成 `rules/gitleaks.json`，再產生插件用的 `extension/lib/rules.generated.js`。轉換時改寫了 regex 語法、拿掉部分規則與 allowlist 範例，細節見 `docs/detection-rules.md` §5.4。
+- 使用的部分：預設規則 `config/gitleaks.toml`（v8.30.1，commit 5f6ec56cfa6f8c67648d863582c7ae2f206d5c1c），轉換成 `rules/gitleaks.json`（舊版用 `tools/convert-gitleaks.mjs`，Phase 1 起改由 `cargo xtask rules gitleaks` 負責）。轉換時改寫了 regex 語法、拿掉部分規則與 allowlist 範例，細節見 `docs/spec/detection-rules.md` §5.4。
 - 授權：MIT License
 
 ```

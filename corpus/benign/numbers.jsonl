@@ -1,0 +1,372 @@
+{"id":"benign.num.001","area":"secret","op":"secret.find","source":"new","input":"Version 1.0.0+20130313144700 includes build metadata.","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.002","area":"secret","op":"secret.find","source":"new","input":"See RFC 3339 and ISO 8601: 2024-06-01T08:30:00+08:00","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.003","area":"secret","op":"secret.find","source":"new","input":"Pi is approximately 3.14159265358979323846","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.004","area":"secret","op":"secret.find","source":"new","input":"e = 2.71828182845904523536028747135266249775724709369995","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.005","area":"secret","op":"secret.find","source":"new","input":"0.1 + 0.2 = 0.30000000000000004","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.006","area":"secret","op":"secret.find","source":"new","input":"2^64 = 18446744073709551616","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.007","area":"secret","op":"secret.find","source":"new","input":"Fibonacci: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.008","area":"secret","op":"secret.find","source":"new","input":"Primes under 100: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.009","area":"secret","op":"secret.find","source":"new","input":"127.0.0.1 localhost\n::1 localhost","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.010","area":"secret","op":"secret.find","source":"new","input":"10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 are private ranges.","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.011","area":"secret","op":"secret.find","source":"new","input":"DNS: 8.8.8.8 / 8.8.4.4 / 1.1.1.1","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.012","area":"secret","op":"secret.find","source":"new","input":"Copyright © 2009–2024","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.013","area":"secret","op":"secret.find","source":"new","input":"2024 年第 3 季財報","expect":{"clean":true},"tags":["zh-tw","misc"]}
+{"id":"benign.num.014","area":"secret","op":"secret.find","source":"new","input":"1234567890","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.015","area":"secret","op":"secret.find","source":"new","input":"0000-0000-0000-0000","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.016","area":"secret","op":"secret.find","source":"new","input":"1111 2222 3333 4444 is not a real card number","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.017","area":"secret","op":"secret.find","source":"new","input":"9999999999","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.018","area":"secret","op":"secret.find","source":"new","input":"Part no. 123-45-678 (rev. B)","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.019","area":"secret","op":"secret.find","source":"new","input":"Lorem ipsum 4242 dolor 0101 sit 1984 amet","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.020","area":"secret","op":"secret.find","source":"new","input":"螢幕解析度 1920×1080、2560×1440、3840×2160","expect":{"clean":true},"tags":["zh-tw","misc"]}
+{"id":"benign.num.021","area":"secret","op":"secret.find","source":"new","input":"轉帳後五碼 12345","expect":{"clean":true},"tags":["zh-tw","misc"]}
+{"id":"benign.num.022","area":"secret","op":"secret.find","source":"new","input":"Room 101, Floor 10, Gate B12","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.023","area":"secret","op":"secret.find","source":"new","input":"格式：YYYY-MM-DD，例如 2025-01-31","expect":{"clean":true},"tags":["zh-tw","misc"]}
+{"id":"benign.num.024","area":"secret","op":"secret.find","source":"new","input":"HTTP 418 I'm a teapot","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.025","area":"secret","op":"secret.find","source":"new","input":"Error code 0x80070005 (E_ACCESSDENIED)","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.026","area":"secret","op":"secret.find","source":"new","input":"Exit status 137 (SIGKILL), 143 (SIGTERM)","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.027","area":"secret","op":"secret.find","source":"new","input":"chmod 755 and umask 022","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.028","area":"secret","op":"secret.find","source":"new","input":"Phone extension list: 101 front desk, 102 sales, 205 support, 310 IT","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.029","area":"secret","op":"secret.find","source":"new","input":"台北 101 高 508 公尺，共 101 層","expect":{"clean":true},"tags":["zh-tw","misc"]}
+{"id":"benign.num.030","area":"secret","op":"secret.find","source":"new","input":"The meeting is in room 3-204 at 14:00–15:30.","expect":{"clean":true},"tags":["en","misc"]}
+{"id":"benign.num.031","area":"secret","op":"secret.find","source":"new","input":"會議時間：2021/11/01 01:43","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.032","area":"secret","op":"secret.find","source":"new","input":"截止日期 2021年10月15日（星期四）","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.033","area":"secret","op":"secret.find","source":"new","input":"民國110年8月14日","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.034","area":"secret","op":"secret.find","source":"new","input":"Due: Oct 8, 2021 at 1:37 PM","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.035","area":"secret","op":"secret.find","source":"new","input":"Released on 09/02/2021","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.036","area":"secret","op":"secret.find","source":"new","input":"2026-05-01T22:34:58Z","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.037","area":"secret","op":"secret.find","source":"new","input":"2024-10-09T02:04:33.260+08:00","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.038","area":"secret","op":"secret.find","source":"new","input":"timestamp=1587902031","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.039","area":"secret","op":"secret.find","source":"new","input":"\"created_at\": 1679280998210","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.040","area":"secret","op":"secret.find","source":"new","input":"[2022-05-19 21:16:17,372] INFO worker-5 finished job in 8263 ms","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.041","area":"secret","op":"secret.find","source":"new","input":"11.01.2023","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.042","area":"secret","op":"secret.find","source":"new","input":"20190301_backup.tar.gz","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.043","area":"secret","op":"secret.find","source":"new","input":"下週三 11:30–15:30 開會","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.044","area":"secret","op":"secret.find","source":"new","input":"Uptime: 207 days, 23:38:32","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.045","area":"secret","op":"secret.find","source":"new","input":"時區 UTC+08:00，伺服器時間 20:27:13","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.046","area":"secret","op":"secret.find","source":"new","input":"訂單編號：20240426213763","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.047","area":"secret","op":"secret.find","source":"new","input":"Order #262966717 has shipped.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.048","area":"secret","op":"secret.find","source":"new","input":"Your order 076-9107385-7227504 will arrive tomorrow.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.049","area":"secret","op":"secret.find","source":"new","input":"發票號碼 NN-58591012，金額 NT$71,801","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.050","area":"secret","op":"secret.find","source":"new","input":"電子發票 JH68813070 已開立，載具 /AX5U60N","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.051","area":"secret","op":"secret.find","source":"new","input":"統一發票 NH-37435540 中獎號碼對獎","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.052","area":"secret","op":"secret.find","source":"new","input":"Invoice INV-2024-07596  Total: $305.95","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.053","area":"secret","op":"secret.find","source":"new","input":"Tracking number: 1ZEWG3386209305067","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.054","area":"secret","op":"secret.find","source":"new","input":"黑貓宅急便託運單號 5943-1489-4319","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.055","area":"secret","op":"secret.find","source":"new","input":"7-11 交貨便 取件代碼 25206360","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.056","area":"secret","op":"secret.find","source":"new","input":"USPS tracking 9400704828946683280227","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.057","area":"secret","op":"secret.find","source":"new","input":"PO-255589 / SO-343890 / Qty 420","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.058","area":"secret","op":"secret.find","source":"new","input":"退貨編號 RMA7755725，請於 22 天內寄回","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.059","area":"secret","op":"secret.find","source":"new","input":"掛號號碼 089414","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.060","area":"secret","op":"secret.find","source":"new","input":"Booking ref: GYWLVB, flight CI576, seat 32F","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.061","area":"secret","op":"secret.find","source":"new","input":"高鐵訂位代號 46583475，12 車 1D","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.062","area":"secret","op":"secret.find","source":"new","input":"Ticket #361554 assigned to on-call","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.063","area":"secret","op":"secret.find","source":"new","input":"Case ID: 46404-284899","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.064","area":"secret","op":"secret.find","source":"new","input":"Server IP: 41.105.10.158","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.065","area":"secret","op":"secret.find","source":"new","input":"inet 128.10.190.150 netmask 255.255.255.0 broadcast 192.168.1.255","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.066","area":"secret","op":"secret.find","source":"new","input":"117.216.146.114 - - [09/Dec/2021:21:15:31 +0800] \"GET /index.html HTTP/1.1\" 200 20136","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.067","area":"secret","op":"secret.find","source":"new","input":"allow from 206.226.235.185/32","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.068","area":"secret","op":"secret.find","source":"new","input":"IPv6 位址：2001:db8:9d0a:db2d:7a8d:6be5:6c11:b5f3","expect":{"clean":true},"tags":["zh-tw","network"]}
+{"id":"benign.num.069","area":"secret","op":"secret.find","source":"new","input":"listen [2001:db8:a5ad:519f:d659:3218:d357:52e4]:80;","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.070","area":"secret","op":"secret.find","source":"new","input":"MAC 11:c1:a0:1b:ed:81","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.071","area":"secret","op":"secret.find","source":"new","input":"port 40154 → 20404","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.072","area":"secret","op":"secret.find","source":"new","input":"Upgraded from v4.11.44 to v6.17.41","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.073","area":"secret","op":"secret.find","source":"new","input":"version = \"21.9.108\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.074","area":"secret","op":"secret.find","source":"new","input":"\"lodash\": \"^24.27.72\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.075","area":"secret","op":"secret.find","source":"new","input":"版本 3.17.37-beta.6 已釋出","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.076","area":"secret","op":"secret.find","source":"new","input":"15.21.34-rc.3+build.5876","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.077","area":"secret","op":"secret.find","source":"new","input":"Build #26652 passed (418 tests, 30 skipped)","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.078","area":"secret","op":"secret.find","source":"new","input":"Windows 11 版本 24H2（OS 組建 26100.1991）","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.079","area":"secret","op":"secret.find","source":"new","input":"Chrome 138.0.6979.129","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.080","area":"secret","op":"secret.find","source":"new","input":"Kernel 5.8.95-44-generic","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.081","area":"secret","op":"secret.find","source":"new","input":"Fixed in commit bcc2a8f, see PR #6946.","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.082","area":"secret","op":"secret.find","source":"new","input":"這個 bug 在 7b7a95a 修掉了，47d3095 之後的版本都沒問題","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.083","area":"secret","op":"secret.find","source":"new","input":"commit 04a4c7b2afd91a7297ec552eb0d81bc8f300619d\nAuthor: Mei <mei@example.invalid>\nDate:   Mon Aug 21 02:14:11 2025 +0800","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.084","area":"secret","op":"secret.find","source":"new","input":"7101ee9..5a069eb  main -> main","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.085","area":"secret","op":"secret.find","source":"new","input":"request_id: 97ae4228-11f7-4885-8d5f-0b0443c75dd7","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.086","area":"secret","op":"secret.find","source":"new","input":"id: b5b97e1f-f6a5-4605-ab66-4eaff7eae95f","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.087","area":"secret","op":"secret.find","source":"new","input":"使用者 ID b78a454d-7381-4e3f-948c-6f528421af81 的資料已同步","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.088","area":"secret","op":"secret.find","source":"new","input":"correlationId=2adc624b-4f40-4525-82fa-86de20dd6e2e","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.089","area":"secret","op":"secret.find","source":"new","input":"SHA256 checksum: 0079b61f41e9b14676d5bf24be4faa2cfec44f116fa1c520e117328a9e2588cb","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.090","area":"secret","op":"secret.find","source":"new","input":"39361e3aa589295c27b0b2e5fca110053b9dd727bc4ad0fed481d33a4cd0c83b  ubuntu-24.04-live-server-amd64.iso","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.091","area":"secret","op":"secret.find","source":"new","input":"md5: d7530d3334a7d697adb556d005e5a373","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.092","area":"secret","op":"secret.find","source":"new","input":"sha1sum = eda5c434febab954fa5dd316ffb6255f4ff9ea80","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.093","area":"secret","op":"secret.find","source":"new","input":"\"integrity\": \"sha512-jEK3XcDIkiSIifwWYRdJ+sf83ECDZh6KxvQaF0RhaCm/hQhYQSH812Wbw/BCqtG6DhQL/TablRwZczwL/U94Mh==\"","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.094","area":"secret","op":"secret.find","source":"new","input":"password_hash: 9f6d0b5e8a3153a85bd7a699521c4f1cfb355e88e9c8bdc832322f3f386ce186","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.095","area":"secret","op":"secret.find","source":"new","input":"ETag: \"e5efea34c1b16fda53799bdd8d4f9d62\"","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.096","area":"secret","op":"secret.find","source":"new","input":"docker image sha256:e7576cecd4b76eb59e12483711d202e698b5b4413ce153f90445a34c7b3a2c75","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.097","area":"secret","op":"secret.find","source":"new","input":"ISBN 978-1-9101-9994-7","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.098","area":"secret","op":"secret.find","source":"new","input":"書號 ISBN：978-0-0064-1963-1，定價 792 元","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.099","area":"secret","op":"secret.find","source":"new","input":"郵遞區號 10021","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.100","area":"secret","op":"secret.find","source":"new","input":"寄到 40398 臺北市中正區重慶南路一段 163 號","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.101","area":"secret","op":"secret.find","source":"new","input":"ZIP code 75646","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.102","area":"secret","op":"secret.find","source":"new","input":"Postcode: SW1A 3EE","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.103","area":"secret","op":"secret.find","source":"new","input":"〒044-4396","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.104","area":"secret","op":"secret.find","source":"new","input":"總機 (06)138-1577 轉分機 518","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.105","area":"secret","op":"secret.find","source":"new","input":"Call us at ext. 9199","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.106","area":"secret","op":"secret.find","source":"new","input":"服務專線 0800-412-464","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.107","area":"secret","op":"secret.find","source":"new","input":"Tel: (555) 0157","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.108","area":"secret","op":"secret.find","source":"new","input":"傳真 (06)513-0157","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.109","area":"secret","op":"secret.find","source":"new","input":"小計 NT$47,079，運費 NT$60，合計 NT$38,783","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.110","area":"secret","op":"secret.find","source":"new","input":"Total: $9726.83 (incl. $9438.07 tax)","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.111","area":"secret","op":"secret.find","source":"new","input":"€1279.49 / £9096.34 / ¥93,450","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.112","area":"secret","op":"secret.find","source":"new","input":"本季營收 60,918 億元，年增 17.7%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.113","area":"secret","op":"secret.find","source":"new","input":"The 2022-21 season averaged 32.5 points per game.","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.114","area":"secret","op":"secret.find","source":"new","input":"身高 177 公分、體重 70.2 公斤","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.115","area":"secret","op":"secret.find","source":"new","input":"坐標 25.517824, 120.961664","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.116","area":"secret","op":"secret.find","source":"new","input":"Dimensions: 173 x 188 x 41 mm, 1510 g","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.117","area":"secret","op":"secret.find","source":"new","input":"溫度 33.0°C，濕度 91%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.118","area":"secret","op":"secret.find","source":"new","input":"Room 324, Building A","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.119","area":"secret","op":"secret.find","source":"new","input":"學號 97631968、座號 36","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.120","area":"secret","op":"secret.find","source":"new","input":"Employee no. E770330","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.121","area":"secret","op":"secret.find","source":"new","input":"Serial: WENR-8202-3471","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.122","area":"secret","op":"secret.find","source":"new","input":"型號 PF-9204W","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.123","area":"secret","op":"secret.find","source":"new","input":"車牌 YWV-5737","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.124","area":"secret","op":"secret.find","source":"new","input":"會員編號 3579031944","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.125","area":"secret","op":"secret.find","source":"new","input":"第 45 期，第 69 頁至第 121 頁","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.126","area":"secret","op":"secret.find","source":"new","input":"Lot 18120574 exp 2028/05","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.127","area":"secret","op":"secret.find","source":"new","input":"pid 65895, ppid 867, rss 196980 KB","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.128","area":"secret","op":"secret.find","source":"new","input":"HTTP/1.1 404, Content-Length: 705385","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.129","area":"secret","op":"secret.find","source":"new","input":"Elapsed: 90.445s, 168/548 passed","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.130","area":"secret","op":"secret.find","source":"new","input":"電話會議代碼 741 401 292","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.131","area":"secret","op":"secret.find","source":"new","input":"Meeting ID: 771 2069 7243","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.132","area":"secret","op":"secret.find","source":"new","input":"Wi-Fi 密碼在櫃台，SSID 是 Cafe_7708","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.133","area":"secret","op":"secret.find","source":"new","input":"股票代號 1315，收盤 133.8 元，成交 72,084 張","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.134","area":"secret","op":"secret.find","source":"new","input":"Account balance as of 10/22: $7949.12","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.135","area":"secret","op":"secret.find","source":"new","input":"會議時間：2022/09/02 15:35","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.136","area":"secret","op":"secret.find","source":"new","input":"截止日期 2026年2月12日（星期一）","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.137","area":"secret","op":"secret.find","source":"new","input":"民國114年6月24日","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.138","area":"secret","op":"secret.find","source":"new","input":"Due: Nov 27, 2026 at 4:47 PM","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.139","area":"secret","op":"secret.find","source":"new","input":"Released on 11/09/2023","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.140","area":"secret","op":"secret.find","source":"new","input":"2019-02-02T16:36:52Z","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.141","area":"secret","op":"secret.find","source":"new","input":"2023-02-08T04:20:35.851+08:00","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.142","area":"secret","op":"secret.find","source":"new","input":"timestamp=1718651119","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.143","area":"secret","op":"secret.find","source":"new","input":"\"created_at\": 1746993317873","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.144","area":"secret","op":"secret.find","source":"new","input":"[2019-08-27 22:39:32,477] INFO worker-3 finished job in 3469 ms","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.145","area":"secret","op":"secret.find","source":"new","input":"11.11.2021","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.146","area":"secret","op":"secret.find","source":"new","input":"20191127_backup.tar.gz","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.147","area":"secret","op":"secret.find","source":"new","input":"下週二 11:00–13:00 開會","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.148","area":"secret","op":"secret.find","source":"new","input":"Uptime: 189 days, 8:42:12","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.149","area":"secret","op":"secret.find","source":"new","input":"時區 UTC+08:00，伺服器時間 23:50:19","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.150","area":"secret","op":"secret.find","source":"new","input":"訂單編號：20200214063583","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.151","area":"secret","op":"secret.find","source":"new","input":"Order #328105172 has shipped.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.152","area":"secret","op":"secret.find","source":"new","input":"Your order 667-1620991-7061442 will arrive tomorrow.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.153","area":"secret","op":"secret.find","source":"new","input":"發票號碼 TD-60898788，金額 NT$73,031","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.154","area":"secret","op":"secret.find","source":"new","input":"電子發票 GJ62254170 已開立，載具 /8XJX4MU","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.155","area":"secret","op":"secret.find","source":"new","input":"統一發票 FN-03163718 中獎號碼對獎","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.156","area":"secret","op":"secret.find","source":"new","input":"Invoice INV-2024-95192  Total: $5839.93","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.157","area":"secret","op":"secret.find","source":"new","input":"Tracking number: 1ZEKB7592113113889","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.158","area":"secret","op":"secret.find","source":"new","input":"黑貓宅急便託運單號 4468-4494-8432","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.159","area":"secret","op":"secret.find","source":"new","input":"7-11 交貨便 取件代碼 13273865","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.160","area":"secret","op":"secret.find","source":"new","input":"USPS tracking 9400415998998957614357","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.161","area":"secret","op":"secret.find","source":"new","input":"PO-940325 / SO-151997 / Qty 120","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.162","area":"secret","op":"secret.find","source":"new","input":"退貨編號 RMA2454584，請於 16 天內寄回","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.163","area":"secret","op":"secret.find","source":"new","input":"掛號號碼 875608","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.164","area":"secret","op":"secret.find","source":"new","input":"Booking ref: WQJLNE, flight CI637, seat 20K","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.165","area":"secret","op":"secret.find","source":"new","input":"高鐵訂位代號 73738510，7 車 17C","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.166","area":"secret","op":"secret.find","source":"new","input":"Ticket #110205 assigned to on-call","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.167","area":"secret","op":"secret.find","source":"new","input":"Case ID: 38446-150034","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.168","area":"secret","op":"secret.find","source":"new","input":"Server IP: 88.112.131.217","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.169","area":"secret","op":"secret.find","source":"new","input":"inet 243.188.151.150 netmask 255.255.255.0 broadcast 192.168.1.255","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.170","area":"secret","op":"secret.find","source":"new","input":"218.204.71.113 - - [16/Jan/2027:13:46:13 +0800] \"GET /index.html HTTP/1.1\" 200 2425","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.171","area":"secret","op":"secret.find","source":"new","input":"allow from 197.209.38.145/24","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.172","area":"secret","op":"secret.find","source":"new","input":"IPv6 位址：2001:db8:dd36:7d8b:c84d:759a:6089:2771","expect":{"clean":true},"tags":["zh-tw","network"]}
+{"id":"benign.num.173","area":"secret","op":"secret.find","source":"new","input":"listen [2001:db8:f1c0:473d:f064:f7f7:a14e:776]:8080;","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.174","area":"secret","op":"secret.find","source":"new","input":"MAC e7:8a:34:b3:b9:96","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.175","area":"secret","op":"secret.find","source":"new","input":"port 25579 → 1729","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.176","area":"secret","op":"secret.find","source":"new","input":"Upgraded from v19.16.43 to v22.18.69","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.177","area":"secret","op":"secret.find","source":"new","input":"version = \"22.17.102\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.178","area":"secret","op":"secret.find","source":"new","input":"\"lodash\": \"^19.12.47\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.179","area":"secret","op":"secret.find","source":"new","input":"版本 14.6.112-beta.8 已釋出","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.180","area":"secret","op":"secret.find","source":"new","input":"2.13.58-rc.5+build.7310","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.181","area":"secret","op":"secret.find","source":"new","input":"Build #67770 passed (4787 tests, 13 skipped)","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.182","area":"secret","op":"secret.find","source":"new","input":"Windows 11 版本 24H2（OS 組建 22631.2446）","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.183","area":"secret","op":"secret.find","source":"new","input":"Chrome 135.0.5081.62","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.184","area":"secret","op":"secret.find","source":"new","input":"Kernel 6.10.65-96-generic","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.185","area":"secret","op":"secret.find","source":"new","input":"Fixed in commit 122a261, see PR #3352.","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.186","area":"secret","op":"secret.find","source":"new","input":"這個 bug 在 68eaf1a 修掉了，c0ed072 之後的版本都沒問題","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.187","area":"secret","op":"secret.find","source":"new","input":"commit da62babcf6975a2d858ad35766ccf58e999e6eb6\nAuthor: Mei <mei@example.invalid>\nDate:   Mon Sep 17 00:46:03 2024 +0800","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.188","area":"secret","op":"secret.find","source":"new","input":"52dc5ce..cfef22b  main -> main","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.189","area":"secret","op":"secret.find","source":"new","input":"request_id: 18049b91-eb11-422a-9900-fe14a8a77178","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.190","area":"secret","op":"secret.find","source":"new","input":"id: ed75742b-c8c5-4222-90e1-0a25ec4d28ab","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.191","area":"secret","op":"secret.find","source":"new","input":"使用者 ID d1dcb873-d736-42f4-92e4-b40e6377cc70 的資料已同步","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.192","area":"secret","op":"secret.find","source":"new","input":"correlationId=15c510d0-e320-4f78-b9c6-051e26e09b67","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.193","area":"secret","op":"secret.find","source":"new","input":"SHA256 checksum: 7807dbd0d6510c5f0ae0a05946260f40e971126929ecdbb14a89c75e1386b54a","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.194","area":"secret","op":"secret.find","source":"new","input":"7d23139edadd13dc2a7bab72726db351c6ebf7acfafa9cab390d7f0308fc35c4  ubuntu-24.04-live-server-amd64.iso","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.195","area":"secret","op":"secret.find","source":"new","input":"md5: a9139c6d4eb415d35933e5982173ea10","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.196","area":"secret","op":"secret.find","source":"new","input":"sha1sum = 8d87a89159a273b6d422abfaf8d7b380ba515fe7","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.197","area":"secret","op":"secret.find","source":"new","input":"\"integrity\": \"sha512-jEk9k+ZukUQTVc0pRPonLxwrWOxH677N/lHM4EmTOVG5KbDXndlrZd4MqTc5DSQ62jLyiaRgZM0SjJCxv8oM6S==\"","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.198","area":"secret","op":"secret.find","source":"new","input":"password_hash: 3b743da03e3abd6feefbf6427bdcbca29c554a38d34c1bcd962d61c72dfa79b8","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.199","area":"secret","op":"secret.find","source":"new","input":"ETag: \"4807b6af9d2937d31756e9ad1cfafe80\"","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.200","area":"secret","op":"secret.find","source":"new","input":"docker image sha256:dd53077707a96ed4947ddaa58311da3f3d4ceefe6cf7965ab683c88d05e56dcb","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.201","area":"secret","op":"secret.find","source":"new","input":"ISBN 978-0-7557-8441-7","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.202","area":"secret","op":"secret.find","source":"new","input":"書號 ISBN：978-0-0838-6249-8，定價 583 元","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.203","area":"secret","op":"secret.find","source":"new","input":"郵遞區號 30080","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.204","area":"secret","op":"secret.find","source":"new","input":"寄到 10681 臺北市中正區重慶南路一段 176 號","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.205","area":"secret","op":"secret.find","source":"new","input":"ZIP code 67173","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.206","area":"secret","op":"secret.find","source":"new","input":"Postcode: SW1A 6BA","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.207","area":"secret","op":"secret.find","source":"new","input":"〒842-3221","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.208","area":"secret","op":"secret.find","source":"new","input":"總機 (03)842-5249 轉分機 119","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.209","area":"secret","op":"secret.find","source":"new","input":"Call us at ext. 6176","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.210","area":"secret","op":"secret.find","source":"new","input":"服務專線 0800-261-953","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.211","area":"secret","op":"secret.find","source":"new","input":"Tel: (555) 0126","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.212","area":"secret","op":"secret.find","source":"new","input":"傳真 (03)665-4887","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.213","area":"secret","op":"secret.find","source":"new","input":"小計 NT$32,033，運費 NT$100，合計 NT$56,067","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.214","area":"secret","op":"secret.find","source":"new","input":"Total: $4743.62 (incl. $2174.44 tax)","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.215","area":"secret","op":"secret.find","source":"new","input":"€5669.98 / £4453.97 / ¥14,888","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.216","area":"secret","op":"secret.find","source":"new","input":"本季營收 84,394 億元，年增 34.3%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.217","area":"secret","op":"secret.find","source":"new","input":"The 2021-15 season averaged 22.3 points per game.","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.218","area":"secret","op":"secret.find","source":"new","input":"身高 150 公分、體重 66.0 公斤","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.219","area":"secret","op":"secret.find","source":"new","input":"坐標 24.383663, 119.358536","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.220","area":"secret","op":"secret.find","source":"new","input":"Dimensions: 283 x 58 x 41 mm, 1204 g","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.221","area":"secret","op":"secret.find","source":"new","input":"溫度 11.9°C，濕度 89%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.222","area":"secret","op":"secret.find","source":"new","input":"Room 724, Building D","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.223","area":"secret","op":"secret.find","source":"new","input":"學號 56957311、座號 37","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.224","area":"secret","op":"secret.find","source":"new","input":"Employee no. E512873","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.225","area":"secret","op":"secret.find","source":"new","input":"Serial: AYKS-0034-2030","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.226","area":"secret","op":"secret.find","source":"new","input":"型號 VU-1440N","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.227","area":"secret","op":"secret.find","source":"new","input":"車牌 HXP-0418","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.228","area":"secret","op":"secret.find","source":"new","input":"會員編號 9342208499","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.229","area":"secret","op":"secret.find","source":"new","input":"第 23 期，第 30 頁至第 282 頁","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.230","area":"secret","op":"secret.find","source":"new","input":"Lot 95989328 exp 2025/04","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.231","area":"secret","op":"secret.find","source":"new","input":"pid 64694, ppid 401, rss 817210 KB","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.232","area":"secret","op":"secret.find","source":"new","input":"HTTP/1.1 500, Content-Length: 663144","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.233","area":"secret","op":"secret.find","source":"new","input":"Elapsed: 56.903s, 149/541 passed","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.234","area":"secret","op":"secret.find","source":"new","input":"電話會議代碼 785 256 376","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.235","area":"secret","op":"secret.find","source":"new","input":"Meeting ID: 054 1555 0030","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.236","area":"secret","op":"secret.find","source":"new","input":"Wi-Fi 密碼在櫃台，SSID 是 Cafe_8589","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.237","area":"secret","op":"secret.find","source":"new","input":"股票代號 7700，收盤 695.2 元，成交 93,413 張","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.238","area":"secret","op":"secret.find","source":"new","input":"Account balance as of 5/2: $150.70","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.239","area":"secret","op":"secret.find","source":"new","input":"會議時間：2027/03/09 17:52","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.240","area":"secret","op":"secret.find","source":"new","input":"截止日期 2022年1月28日（星期二）","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.241","area":"secret","op":"secret.find","source":"new","input":"民國108年11月3日","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.242","area":"secret","op":"secret.find","source":"new","input":"Due: Feb 17, 2021 at 2:17 PM","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.243","area":"secret","op":"secret.find","source":"new","input":"Released on 09/13/2025","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.244","area":"secret","op":"secret.find","source":"new","input":"2020-04-20T02:15:24Z","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.245","area":"secret","op":"secret.find","source":"new","input":"2019-06-05T20:02:02.123+08:00","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.246","area":"secret","op":"secret.find","source":"new","input":"timestamp=1505771493","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.247","area":"secret","op":"secret.find","source":"new","input":"\"created_at\": 1753691425459","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.248","area":"secret","op":"secret.find","source":"new","input":"[2023-05-27 04:37:50,963] INFO worker-11 finished job in 1589 ms","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.249","area":"secret","op":"secret.find","source":"new","input":"05.03.2025","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.250","area":"secret","op":"secret.find","source":"new","input":"20220621_backup.tar.gz","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.251","area":"secret","op":"secret.find","source":"new","input":"下週三 10:30–17:00 開會","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.252","area":"secret","op":"secret.find","source":"new","input":"Uptime: 108 days, 5:32:00","expect":{"clean":true},"tags":["en","datetime"]}
+{"id":"benign.num.253","area":"secret","op":"secret.find","source":"new","input":"時區 UTC+08:00，伺服器時間 11:07:33","expect":{"clean":true},"tags":["zh-tw","datetime"]}
+{"id":"benign.num.254","area":"secret","op":"secret.find","source":"new","input":"訂單編號：20250124238407","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.255","area":"secret","op":"secret.find","source":"new","input":"Order #698903602 has shipped.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.256","area":"secret","op":"secret.find","source":"new","input":"Your order 505-9938478-4176394 will arrive tomorrow.","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.257","area":"secret","op":"secret.find","source":"new","input":"發票號碼 KG-32705486，金額 NT$76,895","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.258","area":"secret","op":"secret.find","source":"new","input":"電子發票 ZR15416490 已開立，載具 /VSQA99T","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.259","area":"secret","op":"secret.find","source":"new","input":"統一發票 AS-75173630 中獎號碼對獎","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.260","area":"secret","op":"secret.find","source":"new","input":"Invoice INV-2021-73063  Total: $7880.84","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.261","area":"secret","op":"secret.find","source":"new","input":"Tracking number: 1ZHPN6588905187236","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.262","area":"secret","op":"secret.find","source":"new","input":"黑貓宅急便託運單號 2067-9101-8441","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.263","area":"secret","op":"secret.find","source":"new","input":"7-11 交貨便 取件代碼 73874379","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.264","area":"secret","op":"secret.find","source":"new","input":"USPS tracking 9400453756593916229011","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.265","area":"secret","op":"secret.find","source":"new","input":"PO-711713 / SO-963668 / Qty 318","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.266","area":"secret","op":"secret.find","source":"new","input":"退貨編號 RMA8823897，請於 21 天內寄回","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.267","area":"secret","op":"secret.find","source":"new","input":"掛號號碼 863458","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.268","area":"secret","op":"secret.find","source":"new","input":"Booking ref: XZXACY, flight CI959, seat 10G","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.269","area":"secret","op":"secret.find","source":"new","input":"高鐵訂位代號 58394937，6 車 16A","expect":{"clean":true},"tags":["zh-tw","order-id"]}
+{"id":"benign.num.270","area":"secret","op":"secret.find","source":"new","input":"Ticket #361588 assigned to on-call","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.271","area":"secret","op":"secret.find","source":"new","input":"Case ID: 18516-559508","expect":{"clean":true},"tags":["en","order-id"]}
+{"id":"benign.num.272","area":"secret","op":"secret.find","source":"new","input":"Server IP: 152.73.77.213","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.273","area":"secret","op":"secret.find","source":"new","input":"inet 144.48.49.222 netmask 255.255.255.0 broadcast 192.168.1.255","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.274","area":"secret","op":"secret.find","source":"new","input":"103.117.140.32 - - [14/Feb/2023:11:46:03 +0800] \"GET /index.html HTTP/1.1\" 200 41848","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.275","area":"secret","op":"secret.find","source":"new","input":"allow from 115.7.53.140/16","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.276","area":"secret","op":"secret.find","source":"new","input":"IPv6 位址：2001:db8:b8a7:586a:cbc4:b874:78c2:e835","expect":{"clean":true},"tags":["zh-tw","network"]}
+{"id":"benign.num.277","area":"secret","op":"secret.find","source":"new","input":"listen [2001:db8:5884:b3a4:8974:d5c5:300d:8972]:8080;","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.278","area":"secret","op":"secret.find","source":"new","input":"MAC d7:3a:bd:36:85:10","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.279","area":"secret","op":"secret.find","source":"new","input":"port 64531 → 41200","expect":{"clean":true},"tags":["en","network"]}
+{"id":"benign.num.280","area":"secret","op":"secret.find","source":"new","input":"Upgraded from v2.40.87 to v5.38.83","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.281","area":"secret","op":"secret.find","source":"new","input":"version = \"24.26.83\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.282","area":"secret","op":"secret.find","source":"new","input":"\"lodash\": \"^14.3.95\"","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.283","area":"secret","op":"secret.find","source":"new","input":"版本 16.38.23-beta.6 已釋出","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.284","area":"secret","op":"secret.find","source":"new","input":"15.15.4-rc.5+build.514","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.285","area":"secret","op":"secret.find","source":"new","input":"Build #50041 passed (3938 tests, 26 skipped)","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.286","area":"secret","op":"secret.find","source":"new","input":"Windows 11 版本 22H2（OS 組建 26100.3613）","expect":{"clean":true},"tags":["zh-tw","version"]}
+{"id":"benign.num.287","area":"secret","op":"secret.find","source":"new","input":"Chrome 125.0.7471.59","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.288","area":"secret","op":"secret.find","source":"new","input":"Kernel 6.6.92-33-generic","expect":{"clean":true},"tags":["en","version"]}
+{"id":"benign.num.289","area":"secret","op":"secret.find","source":"new","input":"Fixed in commit e53874b, see PR #3372.","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.290","area":"secret","op":"secret.find","source":"new","input":"這個 bug 在 bd17ede 修掉了，649155e 之後的版本都沒問題","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.291","area":"secret","op":"secret.find","source":"new","input":"commit 897cb1ab03239bd1817fdade9cc95582a54b3e8e\nAuthor: Mei <mei@example.invalid>\nDate:   Wed Feb 25 20:44:17 2024 +0800","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.292","area":"secret","op":"secret.find","source":"new","input":"b5f09a1..75b2bfd  main -> main","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.293","area":"secret","op":"secret.find","source":"new","input":"request_id: 38ed1f78-e5d4-4c92-ae22-f2ac3f7897f4","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.294","area":"secret","op":"secret.find","source":"new","input":"id: 466bf70e-9f44-4b82-9226-650ee63102a3","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.295","area":"secret","op":"secret.find","source":"new","input":"使用者 ID 3ed887ad-2f14-40ce-b83e-a46a84cc58e4 的資料已同步","expect":{"clean":true},"tags":["zh-tw","hash-id"]}
+{"id":"benign.num.296","area":"secret","op":"secret.find","source":"new","input":"correlationId=9d61d0b3-4fca-4e26-a968-fc778ef75c5a","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.297","area":"secret","op":"secret.find","source":"new","input":"SHA256 checksum: 93cf4b372b2b2c6b4b98d1c7a4b42226ea24d63382d2b8d71f2f30e1f0616175","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.298","area":"secret","op":"secret.find","source":"new","input":"5f1466cf205b404a1bb32e35c5beeda8b6ea3552268d73494f3af590b8d762ce  ubuntu-24.04-live-server-amd64.iso","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.299","area":"secret","op":"secret.find","source":"new","input":"md5: ba76b9d7593a9b16409cb34e58971b3d","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.300","area":"secret","op":"secret.find","source":"new","input":"sha1sum = a609db03d50c5032cebd6ff113cbd77acea7a052","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.301","area":"secret","op":"secret.find","source":"new","input":"\"integrity\": \"sha512-0xtR1Fx5RaprmvtCBKFuZtRr7e0XOKhCWjlKeqbHDBv1FQo5wkcsoGWbGd83/k69/hxti2jCBkVdLqXGMuPrnt==\"","expect":{"clean":true},"tags":["en","hash-id"]}
+{"id":"benign.num.302","area":"secret","op":"secret.find","source":"new","input":"password_hash: fd2dfd80729d73efd6576a3b3b4db9c4813c11f9cb280cd2e13b224adda850f8","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.303","area":"secret","op":"secret.find","source":"new","input":"ETag: \"0c42af3ef8f6efd99863ebf14500d6bb\"","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.304","area":"secret","op":"secret.find","source":"new","input":"docker image sha256:92a04d01252219063b03d9f587793f9af86ce2cb70fce01c1715435f779ca6c4","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.305","area":"secret","op":"secret.find","source":"new","input":"ISBN 978-0-9084-3594-4","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.306","area":"secret","op":"secret.find","source":"new","input":"書號 ISBN：978-0-8018-0053-5，定價 562 元","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.307","area":"secret","op":"secret.find","source":"new","input":"郵遞區號 10645","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.308","area":"secret","op":"secret.find","source":"new","input":"寄到 40384 臺北市中正區重慶南路一段 165 號","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.309","area":"secret","op":"secret.find","source":"new","input":"ZIP code 84317","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.310","area":"secret","op":"secret.find","source":"new","input":"Postcode: SW1A 9AE","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.311","area":"secret","op":"secret.find","source":"new","input":"〒560-5709","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.312","area":"secret","op":"secret.find","source":"new","input":"總機 (06)377-9093 轉分機 780","expect":{"clean":true},"tags":["zh-tw","postal-phone"]}
+{"id":"benign.num.313","area":"secret","op":"secret.find","source":"new","input":"Call us at ext. 5240","expect":{"clean":true},"tags":["en","postal-phone"]}
+{"id":"benign.num.314","area":"secret","op":"secret.find","source":"new","input":"服務專線 0800-147-846","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.315","area":"secret","op":"secret.find","source":"new","input":"Tel: (555) 0100","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.316","area":"secret","op":"secret.find","source":"new","input":"傳真 (02)6761-1745","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.317","area":"secret","op":"secret.find","source":"new","input":"小計 NT$79,172，運費 NT$100，合計 NT$14,606","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.318","area":"secret","op":"secret.find","source":"new","input":"Total: $4258.20 (incl. $2287.16 tax)","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.319","area":"secret","op":"secret.find","source":"new","input":"€6551.69 / £4337.57 / ¥57,757","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.320","area":"secret","op":"secret.find","source":"new","input":"本季營收 14,623 億元，年增 60.9%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.321","area":"secret","op":"secret.find","source":"new","input":"The 2019-18 season averaged 19.5 points per game.","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.322","area":"secret","op":"secret.find","source":"new","input":"身高 155 公分、體重 74.8 公斤","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.323","area":"secret","op":"secret.find","source":"new","input":"坐標 24.768968, 119.405444","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.324","area":"secret","op":"secret.find","source":"new","input":"Dimensions: 59 x 277 x 33 mm, 412 g","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.325","area":"secret","op":"secret.find","source":"new","input":"溫度 16.8°C，濕度 84%","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.326","area":"secret","op":"secret.find","source":"new","input":"Room 305, Building D","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.327","area":"secret","op":"secret.find","source":"new","input":"學號 26541178、座號 9","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.328","area":"secret","op":"secret.find","source":"new","input":"Employee no. E307208","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.329","area":"secret","op":"secret.find","source":"new","input":"Serial: FDHC-3079-6800","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.330","area":"secret","op":"secret.find","source":"new","input":"型號 QZ-4681R","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.331","area":"secret","op":"secret.find","source":"new","input":"車牌 GEN-2617","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.332","area":"secret","op":"secret.find","source":"new","input":"會員編號 1320257698","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.333","area":"secret","op":"secret.find","source":"new","input":"第 2 期，第 72 頁至第 159 頁","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.334","area":"secret","op":"secret.find","source":"new","input":"Lot 36725485 exp 2026/12","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.335","area":"secret","op":"secret.find","source":"new","input":"pid 28158, ppid 556, rss 409141 KB","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.336","area":"secret","op":"secret.find","source":"new","input":"HTTP/1.1 500, Content-Length: 154737","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.337","area":"secret","op":"secret.find","source":"new","input":"Elapsed: 88.181s, 149/521 passed","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.338","area":"secret","op":"secret.find","source":"new","input":"電話會議代碼 780 610 473","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.339","area":"secret","op":"secret.find","source":"new","input":"Meeting ID: 139 8187 6408","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.340","area":"secret","op":"secret.find","source":"new","input":"Wi-Fi 密碼在櫃台，SSID 是 Cafe_3824","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.341","area":"secret","op":"secret.find","source":"new","input":"股票代號 3986，收盤 888.2 元，成交 93,397 張","expect":{"clean":true},"tags":["zh-tw","measure-misc"]}
+{"id":"benign.num.342","area":"secret","op":"secret.find","source":"new","input":"Account balance as of 9/7: $2880.74","expect":{"clean":true},"tags":["en","measure-misc"]}
+{"id":"benign.num.343","area":"secret","op":"secret.find","source":"new","input":"date,store,qty,amount\n2027-01-11,802,80,3419.10\n2019-07-09,957,86,5096.86\n2026-08-01,155,43,1709.98\n2024-06-24,841,66,879.67\n2024-08-08,366,75,2621.37\n2023-07-15,777,75,521.91\n2023-12-18,317,29,3777.62","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.344","area":"secret","op":"secret.find","source":"new","input":"date,store,qty,amount\n2023-06-02,347,3,9381.80\n2026-09-08,154,30,1578.59\n2025-12-22,184,29,907.11\n2025-10-04,118,35,898.67\n2024-08-22,054,38,4715.57\n2021-02-21,883,88,9791.25\n2025-10-03,842,97,2892.73","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.345","area":"secret","op":"secret.find","source":"new","input":"date,store,qty,amount\n2022-03-13,873,30,2042.76\n2025-04-05,780,5,8763.92\n2021-08-25,986,96,3751.18\n2021-12-22,553,29,3597.75\n2026-02-26,384,52,404.08","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.346","area":"secret","op":"secret.find","source":"new","input":"| 日期 | 品項 | 數量 | 金額 |\n|---|---|---|---|\n| 9/22 | 品項1 | 11 | 84,242 |\n| 8/4 | 品項1 | 12 | 63,860 |\n| 12/19 | 品項5 | 5 | 80,532 |\n| 6/26 | 品項6 | 5 | 4,827 |","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.347","area":"secret","op":"secret.find","source":"new","input":"| 日期 | 品項 | 數量 | 金額 |\n|---|---|---|---|\n| 9/19 | 品項1 | 19 | 55,409 |\n| 11/25 | 品項1 | 28 | 72,415 |\n| 8/8 | 品項2 | 2 | 86,637 |\n| 2/8 | 品項2 | 26 | 46,353 |","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.348","area":"secret","op":"secret.find","source":"new","input":"| 日期 | 品項 | 數量 | 金額 |\n|---|---|---|---|\n| 7/27 | 品項9 | 28 | 33,129 |\n| 12/9 | 品項8 | 21 | 23,645 |\n| 11/1 | 品項1 | 20 | 58,201 |\n| 4/13 | 品項9 | 8 | 84,143 |\n| 3/23 | 品項8 | 20 | 54,878 |","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.349","area":"secret","op":"secret.find","source":"new","input":"id\tname\tscore\n5235\tplayer0\t89577\n7314\tplayer1\t64467\n4514\tplayer2\t33355\n3251\tplayer3\t30586\n5912\tplayer4\t21843\n1202\tplayer5\t25401","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.350","area":"secret","op":"secret.find","source":"new","input":"id\tname\tscore\n7837\tplayer0\t77918\n2810\tplayer1\t87322\n5115\tplayer2\t60162","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.351","area":"secret","op":"secret.find","source":"new","input":"id\tname\tscore\n7747\tplayer0\t85633\n8143\tplayer1\t77314\n1207\tplayer2\t71375","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.352","area":"secret","op":"secret.find","source":"new","input":"NAME       READY   STATUS    RESTARTS   AGE\napi-c9836a529-a8f18   1/1     Running   5          43d\napi-452b7ed7a-b81c7   1/1     Running   2          25d\napi-ae2bb4db0-ad958   1/1     Running   1          5d","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.353","area":"secret","op":"secret.find","source":"new","input":"NAME       READY   STATUS    RESTARTS   AGE\napi-c81995a00-9ca97   1/1     Running   0          79d\napi-6b0ea85be-66ce1   1/1     Running   4          18d\napi-1f8ba492d-93775   1/1     Running   4          71d","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.354","area":"secret","op":"secret.find","source":"new","input":"NAME       READY   STATUS    RESTARTS   AGE\napi-b0eb5344d-bbbde   1/1     Running   0          36d\napi-487202ae1-049e8   1/1     Running   3          65d\napi-885423413-36be5   1/1     Running   5          69d","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.355","area":"secret","op":"secret.find","source":"new","input":"Mon Tue Wed Thu Fri\n579 438 951 733 287\n 17 619 743 981 846\n221 175 685 484 939\n636 237 524 342  29","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.356","area":"secret","op":"secret.find","source":"new","input":"Mon Tue Wed Thu Fri\n 37 573 504 873 768\n445 502 988 298 592\n325 142 204 580 816\n580 472 193 254 912","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.357","area":"secret","op":"secret.find","source":"new","input":"Mon Tue Wed Thu Fri\n 17 456 580 466 415\n318 884 929 932 802\n323 364 853 608 652\n487 539 601 262 394","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.358","area":"secret","op":"secret.find","source":"new","input":"242.110.74.200  64f47d1ba9b7  down\n98.230.138.232  14b96b5a0f12  up\n55.85.180.97  4cc027d0ffcc  up\n11.234.164.247  8d3e40b9dc27  up","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.359","area":"secret","op":"secret.find","source":"new","input":"52.147.167.37  b881bcacd4b1  down\n107.134.14.167  341bf91fa10b  up\n143.168.197.237  306ead0183f9  up\n147.208.162.223  63471f296ccf  up","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.360","area":"secret","op":"secret.find","source":"new","input":"254.184.88.134  e54c6e2b1527  up\n59.101.10.47  24ec7042ec07  down\n96.141.156.167  52f6c7951256  up\n56.170.42.83  3fd1b5577373  down","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.361","area":"secret","op":"secret.find","source":"new","input":"開獎號碼：03 06 09 10 15 33，特別號 28","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.362","area":"secret","op":"secret.find","source":"new","input":"開獎號碼：04 15 19 26 29 44，特別號 35","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.363","area":"secret","op":"secret.find","source":"new","input":"開獎號碼：07 09 10 15 45 46，特別號 21","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.364","area":"secret","op":"secret.find","source":"new","input":"1. 晨跑 88:21\n2. 游泳 22:26\n3. 游泳 73:47\n4. 游泳 10:35","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.365","area":"secret","op":"secret.find","source":"new","input":"1. 游泳 53:03\n2. 游泳 79:33\n3. 單車 62:17\n4. 晨跑 85:27","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.366","area":"secret","op":"secret.find","source":"new","input":"1. 晨跑 15:38\n2. 單車 53:03\n3. 游泳 25:36\n4. 晨跑 78:43","expect":{"clean":true},"tags":["zh-tw","table"]}
+{"id":"benign.num.367","area":"secret","op":"secret.find","source":"new","input":"Q1 62,243\nQ2 99,328\nQ3 88,707\nQ4 61,019","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.368","area":"secret","op":"secret.find","source":"new","input":"Q1 59,937\nQ2 40,377\nQ3 39,637\nQ4 96,242","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.369","area":"secret","op":"secret.find","source":"new","input":"Q1 53,392\nQ2 95,012\nQ3 30,358\nQ4 59,288","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.370","area":"secret","op":"secret.find","source":"new","input":"2020-11-24 1516.55\n2024-09-06 730.04\n2026-04-10 4798.63\n2020-11-06 9524.73\n2021-05-01 2469.56\n2027-03-01 9227.59","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.371","area":"secret","op":"secret.find","source":"new","input":"2022-07-03 7951.80\n2025-06-09 5668.17\n2027-04-16 3931.97\n2024-01-23 7196.16\n2025-03-12 3264.28\n2021-01-03 482.58","expect":{"clean":true},"tags":["en","table"]}
+{"id":"benign.num.372","area":"secret","op":"secret.find","source":"new","input":"2024-08-26 6576.47\n2020-02-19 6799.61\n2023-08-07 4738.97\n2023-11-12 2098.16\n2023-12-28 1135.00\n2021-09-12 3231.58","expect":{"clean":true},"tags":["en","table"]}

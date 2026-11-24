@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png binary
+*.ico binary
+# Corpus inputs must keep exact bytes (CRLF cases are written as \r\n escapes, never raw).
+corpus/** text eol=lf
