@@ -112,11 +112,11 @@ pub struct Report {
 
 ### 1b 待辦（1a 移植時發現）
 
-- `hidden` 的「這一行像不像指令」目前用 `pastejack::command_signals` 代替；舊版是呼叫 `CommandDetector.Analyze`。command 合併後改成 `command::analyze(line).level != None`，並刪掉重複的實作。
-- `hidden` 的 shell 指令清單、同形字清單，以及 `pastejack` 的訊號樣式還寫在程式裡（`const`），要搬到 `rules/`。
+- ✅ `hidden` 的「這一行像不像指令」目前用 `pastejack::command_signals` 代替；舊版是呼叫 `CommandDetector.Analyze`。command 合併後改成 `command::analyze(line).level != None`，並刪掉重複的實作。
+- ✅ `hidden` 的 shell 指令清單、同形字清單，以及 `pastejack` 的訊號樣式還寫在程式裡（`const`），要搬到 `rules/`。
 - 良性語料 `benign.cmd.416`、`417`、`421`：markdown 的 code fence 或行內 code 用到反引號，觸發舊版「拼出來的網址不可信」規則，官方網站清單因此失效（忠實移植的行為）。1b 讓反引號規則排除 markdown fence。
 - `ToDisplayText`（通知用的短文字）由 UI 組合：各 action 用 Fluent 渲染後以 `cmd-explain-separator` 串接，套進 `cmd-explain-display`，再用 `command::truncate_display` 截斷；conformance adapter 是參考實作。
-- 良性語料 `benign.text.126`（馬拉雅拉姆文 ZWJ 後面接空白）被判為隱藏字元，和舊版行為一致；1b 決定要不要放寬例外。
+- ✅ 良性語料 `benign.text.126`（馬拉雅拉姆文 ZWJ 後面接空白）被判為隱藏字元，和舊版行為一致；1b 決定要不要放寬例外。
 
 ## 1.6 品質要求
 
