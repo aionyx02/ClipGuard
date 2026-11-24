@@ -2,7 +2,7 @@
   "format": 1,
   "name": "gitleaks",
   "priority": 20,
-  "description": "由 tools/convert-gitleaks.mjs 從 gitleaks 預設規則轉換產生，不要手動修改。授權見 THIRD_PARTY_NOTICES.md。",
+  "description": "由 cargo xtask rules gitleaks 從 gitleaks 預設規則轉換產生，不要手動修改。授權見 THIRD_PARTY_NOTICES.md。",
   "source": {
     "project": "https://github.com/gitleaks/gitleaks",
     "file": "config/gitleaks.toml",
@@ -68,14 +68,6 @@
     {
       "id": "bitbucket-client-id",
       "reason": "client ID 是公開的識別碼，不是機密"
-    },
-    {
-      "id": "curl-auth-header",
-      "reason": "[^\n]* 往後最多跨 6 行，在 JS 的回溯引擎上遇到一行裡很多個 curl 會變成 O(n²)；curl -H \"Authorization: …\" 由第 2 層的 context-authorization 負責"
-    },
-    {
-      "id": "curl-auth-user",
-      "reason": "同 curl-auth-header（O(n²)）；curl -u 帳號:密碼 目前不偵測"
     },
     {
       "id": "discord-client-id",

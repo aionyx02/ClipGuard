@@ -24,3 +24,12 @@ dist/
 __pycache__/
 .ruff_cache/
 .pytest_cache/
+
+# Claude Code worktrees
+/.claude/worktrees/
+
+# fuzz
+/fuzz/target/
+/fuzz/corpus/
+/fuzz/artifacts/
+/fuzz/coverage/

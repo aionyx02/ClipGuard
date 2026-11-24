@@ -1,0 +1,13 @@
+{
+  "_comment": "Bait-comment keywords (docs/spec/detection-rules.md §3.1, #27): matched case-insensitively anywhere after a '#' on the same line. Each pattern is a regex fragment (Rust `regex` syntax: no lookaround, no backreferences). Only words ClickFix lures use and ordinary comments rarely do; Japanese 認証 and Korean 인증 alone are too common (認証トークン, 인증서), so they need a following ID.",
+  "languages": [
+    { "lang": "en", "note": "also covers most es/pt/fr/de/it/id/tr spellings (roboter, verificación, humano…)", "patterns": ["robot", "captcha", "verif", "human", "cloudflare"] },
+    { "lang": "zh-TW", "patterns": ["驗證", "機器人", "人機"] },
+    { "lang": "zh-CN", "patterns": ["验证", "机器人", "人机"] },
+    { "lang": "ja", "patterns": ["ロボット", "人間であること", "認証\\s*id"] },
+    { "lang": "ko", "patterns": ["로봇", "사람인지", "인증\\s*id"] },
+    { "lang": "pt/fr", "note": "robô does not contain robot; vérification has an accent", "patterns": ["robô", "vérif"] },
+    { "lang": "ru", "patterns": ["робот", "капч", "верифик"] },
+    { "lang": "vi", "patterns": ["người máy", "xác minh"] }
+  ]
+}

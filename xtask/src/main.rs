@@ -4,7 +4,12 @@
 //! cargo run -p xtask -- corpus lint       # format, ids, Text, op docs, leak scan
 //! cargo run -p xtask -- corpus coverage   # every legacy test case is accounted for
 //! cargo run -p xtask -- corpus stats      # cases per area / op
+//! cargo run -p xtask -- corpus run [--area A] [--op O] [--id PREFIX] [-v]
+//! cargo run -p xtask -- corpus benign [-v]  # false-positive metrics
+//! cargo run -p xtask -- rules gitleaks <toml> <version> <commit>  # regenerate rules/gitleaks*.json
 //! ```
+
+mod rules;
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
@@ -26,8 +31,13 @@ fn main() -> ExitCode {
         ["corpus", "lint"] => corpus_lint(),
         ["corpus", "coverage"] => corpus_coverage(),
         ["corpus", "stats"] => corpus_stats(),
+        ["corpus", "run", rest @ ..] => corpus_run(rest),
+        ["corpus", "benign", rest @ ..] => corpus_benign(rest),
+        ["rules", rest @ ..] => rules::run(rest),
         _ => {
-            eprintln!("usage: cargo run -p xtask -- corpus <lint|coverage|stats>");
+            eprintln!(
+                "usage: cargo run -p xtask -- corpus <lint|coverage|stats|run|benign> | rules gitleaks <toml> <version> <commit>"
+            );
             return ExitCode::from(2);
         }
     };
@@ -467,6 +477,101 @@ fn corpus_stats() -> Result<bool> {
     }
     let files: BTreeSet<_> = benign.iter().map(|c| c.file.clone()).collect();
     println!("benign: {} cases in {} files", benign.len(), files.len());
+    Ok(true)
+}
+
+fn parse_filter(args: &[&str]) -> (paste_warden_conformance::Filter, bool) {
+    let mut f = paste_warden_conformance::Filter::default();
+    let mut verbose = false;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match *a {
+            "--area" => f.area = it.next().map(|s| s.to_string()),
+            "--op" => f.op = it.next().map(|s| s.to_string()),
+            "--id" => f.id = it.next().map(|s| s.to_string()),
+            "-v" | "--verbose" => verbose = true,
+            other => eprintln!("ignoring unknown argument {other}"),
+        }
+    }
+    (f, verbose)
+}
+
+fn corpus_run(args: &[&str]) -> Result<bool> {
+    use paste_warden_conformance::{Outcome, run_cases};
+    let (filter, verbose) = parse_filter(args);
+    let summary = run_cases(&filter)?;
+    println!(
+        "{:<34} {:>5} {:>5} {:>6} {:>5} {:>5}",
+        "op", "pass", "fail", "unimpl", "error", "div"
+    );
+    let mut tot = [0usize; 5];
+    for (op, c) in summary.per_op() {
+        println!(
+            "{op:<34} {:>5} {:>5} {:>6} {:>5} {:>5}",
+            c[0], c[1], c[2], c[3], c[4]
+        );
+        for i in 0..5 {
+            tot[i] += c[i];
+        }
+    }
+    println!(
+        "{:<34} {:>5} {:>5} {:>6} {:>5} {:>5}",
+        "TOTAL", tot[0], tot[1], tot[2], tot[3], tot[4]
+    );
+    let failures: Vec<_> = summary
+        .failures()
+        .filter(|r| r.outcome != Outcome::Unimplemented)
+        .collect();
+    let shown = if verbose {
+        failures.len()
+    } else {
+        failures.len().min(30)
+    };
+    for r in &failures[..shown] {
+        let rel = r.file.strip_prefix(repo_root()).unwrap_or(&r.file);
+        match &r.outcome {
+            Outcome::Fail(f) => {
+                println!("FAIL {} ({}:{})", r.id, rel.display(), r.line);
+                for m in f {
+                    println!("     {m}");
+                }
+            }
+            Outcome::Error(e) => println!("ERR  {} ({}:{}): {e}", r.id, rel.display(), r.line),
+            _ => {}
+        }
+    }
+    if failures.len() > shown {
+        println!("… {} more (use -v)", failures.len() - shown);
+    }
+    for d in &summary.bad_divergences {
+        println!("BAD DIVERGENCE {d}");
+    }
+    for d in &summary.stale_divergences {
+        println!("STALE DIVERGENCE {d} (now passes; remove it)");
+    }
+    Ok(summary.failures().next().is_none()
+        && summary.bad_divergences.is_empty()
+        && summary.stale_divergences.is_empty())
+}
+
+fn corpus_benign(args: &[&str]) -> Result<bool> {
+    let (filter, verbose) = parse_filter(args);
+    let stats = paste_warden_conformance::run_benign(&filter)?;
+    println!(
+        "{:<22} {:>6} {:>8} {:>7} {:>9} {:>7}",
+        "file", "total", "flagged", "warned", "escalate", "unimpl"
+    );
+    for (file, s) in &stats {
+        println!(
+            "{file:<22} {:>6} {:>8} {:>7} {:>9} {:>7}",
+            s.total, s.flagged, s.warned, s.expected_escalations, s.unimplemented
+        );
+        if verbose {
+            for id in &s.flagged_ids {
+                println!("    flagged: {id}");
+            }
+        }
+    }
     Ok(true)
 }
 

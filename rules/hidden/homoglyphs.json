@@ -1,0 +1,80 @@
+{
+  "_comment": "Cyrillic / Greek letters that look (almost) exactly like Latin letters (legacy HiddenCharDetector.Confusables, §6.1). One character per entry. 'ranges' are the script blocks whose other letters count as genuine Cyrillic / Greek text (real Russian or Greek always contains non-confusable letters such as и, л, λ).",
+  "scripts": [
+    {
+      "script": "cyrillic",
+      "confusables": [
+        "а",
+        "е",
+        "о",
+        "р",
+        "с",
+        "у",
+        "х",
+        "і",
+        "ј",
+        "ѕ",
+        "ԁ",
+        "һ",
+        "ӏ",
+        "ԛ",
+        "ԝ",
+        "ү",
+        "А",
+        "В",
+        "Е",
+        "К",
+        "М",
+        "Н",
+        "О",
+        "Р",
+        "С",
+        "Т",
+        "Х",
+        "І",
+        "Ј",
+        "Ѕ",
+        "Ү"
+      ],
+      "ranges": [
+        [
+          "U+0400",
+          "U+052F"
+        ]
+      ]
+    },
+    {
+      "script": "greek",
+      "confusables": [
+        "ο",
+        "ν",
+        "ρ",
+        "ι",
+        "Α",
+        "Β",
+        "Ε",
+        "Ζ",
+        "Η",
+        "Ι",
+        "Κ",
+        "Μ",
+        "Ν",
+        "Ο",
+        "Ρ",
+        "Τ",
+        "Υ",
+        "Χ"
+      ],
+      "ranges": [
+        [
+          "U+0370",
+          "U+03FF"
+        ],
+        [
+          "U+1F00",
+          "U+1FFF"
+        ]
+      ]
+    }
+  ]
+}

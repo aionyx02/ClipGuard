@@ -1,0 +1,18 @@
+[package]
+name = "paste-warden-i18n"
+description = "Renders engine messages with the Fluent files in locales/ (zh-TW, en)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[dependencies]
+paste-warden-core.workspace = true
+fluent-bundle.workspace = true
+unic-langid.workspace = true
+
+[lints]
+workspace = true

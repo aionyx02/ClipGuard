@@ -10,7 +10,7 @@ Text 欄位**省略或 `null`** = 舊版傳 `null`（非文字內容）。結果
 舊版 `WalletAddress.TryParse(text, out currency, out normalized)`：**整段**（去掉頭尾空白後）是不是一個有效地址。
 
 - `input`：Text
-- 規則：長度 26–90；ETH = `0x`/`0X` + 40 hex（不驗 EIP-55）；BTC bech32 / bech32m（`bc1`，v0 程式 20 或 32 bytes、v1 32 bytes，
+- 規則：長度 26–90；ETH = `0x`/`0X` + 40 hex（舊版不驗 EIP-55；1b 起大小寫混用要通過 EIP-55，見 `wallet-1b.md`）；BTC bech32 / bech32m（`bc1`，v0 程式 20 或 32 bytes、v1 32 bytes，
   不能大小寫混用）；BTC `1…`（Base58Check 版本 0x00）/ `3…`（0x05）；TRON `T…`（Base58Check 版本 0x41）。
 - `expect`：
   - `valid`：`true` | `false`

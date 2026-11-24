@@ -1,0 +1,4 @@
+[[divergence]]
+id = "limits.prefix.surrogate-not-split"
+kind = "unicode-count"
+reason = "MAX_ANALYZED_CHARS 在 Rust 以 char 計算（phase-1.md §1.8）：1048575 個 a 加上 😀 只有 1048576 個 char，整段 😀 保留，結果是 1048577 個 UTF-16 code unit；舊版以 code unit 計算，丟掉整個代理對得到 1048575。Rust 的 &str 本來就不會切開代理對（ends_with_high_surrogate 仍為 false）。"

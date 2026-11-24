@@ -2,6 +2,7 @@
 resolver = "3"
 members = ["crates/*", "xtask"]
 default-members = ["crates/*"]
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.1.0"
@@ -12,11 +13,27 @@ repository = "https://github.com/aionyx02/paste-warden"
 publish = false
 
 [workspace.dependencies]
+paste-warden-core = { path = "crates/core" }
+paste-warden-rules = { path = "crates/rules" }
+paste-warden-i18n = { path = "crates/i18n" }
 paste-warden-corpus = { path = "crates/corpus" }
+paste-warden-conformance = { path = "crates/conformance" }
 anyhow = "1"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+base64 = "0.23"
+bs58 = "0.5"
+fluent-bundle = "0.16"
+hmac = "0.13"
+proptest = "1"
+criterion = { version = "0.8", default-features = false }
+sha2 = "0.11"
+sha3 = "0.12"
+toml = "1"
+unic-langid = "0.9"
+unicode-normalization = "0.1"
+zeroize = "1"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

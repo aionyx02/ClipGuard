@@ -1,0 +1,47 @@
+[package]
+name = "paste-warden-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+paste-warden-core = { path = "../crates/core" }
+
+# Not part of the main workspace: needs nightly and libFuzzer.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "command"
+path = "fuzz_targets/command.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "secret"
+path = "fuzz_targets/secret.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hidden_wallet"
+path = "fuzz_targets/hidden_wallet.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "policy"
+path = "fuzz_targets/policy.rs"
+test = false
+doc = false
+bench = false

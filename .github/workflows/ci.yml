@@ -50,10 +50,21 @@ jobs:
       - run: cargo run --locked -p xtask -- corpus lint
       - run: cargo run --locked -p xtask -- corpus coverage
 
+  perf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: release-mode performance budgets (ignored in debug test runs)
+        env:
+          PW_PERF_SLACK: "2"   # fail only beyond 2x the budget (phase-1.md §1.6)
+        run: cargo test --release --locked -p paste-warden-core -- --include-ignored --test-threads=1
+
   # Stable name for the branch ruleset's required check: passes only when every job above passes.
   build-test:
     if: always()
-    needs: [rust, wasm, corpus]
+    needs: [rust, wasm, corpus, perf]
     runs-on: ubuntu-latest
     steps:
       - name: all CI jobs passed

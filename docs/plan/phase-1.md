@@ -61,7 +61,7 @@ pub struct Report {
 | `SecretRules`、`SecretDetector` | `secret/engine.rs`；規則格式放在 `crates/rules` |
 | `Checksums` | `secret/checksum.rs`（tw-id、tw-ubn、luhn、各國包的檢查碼） |
 | `SecretMasker` | `secret/mask.rs` |
-| `RegisteredSecretStore` 的比對 | `secret/registered.rs`（HMAC 滑動視窗、常數時間比較）；儲存在 Phase 4 |
+| `RegisteredSecretStore` 的比對 | `policy/registered.rs`（HMAC 滑動視窗、常數時間比較，金鑰由呼叫端提供）；儲存在 Phase 4 |
 | `HiddenCharDetector` | `hidden.rs` |
 | `WalletAddress`、`WalletSwapDetector` | `wallet/` |
 | `ExecutionEntryGuard`、`ClipboardGuardState`、`PasteGuard`、`NotificationThrottle` | `policy/` |
@@ -80,7 +80,7 @@ pub struct Report {
 - `cargo xtask corpus run`：用 Rust 跑每一筆語料，和 `expect` 比對，輸出失敗報表（`cargo test` 也會跑同一套）。
 - 每一筆失敗只有兩種處理：
   - 修正 Rust
-  - 確定舊的預期本身不對，或是刻意改變行為時，寫進 `corpus/divergences.toml`：
+  - 確定舊的預期本身不對，或是刻意改變行為時，寫進 `corpus/divergences/<area>.toml`：
     ```toml
     [[divergence]]
     id = "secret.card.017"
@@ -106,16 +106,24 @@ pub struct Report {
 | macOS、Linux 指令 | `osascript -e`、`base64 -d \| sh`、`bash -c "$(curl …)"`、`xattr -d com.apple.quarantine` / `xattr -c`、`chmod +x` 搭配 `/tmp` 執行 |
 | Windows 補強 | msiexec 直接安裝遠端套件、`Invoke-Command`、`.Invoke()`、下載 DLL 後用 rundll32 載入 |
 | 情境加權 | 來源是瀏覽器時提高 `risk_score`；來源是終端機或 IDE 時降低 Suspicious 的提醒頻率。**情境不能把 Malicious 降級**（P1） |
-| 新的機密類型 | BIP-39 助記詞（12、15、18、21、24 個字，**要驗證 checksum**）；含帳號密碼的資料庫連線字串（`postgres://user:pass@`…） |
-| gitleaks | 重新加入舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user` |
+| ✅ 新的機密類型 | BIP-39 助記詞（12、15、18、21、24 個字，**要驗證 checksum**）；含帳號密碼的資料庫連線字串（`postgres://user:pass@`…） |
+| ✅ gitleaks | 重新加入舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user` |
 | `risk_score` | 0–100，由訊號推算出來，給 UI 和報表用。**判定結果仍然以離散的判定表為準**，維持可解釋性 |
+
+### 1b 待辦（1a 移植時發現）
+
+- ✅ `hidden` 的「這一行像不像指令」目前用 `pastejack::command_signals` 代替；舊版是呼叫 `CommandDetector.Analyze`。command 合併後改成 `command::analyze(line).level != None`，並刪掉重複的實作。
+- ✅ `hidden` 的 shell 指令清單、同形字清單，以及 `pastejack` 的訊號樣式還寫在程式裡（`const`），要搬到 `rules/`。
+- ✅ 良性語料 `benign.cmd.416`、`417`、`421`：markdown 的 code fence 或行內 code 用到反引號，觸發舊版「拼出來的網址不可信」規則，官方網站清單因此失效（忠實移植的行為）。1b 讓反引號規則排除 markdown fence。
+- `ToDisplayText`（通知用的短文字）由 UI 組合：各 action 用 Fluent 渲染後以 `cmd-explain-separator` 串接，套進 `cmd-explain-display`，再用 `command::truncate_display` 截斷；conformance adapter 是參考實作。
+- ✅ 良性語料 `benign.text.126`（馬拉雅拉姆文 ZWJ 後面接空白）被判為隱藏字元，和舊版行為一致；1b 決定要不要放寬例外。
 
 ## 1.6 品質要求
 
 | 種類 | 內容 |
 |---|---|
 | 單元測試 | 每個模組都要有，包含命中和不命中 |
-| 語料測試 | `cargo test` 會跑全部語料，並套用 `divergences.toml` |
+| 語料測試 | `cargo test` 會跑全部語料，並套用 `corpus/divergences/<area>.toml` |
 | proptest | 遮罩結果不包含機密原文；位置對照表的範圍落在 char 邊界上；正規化跑兩次結果不變；解混淆的層數和長度不超過上限；`analyze` 的結果是固定的（同樣輸入，同樣輸出） |
 | fuzz（`cargo-fuzz`） | 涵蓋 `analyze`、命令正規化、機密正規化、解混淆、`masked`、規則載入。CI 每個 target 跑 60 秒，用 nightly，放在獨立的 job |
 | 效能（criterion） | 一般 1 KB 輸入 ≤ 1 ms；1 Mi 字的病態輸入（所有關鍵字都出現）≤ 150 ms；每條規則的病態輸入 ≤ 50 ms。CI 只有在超過預算 2 倍時才失敗 |
@@ -123,16 +131,16 @@ pub struct Report {
 
 ## 1.7 完成條件
 
-- [ ] `xtask corpus run`：失敗數為 0（不算 `divergences.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
-- [ ] 1b 的每一項都完成，或在本文件中註明延後的理由。
-- [ ] 良性語料的誤報數不超過 1a 完成時的數字。
-- [ ] proptest、fuzz smoke、效能預算、WASM 編譯都在 CI 通過。
-- [ ] `docs/spec/detection-rules.md` 裡的程式位置全部改成指向 Rust 模組。
-- [ ] `locales/zh-TW`、`locales/en` 涵蓋 core 輸出的所有訊息 ID（由測試檢查）。
+- [x] `xtask corpus run`：失敗數為 0（不算 `corpus/divergences/<area>.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
+- [x] 1b 的每一項都完成，或在本文件中註明延後的理由（延後：白話說明還不描述解混淆結果，只有 trace 呈現；見各 area 的「已知缺口」）。
+- [x] 良性語料的誤報數不超過 1a 完成時的數字（1a：flagged 5；1b：0）。
+- [x] proptest、fuzz smoke、效能預算、WASM 編譯都在 CI 通過（`ci.yml` 的 perf job、`fuzz.yml`）。
+- [x] `docs/spec/detection-rules.md` 裡的程式位置全部改成指向 Rust 模組。
+- [x] `locales/zh-TW`、`locales/en` 涵蓋 core 輸出的所有訊息 ID（`crates/conformance/tests/locales.rs`）。
 
 ## 1.8 已定案
 
-- **長度用 char 計算**：舊版的長度上限、登記機密的長度與滑動視窗、通知字數都用 UTF-16 code unit（`🔑` 算 2）。Rust 內部一律用 char；語料中因此不同的案例在 `divergences.toml` 標為 `unicode-count`。
+- **長度用 char 計算**：舊版的長度上限、登記機密的長度與滑動視窗、通知字數都用 UTF-16 code unit（`🔑` 算 2）。Rust 內部一律用 char；語料中因此不同的案例在 `corpus/divergences/<area>.toml` 標為 `unicode-count`。
 - **孤立的 UTF-16 代理字元**：從 UTF-16 轉進來（WASM、Windows 剪貼簿）時換成 U+FFFD（`corpus/ops/README.md`）。
 - **重複的 op**：`paste.mask` 和 `secret.mask_text` 都描述舊版 `PasteGuard.MaskText`，1a 時合併成一個。
 - **raw.githubusercontent.com 的官方安裝指令**（Homebrew、nvm、oh-my-zsh）：1b 改用「網址路徑白名單」，例如 `raw.githubusercontent.com/Homebrew/install/`。良性語料中標了 `spec-escalates` 的案例，在 1b 完成後應降為 Suspicious。比對規則同主機白名單：拼出來的網址不套用、其他強訊號照樣判 Malicious。

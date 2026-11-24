@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "name": "mnemonic",
+  "priority": 15,
+  "description": "錢包助記詞（phase 1b）：連續 12、15、18、21、24 個 BIP-39 英文單字（rules/secret/bip39-english.txt），而且 checksum 要對。分隔與限制見 docs/spec/detection-rules.md §5.7。",
+  "rules": [
+    {
+      "id": "bip39-mnemonic",
+      "kind": "mnemonic",
+      "label": "錢包助記詞",
+      "finder": "bip39",
+      "mask": "word-count"
+    }
+  ]
+}
