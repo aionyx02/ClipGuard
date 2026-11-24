@@ -240,9 +240,11 @@ impl<'a> Utf16Offsets<'a> {
         self.utf16
     }
 
+    /// `[start, length]` in UTF-16 code units (phase-2.md §2.2, same as the corpus).
     fn span(&mut self, start: usize, end: usize) -> [usize; 2] {
         let s = self.at(start);
-        [s, self.at(end)]
+        let e = self.at(end);
+        [s, e.saturating_sub(s)]
     }
 }
 
@@ -282,7 +284,7 @@ mod tests {
         assert_eq!(v["command"]["level"], "none");
         let s = &v["secrets"][0];
         assert_eq!(s["kind"], "national_id");
-        assert_eq!(s["span_utf16"], serde_json::json!([7, 17]));
+        assert_eq!(s["span_utf16"], serde_json::json!([7, 10])); // [start, length]
         assert!(!v.to_string().contains("A123456789"));
     }
 }

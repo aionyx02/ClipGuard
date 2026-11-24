@@ -14,6 +14,9 @@ fn unicode_classes_used_by_the_engine_compile() {
         r"(?i)powershell",
         r"\w+\s\d",
     ] {
-        assert!(regex::Regex::new(pattern).is_ok(), "{pattern} no longer compiles");
+        assert!(
+            regex::Regex::new(pattern).is_ok(),
+            "{pattern} no longer compiles"
+        );
     }
 }

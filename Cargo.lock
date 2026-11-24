@@ -913,6 +913,7 @@ dependencies = [
  "paste-warden-core",
  "paste-warden-corpus",
  "paste-warden-i18n",
+ "paste-warden-report",
  "predicates",
  "rmcp",
  "schemars",
