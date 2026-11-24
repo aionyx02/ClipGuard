@@ -1,0 +1,40 @@
+{
+  "name": "@paste-warden/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PasteWarden browser extension (Chrome / Edge MV3, Firefox MV3), built with WXT.",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox --mv3",
+    "build": "node scripts/build.mjs",
+    "postinstall": "wxt prepare",
+    "lint": "biome check . && tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fluent/bundle": "^0.19.1",
+    "@paste-warden/core": "workspace:*",
+    "@paste-warden/overlay": "workspace:*",
+    "@paste-warden/ui": "workspace:*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "1.65.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "happy-dom": "^21.0.4",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
+    "web-ext": "^10.8.0",
+    "wxt": "^0.21.5"
+  }
+}

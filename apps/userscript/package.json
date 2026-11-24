@@ -1,0 +1,28 @@
+{
+  "name": "@paste-warden/userscript",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PasteWarden userscript (Violentmonkey / Tampermonkey / iOS Userscripts), built with vite-plugin-monkey.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "lint": "biome check . && tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fluent/bundle": "^0.19.1",
+    "@paste-warden/core": "workspace:*",
+    "@paste-warden/overlay": "workspace:*"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "1.65.1",
+    "@types/node": "^24.19.2",
+    "happy-dom": "^21.0.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-monkey": "^8.1.1",
+    "vitest": "^5.1.1"
+  }
+}

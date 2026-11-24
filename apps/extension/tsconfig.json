@@ -1,0 +1,24 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "allowJs": true,
+    "types": ["vite/client", "node"]
+  },
+  "include": [
+    "src",
+    "test",
+    "e2e",
+    "scripts",
+    "wxt.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    ".wxt/wxt.d.ts"
+  ]
+}
