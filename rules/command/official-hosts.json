@@ -12,6 +12,7 @@
     { "host": "claude.ai", "note": "Claude Code" },
     { "host": "ollama.com", "note": "Ollama" },
     { "host": "dot.net", "note": "dotnet-install" },
-    { "host": "aka.ms", "note": "Microsoft short links (e.g. install-powershell)" }
+    { "host": "aka.ms", "note": "Microsoft short links (e.g. install-powershell)" },
+    { "host": "get.docker.com", "note": "Docker convenience script (download, then sh get-docker.sh)" }
   ]
 }

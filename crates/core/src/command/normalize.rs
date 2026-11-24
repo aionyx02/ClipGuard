@@ -69,12 +69,21 @@ pub fn normalize(text: &str) -> String {
         return String::new();
     }
     let s = normalize_dashes(&strip_invisible(text));
-    let s = replace(caret_newline(), &s, "");
-    let s = replace(caret(), &s, "${1}");
+    let s = unescape_carets(&s);
     let s = expand_variables(&s);
     let s = collapse_split_quotes(s);
-    let s = replace(quoted_path(), &s, "${p}");
-    strip_known_paths(&s)
+    shorten_program_paths(&s)
+}
+
+/// Step 2: cmd `^` escapes (`m^s^h^t^a`, `^^` → `^`, trailing `^` joins lines).
+pub(crate) fn unescape_carets(s: &str) -> String {
+    let s = replace(caret_newline(), s, "");
+    replace(caret(), &s, "${1}")
+}
+
+/// Step 6: full paths of known programs → bare name.
+pub(crate) fn shorten_program_paths(s: &str) -> String {
+    strip_known_paths(&replace(quoted_path(), s, "${p}"))
 }
 
 fn replace(re: &Re, s: &str, rep: &str) -> String {
@@ -101,7 +110,7 @@ fn is_invisible(c: char) -> bool {
     )
 }
 
-fn strip_invisible(s: &str) -> String {
+pub(crate) fn strip_invisible(s: &str) -> String {
     s.chars().filter(|&c| !is_invisible(c)).collect()
 }
 
@@ -112,13 +121,13 @@ fn is_dash(c: char) -> bool {
     )
 }
 
-fn normalize_dashes(s: &str) -> String {
+pub(crate) fn normalize_dashes(s: &str) -> String {
     s.chars()
         .map(|c| if is_dash(c) { '-' } else { c })
         .collect()
 }
 
-fn known_env(name: &str) -> Option<&'static str> {
+pub(crate) fn known_env(name: &str) -> Option<&'static str> {
     CommandRules::embedded()
         .known_env
         .iter()
@@ -126,7 +135,14 @@ fn known_env(name: &str) -> Option<&'static str> {
         .map(|v| v.value.as_str())
 }
 
-fn expand_variables(s: &str) -> String {
+pub(crate) fn expand_variables(s: &str) -> String {
+    let vars = set_variables(s);
+    expand_with(s, &vars)
+}
+
+/// `set x=…` / `set "x=…"` variables in `s`: lowercase names, at most
+/// [`MAX_VARIABLES`], values up to [`MAX_VALUE_LENGTH`] chars.
+pub(crate) fn set_variables(s: &str) -> HashMap<String, String> {
     let mut vars: HashMap<String, String> = HashMap::new();
     'outer: for re in [set_quoted(), set_plain()] {
         let Some(re) = re.get() else { continue };
@@ -143,7 +159,20 @@ fn expand_variables(s: &str) -> String {
             }
         }
     }
+    vars
+}
 
+/// Looks up a `set` variable, then a fixed system variable.
+pub(crate) fn lookup_variable<'a>(
+    vars: &'a HashMap<String, String>,
+    name: &str,
+) -> Option<&'a str> {
+    vars.get(&name.to_lowercase())
+        .map(String::as_str)
+        .or_else(|| known_env(name))
+}
+
+fn expand_with(s: &str, vars: &HashMap<String, String>) -> String {
     let mut budget = MAX_EXPANSIONS;
     let mut lookup = |c: &Captures<'_>| -> String {
         let whole = c.get(0).map_or("", |m| m.as_str());
@@ -151,11 +180,7 @@ fn expand_variables(s: &str) -> String {
         if budget == 0 {
             return whole.to_owned();
         }
-        let value = vars
-            .get(&name.to_lowercase())
-            .map(String::as_str)
-            .or_else(|| known_env(name));
-        match value {
+        match lookup_variable(vars, name) {
             Some(v) => {
                 budget -= 1;
                 v.to_owned()
@@ -187,7 +212,7 @@ fn expand_variables(s: &str) -> String {
 
 /// `"m"sh"ta"` → `"mshta"` → (quoted_path) `mshta`. Only word characters are
 /// joined, so real string arguments such as `-c "iex(…)"` stay intact.
-fn collapse_split_quotes(mut s: String) -> String {
+pub(crate) fn collapse_split_quotes(mut s: String) -> String {
     if !s.contains('"') {
         return s;
     }

@@ -175,6 +175,49 @@ fn with_hosts(id: &'static str, hosts: &[String]) -> Message {
     m
 }
 
+/// Every `-EncodedCommand` argument that decodes to text: the byte range of the
+/// Base64 and the decoded script (deobfuscation layer, 1b).
+pub(crate) fn encoded_args(text: &str) -> Vec<(std::ops::Range<usize>, String)> {
+    let Some(re) = encoded_arg().get() else {
+        return Vec::new();
+    };
+    re.captures_iter(text)
+        .filter_map(|c| {
+            let name = c.name("name")?.as_str().to_lowercase();
+            let b64 = c.name("b64")?;
+            if name != "ec" && !"encodedcommand".starts_with(name.as_str()) {
+                return None;
+            }
+            try_decode(b64.as_str()).map(|d| (b64.range(), d))
+        })
+        .collect()
+}
+
+/// Lenient standard Base64 → bytes (padding optional).
+pub(crate) fn base64_bytes(b64: &str) -> Option<Vec<u8>> {
+    let b64 = b64.trim_end_matches('=');
+    if b64.len() % 4 == 1 {
+        return None;
+    }
+    LENIENT.decode(b64).ok()
+}
+
+/// Decoded text that looks like a script: no control characters other than
+/// whitespace, no U+FFFD, and at least half printable ASCII (in UTF-16 units).
+pub(crate) fn looks_like_text(s: &str) -> bool {
+    if s.is_empty()
+        || s.chars()
+            .any(|c| c.is_control() && !matches!(c, '\r' | '\n' | '\t') || c == '\u{FFFD}')
+    {
+        return false;
+    }
+    let ascii = s
+        .chars()
+        .filter(|c| matches!(c, ' '..='~' | '\r' | '\n' | '\t'))
+        .count();
+    ascii * 2 >= crate::text::utf16_len(s)
+}
+
 fn find_encoded_arg(text: &str) -> Option<&str> {
     let re = encoded_arg().get()?;
     re.captures_iter(text).find_map(|c| {
@@ -194,37 +237,39 @@ const LENIENT: GeneralPurpose = GeneralPurpose::new(
 );
 
 fn try_decode(b64: &str) -> Option<String> {
-    let b64 = b64.trim_end_matches('=');
-    if b64.len() % 4 == 1 {
-        return None;
-    }
-    let bytes = LENIENT.decode(b64).ok()?;
-    if bytes.len() < 2 || bytes.len() % 2 != 0 {
+    let bytes = base64_bytes(b64)?;
+    utf16_text(&bytes, false)
+}
+
+/// UTF-16 (little- or big-endian) bytes → trimmed text, if it looks like text.
+pub(crate) fn utf16_text(bytes: &[u8], big_endian: bool) -> Option<String> {
+    if bytes.len() < 2 || !bytes.len().is_multiple_of(2) {
         return None;
     }
     let units: Vec<u16> = bytes
         .as_chunks::<2>()
         .0
         .iter()
-        .map(|p| u16::from_le_bytes(*p))
+        .map(|p| {
+            if big_endian {
+                u16::from_be_bytes(*p)
+            } else {
+                u16::from_le_bytes(*p)
+            }
+        })
         .collect();
     let decoded = String::from_utf16_lossy(&units);
     let s = decoded.trim_matches(['\0', ' ', '\r', '\n', '\t']);
-    if s.is_empty() {
-        return None;
-    }
     // PowerShell scripts are almost all ASCII; ordinary Base64 (say UTF-8 text)
     // decoded as UTF-16LE becomes rare CJK. Require at least half printable ASCII.
-    if s.chars()
-        .any(|c| c.is_control() && !matches!(c, '\r' | '\n' | '\t') || c == '\u{FFFD}')
-    {
-        return None;
-    }
-    let ascii = s
-        .chars()
-        .filter(|c| matches!(c, ' '..='~' | '\r' | '\n' | '\t'))
-        .count();
-    (ascii * 2 >= crate::text::utf16_len(s)).then(|| s.to_owned())
+    looks_like_text(s).then(|| s.to_owned())
+}
+
+/// UTF-8 bytes → trimmed text, if it looks like text.
+pub(crate) fn utf8_text(bytes: &[u8]) -> Option<String> {
+    let s = std::str::from_utf8(bytes).ok()?;
+    let s = s.trim_matches(['\0', ' ', '\r', '\n', '\t']);
+    looks_like_text(s).then(|| s.to_owned())
 }
 
 /// #21 system programs, remote files and protocol handlers. Patterns are shared

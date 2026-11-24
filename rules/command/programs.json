@@ -15,6 +15,11 @@
     { "name": "ProgramFiles", "value": "C:\\Program Files" },
     { "name": "ProgramW6432", "value": "C:\\Program Files" },
     { "name": "ProgramFiles(x86)", "value": "C:\\Program Files (x86)" },
-    { "name": "CommonProgramFiles", "value": "C:\\Program Files\\Common Files" }
+    { "name": "CommonProgramFiles", "value": "C:\\Program Files\\Common Files" },
+    { "name": "PUBLIC", "value": "C:\\Users\\Public" },
+    { "name": "ALLUSERSPROFILE", "value": "C:\\ProgramData" },
+    { "name": "ProgramData", "value": "C:\\ProgramData" },
+    { "name": "OS", "value": "Windows_NT" },
+    { "name": "PATHEXT", "value": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC" }
   ]
 }

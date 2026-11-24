@@ -27,6 +27,10 @@ cmd-reason-search-ms = Uses search-ms: to open a search window (can point to a r
 cmd-reason-ms-msdt = Uses ms-msdt: to call the troubleshooting tool (Follina technique)
 cmd-reason-net-use = Maps a network drive and runs a file from it
 cmd-reason-download-exec = Downloads and runs code directly
+cmd-reason-osascript = Runs AppleScript with osascript
+cmd-reason-quarantine = Removes the macOS quarantine flag (skips the Gatekeeper check)
+cmd-reason-decode-shell = Decodes hidden text and hands it to a shell
+cmd-reason-dev-tcp = Opens a network connection from the shell (/dev/tcp, nc)
 
 ## Verdict reasons: scam signals
 
@@ -39,6 +43,37 @@ cmd-reason-check-mark = Contains check marks (common in fake verifications)
 cmd-reason-padding = Uses lots of spaces to push the real command out of view
 cmd-reason-mshta-remote = mshta runs a remote URL directly
 cmd-reason-unofficial-source = The download-and-run source is not a known official installer site
+cmd-reason-reverse-shell = Hands control of the shell to a remote computer (reverse shell)
+cmd-reason-background = Keeps running in the background, detached and silenced
+cmd-reason-msiexec-quiet = Silently installs a remote package with msiexec
+cmd-reason-obfuscated = Hides what it runs behind obfuscation (string building or encoding)
+
+## Deobfuscation steps (onion trace)
+# $count = how many places the step changed.
+
+cmd-deob-invisible = Removed invisible characters
+cmd-deob-dash = Turned dash look-alikes into -
+cmd-deob-caret = Removed cmd ^ escapes
+cmd-deob-variable = Filled in cmd %variables%
+cmd-deob-quote = Merged quotes inside words
+cmd-deob-program-path = Shortened program paths
+cmd-deob-markdown = Removed markdown code markers
+cmd-deob-full-width = Turned full-width letters into ASCII
+cmd-deob-backtick = Removed PowerShell backtick escapes
+cmd-deob-url-decode = Decoded URL escapes (%xx)
+cmd-deob-hex-decode = Decoded hex
+cmd-deob-char-code = Turned [char] codes into letters
+cmd-deob-concat = Joined strings built with +
+cmd-deob-join = Evaluated -join
+cmd-deob-format = Evaluated the -f format operator
+cmd-deob-replace = Evaluated -replace / .Replace()
+cmd-deob-string-method = Evaluated [string]::Concat / Join / Format
+cmd-deob-ps-variable = Filled in PowerShell string variables
+cmd-deob-unwrap = Unwrapped a string that is run as a command
+cmd-deob-base64 = Decoded Base64
+cmd-deob-encoded-command = Decoded PowerShell -EncodedCommand
+cmd-deob-cmd-substring = Expanded cmd substrings (%x:~a,b%)
+cmd-deob-nested-variable = Filled in cmd variables nested in other variables
 
 ## Explanations
 # $count = number of source hosts (0 = unknown source), $h1..$h3 = host names (at most 3).

