@@ -1,0 +1,107 @@
+{
+  "_comment": "Where ZWNJ U+200C / ZWJ U+200D are legitimate (§6.1). emoji_ranges: a ZWJ between two of these joins an emoji sequence. complex_script_range: ZWNJ / ZWJ between two letters or marks (Lo, Mn, Mc, Me) of this range control glyph joining (Hebrew, Arabic, Persian, Indic, Southeast Asian). viramas: a ZWJ right after one of these viramas, itself right after a letter of the same block, selects a half form or (Malayalam) a chillu letter: അവന്‍ = NA + VIRAMA + ZWJ, so it may be followed by whitespace, punctuation, a letter of the same block or the end of the text.",
+  "emoji_ranges": [
+    [
+      "U+1F000",
+      "U+10FFFF"
+    ],
+    [
+      "U+2600",
+      "U+27BF"
+    ],
+    [
+      "U+2B00",
+      "U+2BFF"
+    ],
+    [
+      "U+FE0F",
+      "U+FE0F"
+    ]
+  ],
+  "complex_script_range": [
+    "U+0590",
+    "U+1CFF"
+  ],
+  "viramas": [
+    {
+      "script": "devanagari",
+      "virama": "U+094D",
+      "block": [
+        "U+0900",
+        "U+097F"
+      ]
+    },
+    {
+      "script": "bengali",
+      "virama": "U+09CD",
+      "block": [
+        "U+0980",
+        "U+09FF"
+      ]
+    },
+    {
+      "script": "gurmukhi",
+      "virama": "U+0A4D",
+      "block": [
+        "U+0A00",
+        "U+0A7F"
+      ]
+    },
+    {
+      "script": "gujarati",
+      "virama": "U+0ACD",
+      "block": [
+        "U+0A80",
+        "U+0AFF"
+      ]
+    },
+    {
+      "script": "oriya",
+      "virama": "U+0B4D",
+      "block": [
+        "U+0B00",
+        "U+0B7F"
+      ]
+    },
+    {
+      "script": "tamil",
+      "virama": "U+0BCD",
+      "block": [
+        "U+0B80",
+        "U+0BFF"
+      ]
+    },
+    {
+      "script": "telugu",
+      "virama": "U+0C4D",
+      "block": [
+        "U+0C00",
+        "U+0C7F"
+      ]
+    },
+    {
+      "script": "kannada",
+      "virama": "U+0CCD",
+      "block": [
+        "U+0C80",
+        "U+0CFF"
+      ]
+    },
+    {
+      "script": "malayalam",
+      "virama": "U+0D4D",
+      "block": [
+        "U+0D00",
+        "U+0D7F"
+      ]
+    },
+    {
+      "script": "sinhala",
+      "virama": "U+0DCA",
+      "block": [
+        "U+0D80",
+        "U+0DFF"
+      ]
+    }
+  ]
+}

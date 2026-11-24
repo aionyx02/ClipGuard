@@ -1,0 +1,8 @@
+{
+  "_comment": "Emoji TAG sequences that render as a standard (RGI) emoji: black flag U+1F3F4 + these tag letters + CANCEL TAG U+E007F (England, Scotland, Wales). Any other tag sequence shows as a plain black flag, so its tags stay invisible and are counted (§6.1). Lowercase ASCII letters / digits, 2-8 chars.",
+  "rgi_subdivision_flags": [
+    "gbeng",
+    "gbsct",
+    "gbwls"
+  ]
+}
