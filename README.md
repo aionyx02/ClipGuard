@@ -28,6 +28,19 @@ PasteWarden treats the clipboard as a trust boundary. It blocks fake-CAPTCHA "pa
 
 使用說明網站（繁中、English）會在 Phase 3 上線。
 
+## 命令列與 AI agent（`paste-warden`）
+
+```sh
+cargo install --path crates/cli                 # 安裝 paste-warden 執行檔
+paste-warden scan suspicious.txt                # exit code：0 沒問題、1 注意、2 危險、3 錯誤
+paste-warden scan --json - < cmd.txt            # 共用的 Report JSON
+paste-warden mask notes.txt                     # 輸出遮罩後的文字
+paste-warden hook install claude-code           # 安裝 agent hook（也支援 opencode）
+paste-warden mcp                                # 唯讀的 stdio MCP server
+```
+
+CLI 不讀剪貼簿。Hook 和 MCP 預設不安裝，說明見 [`docs/integrations/agent-hooks.md`](docs/integrations/agent-hooks.md) 和 [`docs/integrations/mcp.md`](docs/integrations/mcp.md)。
+
 ## 開發
 
 ```sh
