@@ -451,7 +451,30 @@ fn one_line(s: &str) -> String {
 /// Chars of context kept before the first change in a preview.
 const PREVIEW_CONTEXT: usize = 24;
 
-/// `after` around the first char that differs from `before`.
+/// Chars scanned on each side of a preview window for secrets that cross its
+/// edges (a card number or key cut in half would not be detected, and its
+/// visible half would leak).
+const PREVIEW_MASK_MARGIN: usize = 512;
+
+/// Byte offset of the char `n` chars after `from` (or the end).
+fn advance(s: &str, from: usize, n: usize) -> usize {
+    s[from..]
+        .char_indices()
+        .nth(n)
+        .map_or(s.len(), |(i, _)| from + i)
+}
+
+/// Byte offset of the char `n` chars before `from` (or 0).
+fn retreat(s: &str, from: usize, n: usize) -> usize {
+    s[..from]
+        .char_indices()
+        .rev()
+        .nth(n.saturating_sub(1))
+        .map_or(0, |(i, _)| i)
+}
+
+/// `after` around the first char that differs from `before`, with every secret
+/// that overlaps the window masked before the window is cut (P4).
 fn preview(before: &str, after: &str) -> String {
     let diff = before
         .chars()
@@ -459,18 +482,26 @@ fn preview(before: &str, after: &str) -> String {
         .take_while(|(a, b)| a == b)
         .count();
     let start = diff.saturating_sub(PREVIEW_CONTEXT);
-    let start_b = after
+    let mut start_b = after
         .char_indices()
         .nth(start)
         .map_or(after.len(), |(i, _)| i);
     // Take a bounded slice first so collapsing whitespace stays cheap.
-    let end_b = after[start_b..]
-        .char_indices()
-        .nth(MAX_PREVIEW_CHARS * 4)
-        .map_or(after.len(), |(i, _)| start_b + i);
-    let body = one_line(&after[start_b..end_b]);
+    let mut end_b = advance(after, start_b, MAX_PREVIEW_CHARS * 4);
+    // Grow the window to whole secrets that cross its edges, then mask.
+    let ctx_start = retreat(after, start_b, PREVIEW_MASK_MARGIN);
+    let ctx_end = advance(after, end_b, PREVIEW_MASK_MARGIN);
+    for m in secret::find(&after[ctx_start..ctx_end], &PackSet::default()) {
+        let (s, e) = (ctx_start + m.span.start, ctx_start + m.span.end);
+        if s < end_b && e > start_b {
+            start_b = start_b.min(s);
+            end_b = end_b.max(e);
+        }
+    }
+    let window = &after[start_b..end_b];
+    let body = one_line(&mask_secrets(window));
     let mut out = String::new();
-    if start > 0 {
+    if start_b > 0 {
         out.push('…');
     }
     let cut = body.chars().nth(MAX_PREVIEW_CHARS).is_some() || end_b < after.len();
@@ -608,6 +639,18 @@ mod tests {
         let d = deobfuscate(&big);
         assert!(d.output.chars().count() <= big.chars().count() * MAX_GROWTH);
         assert!(d.capped);
+    }
+
+    #[test]
+    fn secrets_cut_by_the_preview_window_do_not_leak() {
+        // A card number that starts before the preview window: legacy previews
+        // showed its tail ("…11 1111 powershell…").
+        let ps = ["power", "shell"].concat();
+        let text = format!("🔑 身分證 A123456789 卡號 4111 1111 1111 1111 {ps} -enc SQBFAFgA");
+        for step in deobfuscate(&text).layers {
+            assert!(!step.preview.contains("11 1111"), "{:?}", step.preview);
+            assert!(!step.preview.contains("A123456789"), "{:?}", step.preview);
+        }
     }
 
     #[test]

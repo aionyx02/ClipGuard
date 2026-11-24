@@ -1,0 +1,46 @@
+name: py
+
+# Python binding `paste_warden` (crates/py): maturin build + smoke test.
+# The `python` feature is off in the workspace build, so this is the only place
+# the PyO3 code is compiled and linted.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: py-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  py:
+    name: py (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - name: clippy (python feature)
+        run: cargo clippy --locked -p paste-warden-py --features python --all-targets -- -D warnings
+      - name: maturin build (abi3 wheel)
+        working-directory: crates/py
+        run: uvx --from 'maturin>=1.9,<2' maturin build --release --locked --out dist
+      - name: smoke test (installs the package with uv, then pytest)
+        working-directory: crates/py
+        run: uv run --locked pytest -q

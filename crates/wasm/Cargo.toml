@@ -8,7 +8,23 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[lib]
+# cdylib: the .wasm module; rlib: unit tests and the Python binding reuse `api`.
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["bindgen"]
+# wasm-bindgen exports (`analyze`, `mask`, `messages`, `engine_version`) for the
+# main `.wasm` build of `@paste-warden/core`.
+bindgen = ["dep:wasm-bindgen"]
+# Plain C-ABI exports (`pw_alloc`, `pw_free`, `pw_analyze`, …) without any
+# wasm-bindgen glue, so binaryen `wasm2js` can convert the module (S2). Build with
+# `--no-default-features --features raw-abi`.
+raw-abi = []
+
 [dependencies]
+paste-warden-report.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
 
 [lints]
 workspace = true
