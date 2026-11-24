@@ -86,5 +86,6 @@ JS 的 Biome 檢查等 Phase 3 有前端程式碼時再加入 CI。
 - [x] 良性語料各類達到規定數量。
 - [x] C# 和舊插件已刪除，CI 全綠。
 - [x] S1、S2、S4–S8 與 S9（macOS）都有報告。
-- [ ] **S3（Windows）與 S9 的 Windows 部分改為後續 PR 補做**（需要 Windows 實機，見 `docs/spikes/HOWTO.md`），不阻擋 Phase 1；Phase 4 開始前必須完成。
+- [x] S3（Windows）已補上報告（`docs/spikes/s3-windows-monitor.md`）。
+- [ ] **S9 的 Windows 部分改為後續 PR 補做**（需要 Windows 實機，見 `docs/spikes/HOWTO.md`），不阻擋 Phase 1；Phase 4 開始前必須完成。
 - [x] 完成 `docs/THREAT_MODEL.md` 初版：要防的威脅、不防的範圍、信任邊界。
