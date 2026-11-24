@@ -1,0 +1,9 @@
+{
+  "_comment": "File extensions (without the dot) used by command rules. remote_file: files that run when opened from a UNC / WebDAV share or a mapped network drive (#21). launch: files started right after a download (download-and-execute, #20). script_host: scripts run by wscript / cscript.",
+  "remote_file": [
+    "exe", "lnk", "bat", "cmd", "com", "scr", "pif", "cpl", "dll", "msi", "hta", "ps1",
+    "vbs", "vbe", "js", "jse", "wsf", "url", "chm", "inf", "search-ms", "library-ms"
+  ],
+  "launch": ["exe", "bat", "cmd", "com", "msi", "scr", "ps1", "vbs", "js", "hta", "lnk"],
+  "script_host": ["vbs", "vbe", "js", "jse", "wsf", "wsc", "wsh"]
+}

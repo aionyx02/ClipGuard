@@ -1,0 +1,17 @@
+{
+  "_comment": "Official installer hosts (docs/spec/detection-rules.md §3.2, #20 F17). A host matches itself or any subdomain, ASCII only, case-insensitive. Only sites whose official docs ask users to paste a download-and-run command AND whose domain the project itself controls; never shared hosting such as raw.githubusercontent.com.",
+  "hosts": [
+    { "host": "astral.sh", "note": "uv, ruff" },
+    { "host": "bun.sh", "note": "Bun" },
+    { "host": "get.scoop.sh", "note": "Scoop" },
+    { "host": "scoop.sh", "note": "Scoop" },
+    { "host": "deno.land", "note": "Deno" },
+    { "host": "sh.rustup.rs", "note": "rustup" },
+    { "host": "get.pnpm.io", "note": "pnpm" },
+    { "host": "community.chocolatey.org", "note": "Chocolatey" },
+    { "host": "claude.ai", "note": "Claude Code" },
+    { "host": "ollama.com", "note": "Ollama" },
+    { "host": "dot.net", "note": "dotnet-install" },
+    { "host": "aka.ms", "note": "Microsoft short links (e.g. install-powershell)" }
+  ]
+}
