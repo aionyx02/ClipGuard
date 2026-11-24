@@ -184,7 +184,11 @@ fn timeout_denies_quickly() {
 fn opencode(stdin: &str, fault: Option<&str>) -> (i32, Value) {
     let home = tempfile::tempdir().unwrap();
     let mut c = pw(home.path());
-    c.args(["hook", "opencode", "--timeout-ms", "500"])
+    // Fault-injection runs use a short timeout; normal runs get plenty of time
+    // (a debug build on a slow CI runner compiles the rules on first use, and a
+    // timeout would fail closed and block even harmless commands).
+    let timeout = if fault.is_some() { "500" } else { "10000" };
+    c.args(["hook", "opencode", "--timeout-ms", timeout])
         .write_stdin(stdin);
     if let Some(f) = fault {
         c.env("PASTE_WARDEN_HOOK_FAULT", f);
