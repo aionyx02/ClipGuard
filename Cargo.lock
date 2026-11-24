@@ -625,8 +625,18 @@ name = "paste-warden-py"
 version = "0.1.0"
 dependencies = [
  "paste-warden-core",
- "paste-warden-wasm",
+ "paste-warden-report",
  "pyo3",
+]
+
+[[package]]
+name = "paste-warden-report"
+version = "0.1.0"
+dependencies = [
+ "paste-warden-core",
+ "paste-warden-i18n",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -642,10 +652,7 @@ dependencies = [
 name = "paste-warden-wasm"
 version = "0.1.0"
 dependencies = [
- "paste-warden-core",
- "paste-warden-i18n",
- "serde",
- "serde_json",
+ "paste-warden-report",
  "wasm-bindgen",
 ]
 

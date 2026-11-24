@@ -5,14 +5,14 @@
 //! feature. Without it the crate is empty, so plain `cargo` workspace builds do
 //! not need Python.
 //!
-//! The JSON is produced by `paste_warden_wasm::api`, so Python gets exactly the
+//! The JSON is produced by `paste_warden_report`, so Python gets exactly the
 //! same Report as JS (§2.2): masked values only, UTF-16 spans.
 #![forbid(unsafe_code)]
 
 #[cfg(feature = "python")]
 mod module {
     use paste_warden_core::Settings;
-    use paste_warden_wasm::api::{self, AnalyzeOptions};
+    use paste_warden_report::{self as api, AnalyzeOptions};
     use pyo3::exceptions::PyValueError;
     use pyo3::prelude::*;
 

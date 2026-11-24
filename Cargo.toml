@@ -16,6 +16,7 @@ publish = false
 paste-warden-core = { path = "crates/core" }
 paste-warden-rules = { path = "crates/rules" }
 paste-warden-i18n = { path = "crates/i18n" }
+paste-warden-report = { path = "crates/report" }
 paste-warden-corpus = { path = "crates/corpus" }
 paste-warden-conformance = { path = "crates/conformance" }
 anyhow = "1"

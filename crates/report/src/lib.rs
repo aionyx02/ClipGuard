@@ -1,4 +1,5 @@
-//! Pure, safe implementation of the binding API (docs/plan/phase-2.md §2.2, §2.6).
+//! The Report JSON (docs/plan/phase-2.md §2.2) and the string API shared by the
+//! CLI, the MCP server, the WASM build and the Python binding (§2.6).
 //!
 //! Everything here works on strings so that the wasm-bindgen exports, the raw
 //! C ABI and the Python binding are thin wrappers around the same code and
@@ -6,6 +7,7 @@
 //!
 //! Privacy (P3/P4): the Report never contains the analyzed text, only masked
 //! values and positions; error messages never contain the input text.
+#![forbid(unsafe_code)]
 
 use std::borrow::Cow;
 use std::sync::OnceLock;

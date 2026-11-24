@@ -16,12 +16,12 @@ crate-type = ["cdylib"]
 # The binding itself. Off by default so `cargo build/test/clippy --workspace`
 # never needs a Python interpreter or libpython; maturin enables it
 # (pyproject.toml `tool.maturin.features`).
-python = ["dep:pyo3", "dep:paste-warden-core", "dep:paste-warden-wasm"]
+python = ["dep:pyo3", "dep:paste-warden-core", "dep:paste-warden-report"]
 
 [dependencies]
 paste-warden-core = { workspace = true, optional = true }
 # Report JSON, masking and deobfuscation previews shared with the WASM binding.
-paste-warden-wasm = { path = "../wasm", default-features = false, optional = true }
+paste-warden-report = { workspace = true, optional = true }
 pyo3 = { workspace = true, optional = true }
 
 [lints]
