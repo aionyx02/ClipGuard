@@ -1,6 +1,7 @@
 //! Wallet addresses and clipper (address swap) detection (legacy `WalletAddress`,
 //! `WalletSwapDetector`; docs/spec/detection-rules.md §6.2).
 
+mod keccak;
 mod swap;
 
 pub use swap::{
@@ -23,6 +24,16 @@ pub const MIN_ADDRESS_LEN: usize = 26;
 /// Longest plausible address.
 pub const MAX_ADDRESS_LEN: usize = 90;
 
+/// Solana addresses: Base58 of a 32-byte public key.
+pub const SOLANA_MIN_LEN: usize = 32;
+pub const SOLANA_MAX_LEN: usize = 44;
+pub const SOLANA_KEY_BYTES: usize = 32;
+
+/// Longest Base58Check address (BTC, TRON, XRP `r…` in the Ripple alphabet). XRP
+/// allows 25 characters, but [`MIN_ADDRESS_LEN`] still applies (a 25-character
+/// address needs a hash with ~60 leading zero bits).
+pub const BASE58CHECK_MAX_LEN: usize = 35;
+
 /// Cryptocurrency of an address.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Cryptocurrency {
@@ -30,6 +41,10 @@ pub enum Cryptocurrency {
     /// Ethereum and other EVM chains (BSC, Polygon…) sharing `0x` addresses.
     Ethereum,
     Tron,
+    /// Solana (Base58 32-byte public key; no checksum).
+    Solana,
+    /// XRP Ledger classic address.
+    Xrp,
 }
 
 impl Cryptocurrency {
@@ -39,6 +54,8 @@ impl Cryptocurrency {
             Cryptocurrency::Bitcoin => "bitcoin",
             Cryptocurrency::Ethereum => "ethereum",
             Cryptocurrency::Tron => "tron",
+            Cryptocurrency::Solana => "solana",
+            Cryptocurrency::Xrp => "xrp",
         }
     }
 }
@@ -89,7 +106,10 @@ pub fn find_all(text: &str) -> Vec<WalletAddressMatch> {
             continue;
         }
         candidates += 1;
-        if let Some((currency, normalized)) = text.get(start..i).and_then(parse) {
+        let parsed = text.get(start..i).and_then(parse).filter(|(currency, _)| {
+            *currency != Cryptocurrency::Solana || !looks_like_base64_part(bytes, start, i)
+        });
+        if let Some((currency, normalized)) = parsed {
             found.push(WalletAddressMatch {
                 start,
                 len,
@@ -99,6 +119,15 @@ pub fn find_all(text: &str) -> Vec<WalletAddressMatch> {
         }
     }
     found
+}
+
+/// A Solana address has no checksum, so a run that is visibly part of a Base64
+/// string (`+` on either side, `/` or `=` right after it) is not taken as one.
+/// `/` before it is allowed: explorer URLs end in `/account/<address>`.
+fn looks_like_base64_part(bytes: &[u8], start: usize, end: usize) -> bool {
+    let before = start.checked_sub(1).and_then(|b| bytes.get(b));
+    let after = bytes.get(end);
+    before == Some(&b'+') || matches!(after, Some(b'+' | b'/' | b'='))
 }
 
 /// Is the whole of `text` (trimmed) one valid address? Returns its currency and
@@ -114,27 +143,66 @@ pub fn parse(text: &str) -> Option<(Cryptocurrency, String)> {
     if is_bech32_bitcoin(s) {
         return Some((Cryptocurrency::Bitcoin, s.to_ascii_lowercase()));
     }
-    match s.as_bytes().first() {
-        Some(b'1') if is_base58check(s, 0x00) => Some((Cryptocurrency::Bitcoin, s.to_owned())),
-        Some(b'3') if is_base58check(s, 0x05) => Some((Cryptocurrency::Bitcoin, s.to_owned())),
-        Some(b'T') if is_base58check(s, 0x41) => Some((Cryptocurrency::Tron, s.to_owned())),
+    let bitcoin = bs58::Alphabet::BITCOIN;
+    let found = match s.as_bytes().first() {
+        Some(b'1') if is_base58check(s, 0x00, bitcoin) => Some(Cryptocurrency::Bitcoin),
+        Some(b'3') if is_base58check(s, 0x05, bitcoin) => Some(Cryptocurrency::Bitcoin),
+        Some(b'T') if is_base58check(s, 0x41, bitcoin) => Some(Cryptocurrency::Tron),
+        Some(b'r') if is_base58check(s, 0x00, bs58::Alphabet::RIPPLE) => Some(Cryptocurrency::Xrp),
         _ => None,
-    }
+    };
+    let found = found.or_else(|| is_solana(s).then_some(Cryptocurrency::Solana));
+    found.map(|c| (c, s.to_owned()))
 }
 
-/// `0x` / `0X` + 40 hex digits. EIP-55 (Keccak) is not checked.
+/// `0x` / `0X` + 40 hex digits. Mixed-case hex must carry a valid EIP-55 checksum;
+/// all-lowercase and all-uppercase hex have none and stay valid.
 fn is_ethereum(s: &str) -> bool {
-    s.len() == 42
-        && (s.starts_with("0x") || s.starts_with("0X"))
-        && s.bytes().skip(2).all(|b| b.is_ascii_hexdigit())
+    let Some(hex) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) else {
+        return false;
+    };
+    if hex.len() != 40 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return false;
+    }
+    let has_upper = hex.bytes().any(|b| b.is_ascii_uppercase());
+    let has_lower = hex.bytes().any(|b| b.is_ascii_lowercase());
+    !(has_upper && has_lower) || is_eip55(hex)
+}
+
+/// EIP-55: hex letter `i` is uppercase iff nibble `i` of
+/// `keccak256(lowercase hex as ASCII)` is ≥ 8.
+fn is_eip55(hex: &str) -> bool {
+    let lower = hex.to_ascii_lowercase();
+    let hash = keccak::keccak256(lower.as_bytes());
+    hex.bytes().enumerate().all(|(i, b)| {
+        if !b.is_ascii_alphabetic() {
+            return true;
+        }
+        let byte = hash.get(i / 2).copied().unwrap_or(0);
+        let nibble = if i % 2 == 0 { byte >> 4 } else { byte & 0x0f };
+        b.is_ascii_uppercase() == (nibble >= 8)
+    })
+}
+
+/// Solana: Base58 (Bitcoin alphabet) of exactly 32 bytes, 32–44 characters.
+/// There is no checksum, so only the length and alphabet are checked; a string
+/// made only of hex digits (a hash) is never taken as one.
+fn is_solana(s: &str) -> bool {
+    if !(SOLANA_MIN_LEN..=SOLANA_MAX_LEN).contains(&s.len())
+        || s.bytes().all(|b| b.is_ascii_hexdigit())
+    {
+        return false;
+    }
+    let mut key = [0u8; SOLANA_KEY_BYTES];
+    matches!(bs58::decode(s).onto(&mut key[..]), Ok(SOLANA_KEY_BYTES))
 }
 
 /// Base58Check: 1 version byte + 20-byte hash + 4-byte checksum.
-fn is_base58check(s: &str, version: u8) -> bool {
-    if !(26..=35).contains(&s.len()) {
+fn is_base58check(s: &str, version: u8, alphabet: &bs58::Alphabet) -> bool {
+    if !(MIN_ADDRESS_LEN..=BASE58CHECK_MAX_LEN).contains(&s.len()) {
         return false;
     }
-    let Ok(bytes) = bs58::decode(s).into_vec() else {
+    let Ok(bytes) = bs58::decode(s).with_alphabet(alphabet).into_vec() else {
         return false;
     };
     let (Some(body), Some(check)) = (bytes.get(..21), bytes.get(21..)) else {
@@ -247,6 +315,69 @@ mod tests {
         for (s, want) in cases {
             assert_eq!(parse(s).map(|p| p.0), want, "{s}");
         }
+    }
+
+    #[test]
+    fn eip55() {
+        // EIP-55 test vectors.
+        for a in [
+            "0x52908400098527886E0F7030069857D2E4169EE7",
+            "0x8617E340B3D01FA5F11F306F4090FD50E238070D",
+            "0xde709f2102306220921060314715629080e2fb77",
+            "0x27b1fdb04752bbc536007a920d24acb045561c26",
+            "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
+            "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359",
+            "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB",
+            "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb",
+            "0x5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED",
+            "0X5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+        ] {
+            assert_eq!(parse(a).map(|p| p.0), Some(Cryptocurrency::Ethereum), "{a}");
+        }
+        for a in [
+            "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD",
+            "0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
+        ] {
+            assert_eq!(parse(a), None, "{a}");
+        }
+    }
+
+    #[test]
+    fn solana_and_xrp() {
+        for a in [
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "So11111111111111111111111111111111111111112",
+        ] {
+            assert_eq!(parse(a).map(|p| p.0), Some(Cryptocurrency::Solana), "{a}");
+        }
+        for a in [
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
+        ] {
+            assert_eq!(parse(a).map(|p| p.0), Some(Cryptocurrency::Xrp), "{a}");
+        }
+        for a in [
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTi",
+            // Git SHA-1 / SHA-256 (hex only).
+            "9fceb02d0ae598e95dc970b74767f19372d61af8",
+            "1111111111111111111111111111111111111111111",
+            // The system program id: only hex digits, so taken as a hash.
+            "11111111111111111111111111111111",
+            // 44 chars decoding to 33 bytes.
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+            // Base58 of 33 bytes / too long.
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DAx",
+        ] {
+            assert_eq!(parse(a), None, "{a}");
+        }
+        let b64 = "key=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v=";
+        assert!(find_all(b64).is_empty());
+        let b64 = "x+EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+        assert!(find_all(b64).is_empty());
+        let url =
+            "https://explorer.invalid/address/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v?x=1";
+        assert_eq!(find_all(url).len(), 1);
     }
 
     #[test]
