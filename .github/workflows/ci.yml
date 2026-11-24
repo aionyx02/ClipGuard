@@ -57,7 +57,9 @@ jobs:
       - run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - name: release-mode performance budgets (ignored in debug test runs)
-        run: cargo test --release --locked -p paste-warden-core -- --include-ignored
+        env:
+          PW_PERF_SLACK: "2"   # fail only beyond 2x the budget (phase-1.md §1.6)
+        run: cargo test --release --locked -p paste-warden-core -- --include-ignored --test-threads=1
 
   # Stable name for the branch ruleset's required check: passes only when every job above passes.
   build-test:

@@ -658,7 +658,7 @@ mod tests {
             assert!(v.reasons.len() <= 7);
             if !cfg!(debug_assertions) {
                 assert!(
-                    elapsed.as_millis() <= 150,
+                    elapsed.as_millis() <= crate::text::perf_budget_ms(150),
                     "{} chars took {elapsed:?}",
                     input.chars().count()
                 );

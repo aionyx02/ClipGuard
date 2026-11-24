@@ -491,7 +491,7 @@ mod tests {
             assert!(f.trace.len() <= deobfuscate::MAX_STEPS);
             if !cfg!(debug_assertions) {
                 assert!(
-                    elapsed.as_millis() < 2 * BUDGET_MS,
+                    elapsed.as_millis() < crate::text::perf_budget_ms(2 * BUDGET_MS),
                     "{:?}… took {elapsed:?}",
                     input.chars().take(24).collect::<String>()
                 );

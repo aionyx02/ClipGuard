@@ -43,3 +43,17 @@ mod tests {
         assert_eq!(utf16_to_byte(s, 99), s.len());
     }
 }
+
+/// Test helper: a performance budget in milliseconds, multiplied by the
+/// `PW_PERF_SLACK` environment variable (default 1). CI sets it to 2 so only
+/// regressions beyond twice the budget fail (phase-1.md §1.6), since shared
+/// runners are slower than developer machines.
+#[cfg(test)]
+pub(crate) fn perf_budget_ms(base: u128) -> u128 {
+    let slack = std::env::var("PW_PERF_SLACK")
+        .ok()
+        .and_then(|v| v.parse::<f64>().ok())
+        .filter(|s| *s >= 1.0)
+        .unwrap_or(1.0);
+    (base as f64 * slack) as u128
+}
