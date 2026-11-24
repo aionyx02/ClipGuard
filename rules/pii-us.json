@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "name": "pii-us",
+  "pack": "US",
+  "priority": 40,
+  "description": "美國個資包（#27）：SSN（3-2-4 碼）。沒有檢查碼，所以一定要有 SSN、Social Security 這類關鍵字（P6），另外排除 SSA 不會發的範圍（000、666、9xx 區碼，00 組號，0000 序號）。",
+  "rules": [
+    {
+      "id": "us-ssn",
+      "kind": "national-id",
+      "label": "社會安全號碼（SSN）",
+      "regex": "[0-9]{3}[ \\-]?[0-9]{2}[ \\-]?[0-9]{4}",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "us-ssn",
+      "context": { "keywords": ["ssn", "social security", "soc sec", "ss#", "ss #", "社會安全號碼", "社會安全碼", "社會安全"], "before": 32, "after": 16 },
+      "mask": { "keepStart": 0, "keepEnd": 4, "canonical": "digits" }
+    }
+  ]
+}

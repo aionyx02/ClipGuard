@@ -83,13 +83,13 @@ public sealed class RegisteredSecretStore
     {
         ArgumentNullException.ThrowIfNull(secret);
         if (secret.Length is < MinLength or > MaxLength)
-            throw new ArgumentException($"長度必須介於 {MinLength} 到 {MaxLength} 個字元。", nameof(secret));
+            throw new ArgumentException(CoreStrings.Store_LengthOutOfRange(MinLength, MaxLength), nameof(secret));
 
         var hmac = Compute(secret.AsSpan());
         if (_entries.Any(e => e.Length == secret.Length && CryptographicOperations.FixedTimeEquals(e.Hmac, hmac)))
-            throw new InvalidOperationException("這個機密已經登記過了。");
+            throw new InvalidOperationException(CoreStrings.Store_AlreadyRegistered);
 
-        label = string.IsNullOrWhiteSpace(label) ? "未命名" : label.Trim();
+        label = string.IsNullOrWhiteSpace(label) ? CoreStrings.Store_Untitled : label.Trim();
         if (label.Length > MaxLabelLength) label = label[..MaxLabelLength];
         var entry = new RegisteredSecret(Guid.NewGuid(), label,
             secret.Length, hmac, DateTimeOffset.UtcNow);
@@ -130,7 +130,7 @@ public sealed class RegisteredSecretStore
                 {
                     var e = candidates[j];
                     if (!CryptographicOperations.FixedTimeEquals(e.Hmac, mac)) continue;
-                    results.Add(new(SecretKind.Registered, e.Label, $"已登記的「{e.Label}」", i, length));
+                    results.Add(new(SecretKind.Registered, e.Label, CoreStrings.Store_RegisteredMask(e.Label), i, length));
                     candidates.RemoveAt(j);
                 }
             }

@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "name": "pii-hk",
+  "pack": "HK",
+  "priority": 40,
+  "description": "香港個資包（#27）：身分證（1–2 個字母 + 6 碼 + 檢查碼，mod 11）。檢查碼寫在括號裡的 A123456(3) 很好認，不要求關鍵字；沒有括號的 A1234563 跟產品型號分不開，要有關鍵字。",
+  "rules": [
+    {
+      "id": "hk-id",
+      "kind": "national-id",
+      "label": "香港身分證號",
+      "regex": "[A-Z]{1,2}[0-9]{6} ?\\([0-9A]\\)",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "validate": "hk-id",
+      "mask": { "keepStart": 1, "keepEnd": 2, "canonical": "alnum-upper" }
+    },
+    {
+      "id": "hk-id-plain",
+      "kind": "national-id",
+      "label": "香港身分證號",
+      "regex": "[A-Z]{1,2}[0-9]{6}[0-9A]",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "hk-id",
+      "context": { "keywords": ["hkid", "hong kong id", "identity card", "身份證", "身分證", "身份证"], "before": 32 },
+      "mask": { "keepStart": 1, "keepEnd": 2, "canonical": "alnum-upper" }
+    }
+  ]
+}

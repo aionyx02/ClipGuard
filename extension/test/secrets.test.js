@@ -25,8 +25,8 @@ test('身分證：檢查碼錯、第二碼不合法、長度不對都不通過',
 });
 
 test('身分證：在句子中找得到，小寫字母也算', () => {
-  assert.deepEqual(types('我的身分證是 A123456789 喔'), ['tw-id']);
-  assert.deepEqual(types('a123456789'), ['tw-id']);
+  assert.deepEqual(types('我的身分證是 A123456789 喔'), ['national-id']);
+  assert.deepEqual(types('a123456789'), ['national-id']);
 });
 
 test('身分證：檢查碼錯或黏在更長的英數字串裡不算', () => {
@@ -61,9 +61,9 @@ test('統編：不合法', () => {
 });
 
 test('統編：要有「統編」等關鍵字才偵測，避免日期、訂單號碼誤判', () => {
-  assert.deepEqual(types('統編：22099131'), ['ubn']);
-  assert.deepEqual(types('統一編號 10000004'), ['ubn']);
-  assert.deepEqual(types('Tax ID: 22099131'), ['ubn']);
+  assert.deepEqual(types('統編：22099131'), ['business-id']);
+  assert.deepEqual(types('統一編號 10000004'), ['business-id']);
+  assert.deepEqual(types('Tax ID: 22099131'), ['business-id']);
   assert.deepEqual(types('訂單 22099131'), []);
   assert.deepEqual(types('統編：12345678'), []);
 });
@@ -92,10 +92,10 @@ test('信用卡：Luhn 不過或開頭不像卡號不算', () => {
 // ---------- 手機 ----------
 
 test('手機：各種寫法', () => {
-  assert.deepEqual(types('0912345678'), ['tw-mobile']);
-  assert.deepEqual(types('0912-345-678'), ['tw-mobile']);
-  assert.deepEqual(types('+886 912 345 678'), ['tw-mobile']);
-  assert.deepEqual(types('+886912345678'), ['tw-mobile']);
+  assert.deepEqual(types('0912345678'), ['mobile-phone']);
+  assert.deepEqual(types('0912-345-678'), ['mobile-phone']);
+  assert.deepEqual(types('+886 912 345 678'), ['mobile-phone']);
+  assert.deepEqual(types('+886912345678'), ['mobile-phone']);
 });
 
 test('手機：市話或更長的數字不算', () => {
@@ -143,7 +143,7 @@ test('API key：太短或只是單字不算', () => {
 
 test('多筆機密依位置排序', () => {
   const f = findSecrets(`姓名 王小明 A123456789 電話 0912345678 卡 4111111111111111 key ${GHP}`);
-  assert.deepEqual(f.map((x) => x.type), ['tw-id', 'tw-mobile', 'credit-card', 'api-key']);
+  assert.deepEqual(f.map((x) => x.type), ['national-id', 'mobile-phone', 'credit-card', 'api-key']);
   for (const x of f) assert.ok(x.start < x.end);
 });
 
@@ -159,7 +159,7 @@ test('超長文字：結尾的機密也找得到，而且不會卡住', () => {
   const t0 = performance.now();
   const f = findSecrets(text);
   const ms = performance.now() - t0;
-  assert.deepEqual(f.map((x) => x.type), ['tw-id']);
+  assert.deepEqual(f.map((x) => x.type), ['national-id']);
   assert.equal(f[0].start, filler.length + 3);
   assert.ok(ms < 5000, `took ${ms} ms`);
 });
@@ -191,7 +191,7 @@ test('正規化：全形、分隔符號、換行、零寬字元的身分證', ()
     'A1234.56789', 'A123​456789', 'A123–456–789']) {
     const text = `身分證：${id}，謝謝`;
     const f = findSecrets(text);
-    assert.deepEqual(f.map((x) => x.type), ['tw-id'], JSON.stringify(id));
+    assert.deepEqual(f.map((x) => x.type), ['national-id'], JSON.stringify(id));
     assert.equal(text.slice(f[0].start, f[0].end), id);
   }
   for (const bad of ['A 1 2 3 4 5 6 7 8 9', 'A12345  6789', 'A12345-6788', 'XA 123 456 789']) {
@@ -215,7 +215,7 @@ test('正規化：手機 886、(09)、全形', () => {
     '(09)55666777', '(09) 5566-6777', fullWidth('0955-666-777')]) {
     const text = `電話 ${phone} 找我`;
     const f = findSecrets(text);
-    assert.deepEqual(f.map((x) => x.type), ['tw-mobile'], JSON.stringify(phone));
+    assert.deepEqual(f.map((x) => x.type), ['mobile-phone'], JSON.stringify(phone));
     assert.equal(text.slice(f[0].start, f[0].end), phone);
   }
   for (const bad of ['(02)25556666', '1886912000111', '第 09 屆 12000111 號', '88691200011']) {
@@ -247,7 +247,8 @@ test('分隔符號不能把不相干的數字湊成機密', () => {
 
 test('maskText：全形與零寬字元的原文整段換掉', () => {
   const text = `ID ${fullWidth('A123456789')} card 4111​1111​1111​1111 tel 886912000111.`;
-  assert.equal(maskText(text), 'ID A12****789 card ************1111 tel 8869*****111.');
+  // #27 起與 C# 的 PasteGuard.MaskText 結果一樣（SecretNormalizationTests.貼遮罩版_全形與零寬字元整段換掉）。
+  assert.equal(maskText(text), 'ID A12****789 card 4111********1111 tel 091****111.');
 });
 
 // ---------- JWT（#22 F15） ----------
@@ -262,7 +263,7 @@ test('JWT：命中並遮罩', () => {
   assert.equal(f.length, 1);
   assert.equal(f[0].label, 'JWT');
   assert.equal(f[0].value, jwt);
-  assert.equal(maskSecret(f[0]), 'eyJ********6789');
+  assert.equal(maskSecret(f[0]), 'eyJ********789');
   assert.deepEqual(types(`token 是 ${fakeJwt()}.`), ['api-key']);
   assert.deepEqual(types(fakeJwt('{"alg":"none"}', '')), ['api-key']);
 });
@@ -276,29 +277,31 @@ test('JWT：header 不對、不像、五段的 JWE 都不算', () => {
 
 // ---------- 遮罩 ----------
 
-test('遮罩：身分證保留前 3 後 3', () => {
-  assert.equal(maskSecret({ type: 'tw-id', value: 'A123456789' }), 'A12****789');
+// #27 起遮罩字串與 C# 一樣：先換成標準寫法（去掉分隔符號、+886 換成 0），再保留頭尾，星號最多 8 個。
+test('遮罩：身分證保留前 3 後 3，分隔符號去掉', () => {
+  assert.equal(maskSecret({ type: 'national-id', value: 'A123456789' }), 'A12****789');
+  assert.equal(maskSecret({ type: 'national-id', value: 'a 123 456 789' }), 'A12****789');
 });
 
-test('遮罩：信用卡只留末 4 碼且保留分隔符號', () => {
-  assert.equal(maskSecret({ type: 'credit-card', value: '4111 1111 1111 1111' }), '**** **** **** 1111');
-  assert.equal(maskSecret({ type: 'credit-card', value: '4111111111111111' }), '************1111');
+test('遮罩：信用卡保留前 4 後 4', () => {
+  assert.equal(maskSecret({ type: 'credit-card', value: '4111 1111 1111 1111' }), '4111********1111');
+  assert.equal(maskSecret({ type: 'credit-card', value: '4111111111111111' }), '4111********1111');
 });
 
 test('遮罩：手機、統編', () => {
-  assert.equal(maskSecret({ type: 'tw-mobile', value: '0912345678' }), '0912***678');
-  assert.equal(maskSecret({ type: 'tw-mobile', value: '0912-345-678' }), '0912-***-678');
-  assert.equal(maskSecret({ type: 'tw-mobile', value: '+886912345678' }), '+886912***678');
-  assert.equal(maskSecret({ type: 'ubn', value: '22099131' }), '22****31');
+  assert.equal(maskSecret({ type: 'mobile-phone', value: '0912345678' }), '091****678');
+  assert.equal(maskSecret({ type: 'mobile-phone', value: '0912-345-678' }), '091****678');
+  assert.equal(maskSecret({ type: 'mobile-phone', value: '+886912345678' }), '091****678');
+  assert.equal(maskSecret({ type: 'business-id', value: '22099131' }), '22****31');
 });
 
-test('遮罩：API key 保留前綴與末 4 碼，中間壓成 8 個星號', () => {
-  assert.equal(maskSecret({ type: 'api-key', value: GHP }), `ghp_********${GHP.slice(-4)}`);
-  assert.equal(maskSecret({ type: 'api-key', value: AKIA }), 'AKIA********MPLE');
+test('遮罩：API key 保留前綴與末 3 碼，中間壓成 8 個星號', () => {
+  assert.equal(maskSecret({ type: 'api-key', value: GHP }), `ghp_********${GHP.slice(-3)}`);
+  assert.equal(maskSecret({ type: 'api-key', value: AKIA }), 'AKIA********PLE');
   assert.ok(!maskSecret({ type: 'api-key', value: SKANT }).includes(SKANT.slice(7, 20)));
 });
 
 test('maskText 只換掉機密，其他文字不動', () => {
-  assert.equal(maskText('ID: A123456789, tel 0912345678.'), 'ID: A12****789, tel 0912***678.');
+  assert.equal(maskText('ID: A123456789, tel 0912345678.'), 'ID: A12****789, tel 091****678.');
   assert.equal(maskText('沒有機密'), '沒有機密');
 });

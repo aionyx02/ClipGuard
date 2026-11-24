@@ -47,6 +47,9 @@ internal static class SecretRules
             var root = doc.RootElement;
             if (root.GetProperty("format").GetInt32() != 1) throw new InvalidDataException($"{name}: 不支援的 format");
             var priority = root.GetProperty("priority").GetInt32();
+            var pack = root.TryGetProperty("pack", out var pk) ? pk.GetString()! : SecretPacks.Universal;
+            if (pack != SecretPacks.Universal && !(pack.Length == 2 && pack.All(char.IsAsciiLetterUpper)))
+                throw new InvalidDataException($"{name}: pack 要是 universal 或兩個大寫字母的國家代碼：{pack}");
             var fileExclude = ReadExclusions(root, cache, name);
             var fileStopwords = ReadStrings(root, "stopwords");
 
@@ -57,7 +60,7 @@ internal static class SecretRules
                 if (!ids.Add(id)) throw new InvalidDataException($"{name}: 規則 id 重複：{id}");
                 try
                 {
-                    rules.Add(ReadRule(r, id, fileExclude, fileStopwords, cache, name));
+                    rules.Add(ReadRule(r, id, pack, fileExclude, fileStopwords, cache, name));
                 }
                 catch (Exception e) when (e is ArgumentException or KeyNotFoundException or InvalidOperationException or NotSupportedException)
                 {
@@ -70,11 +73,16 @@ internal static class SecretRules
         return [.. parsed.OrderBy(p => p.Priority).ThenBy(p => p.Name, StringComparer.Ordinal).SelectMany(p => p.Rules)];
     }
 
-    private static SecretRule ReadRule(JsonElement r, string id, Exclusion[] fileExclude, string[] fileStopwords,
+    /// <summary>遮罩時預設保留的結尾字數（桌面版和插件一樣，#27 起統一成 3）。</summary>
+    internal const int DefaultKeepEnd = 3;
+
+    private static SecretRule ReadRule(JsonElement r, string id, string pack, Exclusion[] fileExclude, string[] fileStopwords,
         Dictionary<(string, bool), Regex> cache, string file)
     {
         var ignoreCase = r.TryGetProperty("ignoreCase", out var ic) && ic.GetBoolean();
         var keepStart = 0;
+        var keepEnd = DefaultKeepEnd;
+        Func<string, string>? canonical = null;
         var pem = false;
         if (r.TryGetProperty("mask", out var mask))
         {
@@ -83,20 +91,45 @@ internal static class SecretRules
                 if (mask.GetString() != "pem-block") throw new InvalidDataException($"{file}: {id} 的 mask 不認得");
                 pem = true;
             }
-            else keepStart = mask.TryGetProperty("keepStart", out var ks) ? ks.GetInt32() : 0;
+            else
+            {
+                keepStart = mask.TryGetProperty("keepStart", out var ks) ? ks.GetInt32() : 0;
+                keepEnd = mask.TryGetProperty("keepEnd", out var ke) ? ke.GetInt32() : DefaultKeepEnd;
+                if (mask.TryGetProperty("canonical", out var cn))
+                    canonical = PiiFormats.Canonical(cn.GetString()!)
+                                ?? throw new InvalidDataException($"{file}: {id} 的 mask.canonical 不認得：{cn.GetString()}");
+            }
         }
+
+        var hasRegex = r.TryGetProperty("regex", out var regexElement);
+        var hasFinder = r.TryGetProperty("finder", out var finderElement);
+        if (hasRegex == hasFinder) throw new InvalidDataException($"{file}: {id} 要有 regex 或 finder 其中一個");
+        var regex = hasRegex ? regexElement.GetString()! : null;
 
         return new SecretRule
         {
             Id = id,
+            Pack = pack,
             Kind = r.GetProperty("kind").GetString() switch
             {
                 "api-key" => SecretKind.ApiKey,
+                "national-id" => SecretKind.NationalId,
+                "resident-certificate" => SecretKind.ResidentCertificate,
+                "business-id" => SecretKind.BusinessId,
+                "credit-card" => SecretKind.CreditCard,
+                "mobile-phone" => SecretKind.MobilePhone,
+                "phone-number" => SecretKind.PhoneNumber,
+                "bank-account" => SecretKind.BankAccount,
                 var k => throw new InvalidDataException($"{file}: {id} 的 kind 不認得：{k}"),
             },
             Label = r.GetProperty("label").GetString()!,
-            Pattern = Compile(r.GetProperty("regex").GetString()!, ignoreCase, cache),
-            GroupPattern = CompileGroups(r.GetProperty("regex").GetString()!, ignoreCase),
+            Pattern = regex is null ? null : Compile(regex, ignoreCase, cache),
+            GroupPattern = regex is null ? null : CompileGroups(regex, ignoreCase),
+            Finder = hasFinder
+                ? PiiFormats.Finder(finderElement.GetString()!)
+                  ?? throw new InvalidDataException($"{file}: {id} 的 finder 不認得：{finderElement.GetString()}")
+                : null,
+            Context = r.TryGetProperty("context", out var ctx) ? ContextSpec.Read(ctx, file, id) : null,
             SecretGroup = r.TryGetProperty("secretGroup", out var sg) ? sg.GetInt32() : null,
             Keywords = ReadStrings(r, "keywords"),
             NotPrecededBy = r.TryGetProperty("notPrecededBy", out var np) ? Compile($"^(?:{np.GetString()})$", false, cache) : null,
@@ -108,12 +141,12 @@ internal static class SecretRules
             RejectSequential = r.TryGetProperty("rejectSequential", out var rs) && rs.GetBoolean(),
             Exclusions = [.. ReadExclusions(r, cache, file), .. fileExclude],
             Stopwords = [.. ReadStrings(r, "stopwords"), .. fileStopwords],
-            Validate = r.TryGetProperty("validate", out var v) ? v.GetString() switch
-            {
-                "jwt-header" => SecretValidators.IsJwt,
-                var n => throw new InvalidDataException($"{file}: {id} 的 validate 不認得：{n}"),
-            } : null,
+            Validate = r.TryGetProperty("validate", out var v)
+                ? PiiFormats.Validator(v.GetString()!) ?? throw new InvalidDataException($"{file}: {id} 的 validate 不認得：{v.GetString()}")
+                : null,
             KeepStart = keepStart,
+            KeepEnd = keepEnd,
+            Canonical = canonical,
             PemBlock = pem,
         };
     }
@@ -213,6 +246,91 @@ internal static class SecretRules
 }
 
 internal enum ExclusionTarget { Secret, Match, Line, Key }
+
+/// <summary>
+/// 規則的上下文關鍵字（<c>context</c>，#27）：機密前面 <see cref="Before"/> 字內（關鍵字的結尾）或後面 <see cref="After"/> 字內
+/// （關鍵字的開頭）要出現其中一個關鍵字。比對的是正規化後的文字，不是 ASCII 版本，所以中日韓的關鍵字（統編、マイナンバー、
+/// 주민등록번호）也能用；英文字母不分大小寫，開頭或結尾是英文字母的關鍵字不能緊貼著其他英文字母（<c>vat</c> 不會比到 private）。
+/// </summary>
+internal sealed class ContextSpec
+{
+    // 往前看的範圍加上關鍵字長度，不能超過 SecretDetector 每段往前多看的字數（Context = 64）。
+    internal const int MaxWindow = 32;
+    internal const int MaxKeywordLength = 24;
+
+    public required string[] Keywords { get; init; }
+    public int Before { get; init; }
+    public int After { get; init; }
+
+    public static ContextSpec Read(JsonElement e, string file, string id)
+    {
+        var spec = new ContextSpec
+        {
+            Keywords = [.. e.GetProperty("keywords").EnumerateArray().Select(x => x.GetString()!)],
+            Before = e.TryGetProperty("before", out var b) ? b.GetInt32() : 0,
+            After = e.TryGetProperty("after", out var a) ? a.GetInt32() : 0,
+        };
+        if (spec.Keywords.Length == 0 || spec.Keywords.Any(k => k.Length is 0 or > MaxKeywordLength || k != AsciiLower(k)))
+            throw new InvalidDataException($"{file}: {id} 的 context.keywords 要是 1–{MaxKeywordLength} 字、英文小寫");
+        if (spec.Before is < 0 or > MaxWindow || spec.After is < 0 or > MaxWindow || spec.Before + spec.After == 0)
+            throw new InvalidDataException($"{file}: {id} 的 context.before／after 要在 0–{MaxWindow}，而且不能都是 0");
+        return spec;
+    }
+
+    /// <summary>只把 A–Z 轉小寫，長度不變（C# 和 JS 的 Unicode 大小寫轉換不完全一樣；關鍵字也只需要英文不分大小寫）。</summary>
+    public static string AsciiLower(string s)
+    {
+        var i = 0;
+        while (i < s.Length && !char.IsAsciiLetterUpper(s[i])) i++;
+        if (i == s.Length) return s;
+        return string.Create(s.Length, s, static (span, t) =>
+        {
+            for (var k = 0; k < t.Length; k++) span[k] = char.IsAsciiLetterUpper(t[k]) ? (char)(t[k] | 0x20) : t[k];
+        });
+    }
+
+    /// <summary>預先篩選：整段文字（<see cref="AsciiLower"/> 過）裡有沒有任何一個關鍵字。</summary>
+    public bool AnyIn(string lower)
+    {
+        foreach (var k in Keywords)
+            if (lower.Contains(k, StringComparison.Ordinal)) return true;
+        return false;
+    }
+
+    /// <summary><paramref name="lower"/> 是 <see cref="AsciiLower"/> 過的正規化文字；機密在 [index, index+length)。</summary>
+    public bool Present(string lower, int index, int length)
+    {
+        var end = index + length;
+        foreach (var k in Keywords)
+        {
+            if (Before > 0)
+            {
+                // 關鍵字整個在機密前面，結尾落在 [index - Before, index]。
+                var from = Math.Max(0, index - Before - k.Length);
+                for (var p = lower.IndexOf(k, from, index - from, StringComparison.Ordinal); p >= 0;
+                     p = p + 1 < index ? lower.IndexOf(k, p + 1, index - p - 1, StringComparison.Ordinal) : -1)
+                    if (IsWord(lower, p, k.Length)) return true;
+            }
+            if (After > 0 && end < lower.Length)
+            {
+                // 關鍵字的開頭落在 [end, end + After]。
+                var limit = Math.Min(lower.Length, end + After + k.Length);
+                for (var p = lower.IndexOf(k, end, limit - end, StringComparison.Ordinal); p >= 0;
+                     p = p + 1 < limit ? lower.IndexOf(k, p + 1, limit - p - 1, StringComparison.Ordinal) : -1)
+                    if (IsWord(lower, p, k.Length)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsWord(string s, int start, int length)
+    {
+        var end = start + length;
+        if (char.IsAsciiLetterLower(s[start]) && start > 0 && char.IsAsciiLetter(s[start - 1])) return false;
+        if (char.IsAsciiLetterLower(s[end - 1]) && end < s.Length && char.IsAsciiLetter(s[end])) return false;
+        return true;
+    }
+}
 
 internal sealed record Exclusion(Regex Pattern, bool IgnoreCase, ExclusionTarget Target);
 
@@ -315,9 +433,17 @@ internal static class SecretValidators
 internal sealed class SecretRule
 {
     public required string Id { get; init; }
+    /// <summary>所屬的規則包：<see cref="SecretPacks.Universal"/> 或國家代碼（TW、US…，#27）。</summary>
+    public string Pack { get; init; } = SecretPacks.Universal;
     public required SecretKind Kind { get; init; }
     public required string Label { get; init; }
-    public required Regex Pattern { get; init; }
+    /// <summary>通知裡顯示的名稱：CoreStrings 有 <c>RuleLabel_&lt;id&gt;</c> 就用它（有翻譯），否則用規則檔的 label。</summary>
+    public string DisplayLabel => CoreStrings.Lookup("RuleLabel_" + Id) ?? Label;
+    /// <summary>在 ASCII 版本上找範圍的 regex；跟 <see cref="Finder"/> 二選一。</summary>
+    public Regex? Pattern { get; init; }
+    /// <summary>regex 寫不出來的格式（信用卡分組）：程式寫的候選產生器，回傳 ASCII 版本裡的位置（見 <see cref="PiiFormats"/>）。</summary>
+    public Func<string, IEnumerable<(int Index, int Length)>>? Finder { get; init; }
+    public ContextSpec? Context { get; init; }
     /// <summary>有捕獲群組時，在比對到的範圍裡重新取群組用（見 <c>SecretRules.CompileGroups</c>）。</summary>
     public Regex? GroupPattern { get; init; }
     /// <summary>機密是哪個捕獲群組；null 表示第一個有比對到、而且不是空字串的群組，沒有群組就是整段（同 gitleaks）。</summary>
@@ -336,8 +462,16 @@ internal sealed class SecretRule
     public Func<string, bool>? Validate { get; init; }
     /// <summary>遮罩時保留的前綴長度（例如 <c>ghp_</c>）。</summary>
     public int KeepStart { get; init; }
+    /// <summary>遮罩時保留的結尾長度。</summary>
+    public int KeepEnd { get; init; } = SecretRules.DefaultKeepEnd;
+    /// <summary>遮罩前換成的標準寫法（去掉分隔符號、+886 換成 0…）；null 表示原樣。</summary>
+    public Func<string, string>? Canonical { get; init; }
     /// <summary>PEM 標頭：通知原樣顯示標頭，貼遮罩版時從標頭遮到 END 行（見 PasteGuard）。</summary>
     public bool PemBlock { get; init; }
+
+    /// <summary>通知和貼遮罩版用的遮罩字串。PEM 標頭原樣顯示（見 PasteGuard）。</summary>
+    public string Mask(string secret) =>
+        PemBlock ? secret : SecretMasker.Mask(Canonical is null ? secret : Canonical(secret), KeepStart, KeepEnd);
 
     public bool KeywordsPresent(string lower)
     {
@@ -351,9 +485,22 @@ internal sealed class SecretRule
     /// 在 <paramref name="ascii"/>（<see cref="SecretRules.AsciiView"/>）裡找這條規則的機密。
     /// 回傳機密的位置；字串本身從 <paramref name="text"/>（同長度的正規化文字）取，給遮罩用。
     /// </summary>
-    public IEnumerable<(int Index, int Length, string Secret)> Scan(string ascii, string text)
+    public IEnumerable<(int Index, int Length, string Secret)> Scan(string ascii, string text, string? contextLower = null)
     {
-        foreach (Match span in Pattern.Matches(ascii))
+        if (Context is not null) contextLower ??= ContextSpec.AsciiLower(text);
+        if (Finder is not null)
+        {
+            foreach (var (index, length) in Finder(ascii))
+            {
+                if (length < MinLength || length > MaxLength) continue;
+                var secret = text.Substring(index, length);
+                if (!Accept(secret, null, index, length, ascii, contextLower)) continue;
+                yield return (index, length, secret);
+            }
+            yield break;
+        }
+
+        foreach (Match span in Pattern!.Matches(ascii))
         {
             if (NotPrecededBy is not null && span.Index > 0 && NotPrecededBy.IsMatch(ascii.AsSpan(span.Index - 1, 1))) continue;
             var end = span.Index + span.Length;
@@ -376,7 +523,7 @@ internal sealed class SecretRule
             var g = SecretGroupOf(m);
             if (g.Length < MinLength || g.Length > MaxLength) continue;
             var secret = text.Substring(g.Index, g.Length);
-            if (!Accept(secret, m, g, ascii)) continue;
+            if (!Accept(secret, m, g.Index, g.Length, ascii, contextLower)) continue;
             yield return (g.Index, g.Length, secret);
         }
     }
@@ -389,7 +536,7 @@ internal sealed class SecretRule
         return m;
     }
 
-    private bool Accept(string secret, Match m, Group g, string ascii)
+    private bool Accept(string secret, Match? m, int index, int length, string ascii, string? contextLower)
     {
         if (Entropy is not null && SecretValidators.Entropy(secret) <= Entropy.For(secret)) return false;
         if (DigitRequiredBelow > 0 && secret.Length < DigitRequiredBelow && !secret.Any(char.IsAsciiDigit)) return false;
@@ -404,15 +551,16 @@ internal sealed class SecretRule
         {
             var target = e.Target switch
             {
-                ExclusionTarget.Match => m.Value,
-                ExclusionTarget.Line => LineOf(ascii, m.Index, m.Index + m.Length),
-                ExclusionTarget.Key => KeyOf(ascii, m),
+                ExclusionTarget.Match => m?.Value ?? secret,
+                ExclusionTarget.Line => m is null ? LineOf(ascii, index, index + length) : LineOf(ascii, m.Index, m.Index + m.Length),
+                ExclusionTarget.Key => m is null ? secret : KeyOf(ascii, m),
                 _ => secret,
             };
             if (e.IgnoreCase) target = target.ToLowerInvariant();
             if (e.Pattern.IsMatch(target)) return false;
         }
-        return Validate is null || Validate(secret);
+        if (Validate is not null && !Validate(secret)) return false;
+        return Context is null || Context.Present(contextLower!, index, length);
     }
 
     private static string LineOf(string s, int start, int end)

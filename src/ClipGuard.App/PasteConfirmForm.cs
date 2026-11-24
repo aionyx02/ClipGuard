@@ -25,7 +25,7 @@ internal sealed class PasteConfirmForm : Form
 
     public PasteConfirmForm(IReadOnlyList<SecretSummary> secrets, string targetName)
     {
-        Text = "ClipGuard：貼上前確認";
+        Text = Strings.Confirm_Title;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
         ShowInTaskbar = true;   // 沒搶到焦點時，使用者還能從工作列找到它
@@ -36,14 +36,14 @@ internal sealed class PasteConfirmForm : Form
         KeyPreview = false;
 
         var lines = secrets.Take(MaxListed).Select(s => s.Kind == SecretKind.Registered ? s.Masked : $"{s.Label} {s.Masked}").ToList();
-        if (secrets.Count > MaxListed) lines.Add($"…另有 {secrets.Count - MaxListed} 筆");
+        if (secrets.Count > MaxListed) lines.Add(Strings.Secret_More(secrets.Count - MaxListed));
 
         var head = new Label
         {
             AutoSize = true,
             MaximumSize = new Size(420, 0),
             Font = new Font(Font, FontStyle.Bold),
-            Text = $"剪貼簿裡有機密，已先擋下這次貼上{(targetName.Length > 0 ? $"（目標：{targetName}）" : "")}。",
+            Text = targetName.Length > 0 ? Strings.Confirm_HeadWithTarget(targetName) : Strings.Confirm_Head,
         };
         var list = new Label { AutoSize = true, MaximumSize = new Size(420, 0), Text = string.Join("\n", lines) };
         var hint = new Label
@@ -51,12 +51,12 @@ internal sealed class PasteConfirmForm : Form
             AutoSize = true,
             MaximumSize = new Size(420, 0),
             ForeColor = SystemColors.GrayText,
-            Text = "按 Enter 或 Esc 取消，什麼都不會貼上。遮罩版會把機密換成星號。",
+            Text = Strings.Confirm_Hint,
         };
 
-        var cancel = new Button { Text = "取消", AutoSize = true, DialogResult = DialogResult.Cancel };
-        var masked = new Button { Text = "貼上遮罩版(&M)", AutoSize = true };
-        var original = new Button { Text = "貼上原文(&O)", AutoSize = true, TabStop = false };
+        var cancel = new Button { Text = Strings.Common_Cancel, AutoSize = true, DialogResult = DialogResult.Cancel };
+        var masked = new Button { Text = Strings.Confirm_PasteMasked, AutoSize = true };
+        var original = new Button { Text = Strings.Confirm_PasteOriginal, AutoSize = true, TabStop = false };
         masked.Click += (_, _) => Close(PasteChoice.Masked);
         original.Click += (_, _) => Close(PasteChoice.Original);
         AcceptButton = cancel;

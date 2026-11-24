@@ -26,35 +26,35 @@ internal sealed class TrayApp : ApplicationContext
 
     public TrayApp()
     {
-        _restoreItem = new ToolStripMenuItem("還原被清除的內容", null, (_, _) => Restore()) { Enabled = false };
+        _restoreItem = new ToolStripMenuItem(Strings.Tray_Restore, null, (_, _) => Restore()) { Enabled = false };
 
         _paste = new PasteInterceptor(_secrets, RegisteredSecretStore.DefaultDirectory,
             reanalyzeClipboard: () => OnClipboardChanged(null, EventArgs.Empty),
             notify: (title, body) => Notify(ToolTipIcon.Warning, title, body));
 
-        _strictRegisteredItem = new ToolStripMenuItem("攔截已登記的機密", null,
+        _strictRegisteredItem = new ToolStripMenuItem(Strings.Tray_StrictRegistered, null,
             (_, _) => UpdatePasteSettings(s => s with { InterceptRegistered = !s.InterceptRegistered }));
-        _strictDetectedItem = new ToolStripMenuItem("也攔截個資與 API key", null,
+        _strictDetectedItem = new ToolStripMenuItem(Strings.Tray_StrictDetected, null,
             (_, _) => UpdatePasteSettings(s => s with { InterceptDetected = !s.InterceptDetected }));
-        var pasteMenu = new ToolStripMenuItem("貼上前確認（嚴格模式）");
+        var pasteMenu = new ToolStripMenuItem(Strings.Tray_PasteMenu);
         pasteMenu.DropDownItems.Add(_strictRegisteredItem);
         pasteMenu.DropDownItems.Add(_strictDetectedItem);
         pasteMenu.DropDownItems.Add(new ToolStripSeparator());
-        pasteMenu.DropDownItems.Add("允許清單…", null, (_, _) => ShowAllowlist());
+        pasteMenu.DropDownItems.Add(Strings.Tray_Allowlist, null, (_, _) => ShowAllowlist());
         SyncPasteMenu();
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_restoreItem);
-        menu.Items.Add("登記機密…", null, (_, _) => _secrets.ShowRegisterDialog(_paste.RefreshHook));
-        menu.Items.Add("管理已登記的機密…", null, (_, _) => _secrets.ShowManageDialog(_paste.RefreshHook));
+        menu.Items.Add(Strings.Tray_RegisterSecret, null, (_, _) => _secrets.ShowRegisterDialog(_paste.RefreshHook));
+        menu.Items.Add(Strings.Tray_ManageSecrets, null, (_, _) => _secrets.ShowManageDialog(_paste.RefreshHook));
         menu.Items.Add(pasteMenu);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("結束", null, (_, _) => ExitThread());
+        menu.Items.Add(Strings.Tray_Exit, null, (_, _) => ExitThread());
 
         _tray = new NotifyIcon
         {
             Icon = LoadAppIcon(),
-            Text = "ClipGuard：剪貼簿防護中",
+            Text = Strings.Tray_Tooltip,
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -77,7 +77,7 @@ internal sealed class TrayApp : ApplicationContext
             startup.Dispose();
             OnClipboardChanged(null, EventArgs.Empty);
             if (_paste.SettingsError is not null || _paste.HookError is not null)
-                Notify(ToolTipIcon.Warning, "貼上前確認的設定有問題", _paste.HookError ?? "設定檔損毀，已改用預設值。");
+                Notify(ToolTipIcon.Warning, Strings.Notify_PasteSettingsProblem_Title, _paste.HookError ?? Strings.Notify_PasteSettingsCorrupt_Body);
         };
         startup.Start();
     }
@@ -124,15 +124,15 @@ internal sealed class TrayApp : ApplicationContext
             case ClipboardAction.Quarantine:
                 _restoreItem.Enabled = true;
                 TryClear();
-                Notify(ToolTipIcon.Error, "已攔截可疑的「貼上執行」指令",
-                    ComposeBody("剪貼簿已清空，正常網站不會要你按 Win+R 貼上指令。", explanation!,
-                        "若確定安全，點這則通知或從系統匣選單還原。"),
+                Notify(ToolTipIcon.Error, Strings.Notify_Quarantine_Title,
+                    ComposeBody(Strings.Notify_Quarantine_Head, explanation!,
+                        Strings.Notify_Quarantine_Tail),
                     restorable: true);
                 break;
 
             case ClipboardAction.WarnSuspicious when swap is null:
-                Notify(ToolTipIcon.Warning, "剪貼簿裡是會執行程式的指令",
-                    ComposeBody("貼上前請確認來源可信。", explanation!, null));
+                Notify(ToolTipIcon.Warning, Strings.Notify_Suspicious_Title,
+                    ComposeBody(Strings.Notify_Suspicious_Head, explanation!, null));
                 break;
 
             // 不是指令才檢查機密，避免蓋掉上面更重要的通知；通知內容只有遮罩後的字串與標籤。
@@ -152,10 +152,11 @@ internal sealed class TrayApp : ApplicationContext
     // 錢包地址掉包（#6、#23）。通知不顯示地址，連遮罩版都不顯示（P4）。
     private void NotifyWalletSwap(WalletSwap swap)
     {
-        var to = swap.ReplacementCurrency == swap.Currency ? "" : $" {swap.ReplacementCurrency} ";
-        Notify(ToolTipIcon.Error, "錢包地址可能被掉包",
-            $"剛複製的 {swap.Currency} 地址在 {swap.Elapsed.TotalMilliseconds:0} 毫秒後被換成另一個{to}地址，可能有剪貼簿劫持惡意程式。\n"
-            + "請勿貼上；假地址常與原地址頭尾相同，請逐字核對並掃毒。");
+        var ms = swap.Elapsed.TotalMilliseconds.ToString("0", System.Globalization.CultureInfo.CurrentCulture);
+        var detail = swap.ReplacementCurrency == swap.Currency
+            ? Strings.Notify_WalletSwap_Detail(swap.Currency, ms)
+            : Strings.Notify_WalletSwap_DetailOtherCurrency(swap.Currency, ms, swap.ReplacementCurrency);
+        Notify(ToolTipIcon.Error, Strings.Notify_WalletSwap_Title, detail + "\n" + Strings.Notify_WalletSwap_Advice);
     }
 
     // 隱藏字元（#5、#23）。通知只顯示 code point，不顯示原文。
@@ -164,8 +165,8 @@ internal sealed class TrayApp : ApplicationContext
         if (!notifyHiddenChars) return;
         var hidden = HiddenCharDetector.Analyze(text);
         if (hidden.Level != ThreatLevel.None)
-            Notify(ToolTipIcon.Warning, "剪貼簿裡有看不見或偽裝的字元",
-                "貼上前請確認內容。\n" + string.Join("、", hidden.Reasons));
+            Notify(ToolTipIcon.Warning, Strings.Notify_HiddenChars_Title,
+                Strings.Notify_HiddenChars_Head + "\n" + string.Join(Strings.ListSeparator, hidden.Reasons));
     }
 
     // 通知內文上限 255 字元（NOTIFYICONDATA.szInfo），把白話說明塞進頭尾之間的空間。
@@ -235,10 +236,10 @@ internal sealed class TrayApp : ApplicationContext
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show(ex.Message, "無法儲存設定", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(ex.Message, Strings.Dialog_SaveSettingsFailed_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         SyncPasteMenu();
-        if (_paste.HookError is not null) Notify(ToolTipIcon.Warning, "貼上前確認沒有作用", _paste.HookError);
+        if (_paste.HookError is not null) Notify(ToolTipIcon.Warning, Strings.Notify_PasteInactive_Title, _paste.HookError);
     }
 
     private void SyncPasteMenu()

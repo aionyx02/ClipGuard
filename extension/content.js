@@ -15,11 +15,15 @@
   const LATE_WRITE_MS = 2000;
 
   let lib = null;
+  let packs = null;
   Promise.all([
     import(chrome.runtime.getURL('lib/secrets.js')),
     import(chrome.runtime.getURL('lib/pastejack.js')),
-  ]).then(([secrets, pastejack]) => {
-    lib = { ...secrets, ...pastejack };
+    import(chrome.runtime.getURL('lib/i18n.js')),
+  ]).then(([secrets, pastejack, i18n]) => {
+    lib = { ...secrets, ...pastejack, ...i18n };
+    // 個資的國家包依瀏覽器偏好語言選（#27，例如 zh-TW 開台灣包、en-US 開美國包）；通用包一律開。
+    packs = secrets.packsForLocales(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);
   }, () => {});
 
   // ====================================================================
@@ -123,7 +127,7 @@
     if (!el) return;
     const text = event.clipboardData.getData('text/plain');
     if (!text) return;
-    const findings = lib.findSecrets(text);
+    const findings = lib.findSecrets(text, { packs });
     if (findings.length === 0) return; // 沒有機密：不 preventDefault，網站行為完全不變。
 
     // 有機密：攔下原本的貼上，連網頁自己的 paste handler 也不讓它看到原文。
@@ -353,18 +357,21 @@
       decide(choice);
     };
     const counts = new Map();
-    for (const f of findings) counts.set(f.label, (counts.get(f.label) || 0) + 1);
+    for (const f of findings) {
+      const label = lib.displayLabel(f);
+      counts.set(label, (counts.get(label) || 0) + 1);
+    }
     const items = [...counts].map(([label, n]) => el('li', {}, n > 1 ? `${label} × ${n}` : label));
 
-    const primary = el('button', { class: 'primary', type: 'button', onclick: () => choose('masked') }, '貼上遮罩版本');
-    const box = el('div', { class: 'box', role: 'dialog', 'aria-label': 'ClipGuard 機密貼上提醒' },
-      el('p', { class: 'title warn' }, 'ClipGuard：要貼上的內容含有機密'),
+    const primary = el('button', { class: 'primary', type: 'button', onclick: () => choose('masked') }, lib.t('paste_masked'));
+    const box = el('div', { class: 'box', role: 'dialog', 'aria-label': lib.t('paste_aria') },
+      el('p', { class: 'title warn' }, lib.t('paste_title')),
       el('ul', {}, ...items),
-      el('p', { class: 'label' }, '遮罩後會貼上：'),
+      el('p', { class: 'label' }, lib.t('paste_preview_label')),
       el('span', { class: 'preview' }, masked.length > 200 ? `${masked.slice(0, 200)}…` : masked),
       el('div', { class: 'buttons' },
-        el('button', { type: 'button', onclick: () => choose('cancel') }, '取消'),
-        el('button', { type: 'button', onclick: () => choose('original') }, '貼上原文'),
+        el('button', { type: 'button', onclick: () => choose('cancel') }, lib.t('cancel')),
+        el('button', { type: 'button', onclick: () => choose('original') }, lib.t('paste_original')),
         primary,
       ),
     );
@@ -379,21 +386,21 @@
     const writeClipboard = (text, done) => {
       navigator.clipboard.writeText(text).then(
         () => { status.textContent = done; },
-        () => { status.textContent = '無法寫入剪貼簿，請重新複製一次。'; },
+        () => { status.textContent = lib.t('copy_write_failed'); },
       );
     };
-    const buttons = [el('button', { type: 'button', onclick: closeUi }, '關閉')];
-    buttons.unshift(el('button', { type: 'button', onclick: () => writeClipboard('', '已清空剪貼簿。') }, '清空剪貼簿'));
+    const buttons = [el('button', { type: 'button', onclick: closeUi }, lib.t('close'))];
+    buttons.unshift(el('button', { type: 'button', onclick: () => writeClipboard('', lib.t('copy_cleared')) }, lib.t('copy_clear')));
     if (selection) {
-      buttons.push(el('button', { class: 'primary', type: 'button', onclick: () => writeClipboard(selection, '已改回你選取的文字。') }, '改回我選取的文字'));
+      buttons.push(el('button', { class: 'primary', type: 'button', onclick: () => writeClipboard(selection, lib.t('copy_restored')) }, lib.t('copy_restore')));
     }
-    const title = selection ? 'ClipGuard：這個網頁改寫了你複製的內容' : 'ClipGuard：這個網頁把可疑內容寫進剪貼簿';
-    const box = el('div', { class: 'box', role: 'alertdialog', 'aria-label': 'ClipGuard 剪貼簿警告' },
+    const title = lib.t(selection ? 'copy_title_replaced' : 'copy_title_unselected');
+    const box = el('div', { class: 'box', role: 'alertdialog', 'aria-label': lib.t('copy_aria') },
       el('p', { class: 'title danger' }, title),
       el('ul', {}, ...result.reasons.map((r) => el('li', {}, r))),
-      el('p', { class: 'label' }, '實際寫入剪貼簿：'),
+      el('p', { class: 'label' }, lib.t('copy_written_label')),
       el('span', { class: 'preview' }, lib.preview(written, 300)),
-      el('p', { class: 'label' }, '先不要貼到終端機、Win+R 或檔案總管網址列。'),
+      el('p', { class: 'label' }, lib.t('copy_advice')),
       el('div', { class: 'buttons' }, ...buttons),
       status,
     );

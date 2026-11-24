@@ -28,13 +28,16 @@ python -m http.server 8765
 
 ## 偵測規則
 
+所有規則（個資和 API key）都跟桌面版共用 `rules/*.json`，遮罩字串也一樣。個資分成通用包和國家包（#27）：通用包一律開啟，國家包依瀏覽器的偏好語言（`navigator.languages`，例如 `zh-TW` 開台灣包、`en-US` 開美國包，列了幾個語言就開幾個）。插件沒有設定畫面，詳細見 `docs/detection-rules.md` §5.6。
+
 | 種類 | 規則 | 遮罩範例 |
 |---|---|---|
-| 身分證／新式居留證 | 英文字母 + 1/2/8/9 + 8 碼，驗檢查碼 | `A12****789` |
-| 統一編號 | 8 碼，驗檢查碼（可被 5 整除，見下方）；前面 12 字內要有「統編／統一編號／稅籍／Tax ID／VAT」 | `22****31` |
-| 信用卡 | 13–19 碼，可含空白或連字號，驗 Luhn 與發卡組織開頭 | `**** **** **** 1111` |
-| 手機 | `09xx-xxx-xxx`、`+886 9xx xxx xxx` | `0912***678` |
-| API key | 跟桌面版共用 `rules/*.json`：手寫的前綴規則（GitHub、`sk-ant-`、`sk-`、AWS、Stripe、Slack、Google、GitLab、npm、PEM、JWT）、gitleaks 的 198 種服務格式、上下文＋亂度（`api_key=…`、`Authorization: Bearer …`）。見 `docs/detection-rules.md` §5.4、§5.5 | `ghp_********abcd` |
+| 信用卡（通用） | 13–19 碼，可含空白或連字號，驗 Luhn 與發卡組織開頭 | `4111********1111` |
+| IBAN（通用） | 大寫，每 4 碼一個空白或不分隔，驗國家長度與 mod-97 | `DE89********3000` |
+| 國際電話（通用） | 一定要以 `+` 開頭，國碼要是已分配的 | `+44*******958` |
+| 台灣 | 身分證／居留證（驗檢查碼）、統編（驗檢查碼，前面 20 字內要有「統編／統一編號／稅籍／Tax ID／VAT」）、手機 `09xx-xxx-xxx`、`+886 9xx xxx xxx` | `A12****789`、`22****31`、`091****678` |
+| 中國、日本、韓國、香港、新加坡、美國 | 居民身分證、個人番號（要關鍵字）、住民登錄番號（要關鍵字）、香港身分證、NRIC／FIN、SSN（要關鍵字） | `110********02X` |
+| API key | 手寫的前綴規則（GitHub、`sk-ant-`、`sk-`、AWS、Stripe、Slack、Google、GitLab、npm、PEM、JWT）、gitleaks 的 198 種服務格式、上下文＋亂度（`api_key=…`、`Authorization: Bearer …`）。見 `docs/detection-rules.md` §5.4、§5.5 | `ghp_********abc` |
 
 統編檢查碼：財政部財政資訊中心〈[營利事業統一編號檢查碼邏輯修正說明](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283)〉（110-12-22 公告），判斷由「可被 10 整除」改為「可被 5 整除」，112 年 4 月起釋出新號碼。新規則下隨機 8 位數大約五分之一會通過，所以這裡要求前面有關鍵字，否則日期、訂單號碼會一直誤判。
 
@@ -49,7 +52,7 @@ python -m http.server 8765
 | `content_scripts`，`matches: <all_urls>` | 貼上和複製可能發生在任何網站，必須在每個頁面注入。Chrome 會因此顯示「讀取及變更你在所有網站上的資料」 |
 | `content_scripts`，`world: "MAIN"`（`main-world.js`） | 只有在網頁自己的 JS 環境裡，才能看到網頁呼叫 `setData`／`writeText` 寫了什麼（見下節） |
 | `all_frames` + `match_origin_as_fallback` | 很多編輯器放在 iframe（含 `about:blank`）裡 |
-| `web_accessible_resources`：`lib/secrets.js`、`lib/rules.js`、`lib/rules.generated.js`、`lib/pastejack.js` | content script 是 classic script，要用 `import()` 載入偵測模組，Chrome 要求被 import 的檔案列在這裡。代價是網頁能探測到這些檔案存在（可被用來辨識你裝了 ClipGuard） |
+| `web_accessible_resources`：`lib/secrets.js`、`lib/rules.js`、`lib/rules.generated.js`、`lib/pastejack.js`、`lib/i18n.js` | content script 是 classic script，要用 `import()` 載入偵測模組，Chrome 要求被 import 的檔案列在這裡。代價是網頁能探測到這些檔案存在（可被用來辨識你裝了 ClipGuard） |
 
 不連網、不存任何貼上或複製的內容（只在提示框開著時放在記憶體）、沒有分析或遙測，也沒有背景 service worker。
 
@@ -85,6 +88,5 @@ node --test
 
 ## 之後可以做
 
-- **個資規則也共用**：API key 已經跟桌面版共用規則檔（#26），個資還是兩邊各寫一份（#27）。
 - 登記機密（檢查點 4 的 HMAC）在瀏覽器端也能比對。
 - 設定頁：關閉特定種類、網站白名單（需要 `storage` 權限，只存設定不存內容）。

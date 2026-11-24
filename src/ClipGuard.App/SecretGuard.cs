@@ -14,6 +14,14 @@ internal sealed class SecretGuard
 
     private RegisteredSecretStore? _store;
     private string? _storeError;
+    // 個資的國家包（#27）：依 Windows 地區設定選，secret-packs.json 可以手動加或關。啟動時決定一次。
+    private readonly IReadOnlySet<string> _packs = LoadPacks();
+
+    private static IReadOnlySet<string> LoadPacks()
+    {
+        var manual = new SecretPackSettingsStore(RegisteredSecretStore.DefaultDirectory).Load(out _);
+        return SecretPacks.ForRegion(System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName, manual.Extra, manual.Disabled);
+    }
 
     public SecretGuard()
     {
@@ -39,7 +47,7 @@ internal sealed class SecretGuard
         // 不能拿正在變長的 found 來比，超長文字命中很多筆時會變成 O(n²)，卡住 UI。
         IReadOnlyList<SecretMatch> registered = _store is not null ? _store.Find(text) : [];
         var found = new List<SecretMatch>(registered);
-        found.AddRange(SecretDetector.Find(text).Where(m =>
+        found.AddRange(SecretDetector.Find(text, _packs).Where(m =>
             !registered.Any(r => m.Index < r.Index + r.Length && r.Index < m.Index + m.Length)));
         found.Sort((a, b) => a.Index.CompareTo(b.Index));
         return found;
@@ -52,10 +60,10 @@ internal sealed class SecretGuard
 
         var lines = found.Take(MaxListed).Select(m =>
             m.Kind == SecretKind.Registered ? m.Masked : $"{m.Label} {m.Masked}");
-        var more = found.Count > MaxListed ? $"\n…另有 {found.Count - MaxListed} 筆" : "";
+        var more = found.Count > MaxListed ? "\n" + Strings.Secret_More(found.Count - MaxListed) : "";
 
-        return ("剪貼簿裡有機密資料",
-            string.Join("\n", lines) + more + "\n貼上前請確認對象與網站可信。");
+        return (Strings.Secret_Notify_Title,
+            string.Join("\n", lines) + more + "\n" + Strings.Secret_Notify_Advice);
     }
 
     public void ShowRegisterDialog(Action? changed = null)
@@ -96,8 +104,7 @@ internal sealed class SecretGuard
     {
         if (_store is not null) return true;
         MessageBox.Show(
-            "無法開啟已登記機密的金鑰（%LOCALAPPDATA%\\ClipGuard）。\n" +
-            "可能是檔案損毀，或是從別的 Windows 帳號複製過來的。\n\n" + _storeError,
+            Strings.Secret_StoreOpenFailed + "\n" + Strings.Secret_StoreOpenFailed_Reason + "\n\n" + _storeError,
             "ClipGuard", MessageBoxButtons.OK, MessageBoxIcon.Error);
         return false;
     }
@@ -112,13 +119,13 @@ internal sealed class SecretGuard
 /// </summary>
 internal sealed class RegisterSecretForm : Form
 {
-    private const string LabelDescription = "選填，會顯示在通知裡；留空會存成「未命名」。";
-    private const string ConfirmDescription = "再輸入一次同樣的機密，確認沒有打錯。";
-    private static readonly string SecretDescription =
-        $"只會保存長度與 HMAC，無法還原原文。長度需 {RegisteredSecretStore.MinLength}–{RegisteredSecretStore.MaxLength} 字元。";
+    private static string LabelDescription => Strings.Register_LabelDescription;
+    private static string ConfirmDescription => Strings.Register_ConfirmDescription;
+    private static string SecretDescription =>
+        Strings.Register_SecretDescription(RegisteredSecretStore.MinLength, RegisteredSecretStore.MaxLength);
 
     private readonly Func<string, string, string?> _commit;
-    private readonly TextBox _label = new() { Width = 260, MaxLength = RegisteredSecretStore.MaxLabelLength, PlaceholderText = "例如：網銀密碼（會顯示在通知裡）" };
+    private readonly TextBox _label = new() { Width = 260, MaxLength = RegisteredSecretStore.MaxLabelLength, PlaceholderText = Strings.Register_LabelPlaceholder };
     private readonly TextBox _secret = new() { Width = 260, UseSystemPasswordChar = true };
     private readonly TextBox _confirm = new() { Width = 260, UseSystemPasswordChar = true };
     private readonly Label _error = new()
@@ -128,7 +135,7 @@ internal sealed class RegisterSecretForm : Form
         ForeColor = Color.Firebrick,
         Visible = false,
         AccessibleRole = AccessibleRole.Alert,
-        AccessibleName = "錯誤",
+        AccessibleName = Strings.Register_ErrorName,
     };
     private readonly ErrorProvider _errors = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
 
@@ -138,7 +145,7 @@ internal sealed class RegisterSecretForm : Form
     public RegisterSecretForm(Func<string, string, string?> commit)
     {
         _commit = commit;
-        Text = "登記機密";
+        Text = Strings.Register_Title;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -146,11 +153,11 @@ internal sealed class RegisterSecretForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         TopMost = true;
 
-        _label.AccessibleName = "標籤";
+        _label.AccessibleName = Strings.Register_LabelName;
         _label.AccessibleDescription = LabelDescription;
-        _secret.AccessibleName = "機密";
+        _secret.AccessibleName = Strings.Register_SecretName;
         _secret.AccessibleDescription = SecretDescription;
-        _confirm.AccessibleName = "再輸入一次機密";
+        _confirm.AccessibleName = Strings.Register_ConfirmName;
         _confirm.AccessibleDescription = ConfirmDescription;
 
         // 輸入框右邊留空間給 ErrorProvider 的圖示，不然會被 AutoSize 的版面切掉。
@@ -160,8 +167,8 @@ internal sealed class RegisterSecretForm : Form
         _confirm.TextChanged += (_, _) => ClearError(_confirm);
 
         // 「登記」不設 DialogResult：只有檢查和寫入都成功時，才在 OnOk 裡關閉。
-        var ok = new Button { Text = "登記(&R)", AutoSize = true, TabIndex = 0 };
-        var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, AutoSize = true, TabIndex = 1 };
+        var ok = new Button { Text = Strings.Register_OkButton, AutoSize = true, TabIndex = 0 };
+        var cancel = new Button { Text = Strings.Common_Cancel, DialogResult = DialogResult.Cancel, AutoSize = true, TabIndex = 1 };
         ok.Click += (_, _) => OnOk();
         AcceptButton = ok;
         CancelButton = cancel;
@@ -176,9 +183,9 @@ internal sealed class RegisterSecretForm : Form
             box.TabIndex = tab++;
             grid.Controls.Add(box, 1, row);
         }
-        Row(0, "標籤(&L)", _label);
-        Row(1, "機密(&S)", _secret);
-        Row(2, "再輸入一次(&C)", _confirm);
+        Row(0, Strings.Register_LabelCaption, _label);
+        Row(1, Strings.Register_SecretCaption, _secret);
+        Row(2, Strings.Register_ConfirmCaption, _confirm);
 
         var hint = new Label { AutoSize = true, MaximumSize = new Size(380, 0), Text = SecretDescription, TabIndex = tab++ };
         grid.Controls.Add(hint, 0, 3);
@@ -219,7 +226,7 @@ internal sealed class RegisterSecretForm : Form
         }
 
         // 有 owner 的訊息框才會跟著置頂的對話框出現在最上層，不會落到別的視窗後面。
-        MessageBox.Show(this, "已登記。之後複製到這段文字時會提醒你。", "ClipGuard",
+        MessageBox.Show(this, Strings.Register_Done, "ClipGuard",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
         DialogResult = DialogResult.OK;
     }
@@ -230,9 +237,9 @@ internal sealed class RegisterSecretForm : Form
         ClearError(_confirm);
         _errors.SetError(field, message);
         _error.Text = message;
-        _error.AccessibleName = "錯誤：" + message;
+        _error.AccessibleName = Strings.Register_ErrorPrefix(message);
         _error.Visible = true;
-        field.AccessibleDescription = "錯誤：" + message;
+        field.AccessibleDescription = Strings.Register_ErrorPrefix(message);
         field.Focus();
         // 焦點本來就在這一欄時，報讀器不會重念；另外發一個通知讓它念出錯誤。
         field.AccessibilityObject.RaiseAutomationNotification(
@@ -280,7 +287,7 @@ internal sealed class ManageSecretsForm : Form
     public ManageSecretsForm(RegisteredSecretStore store)
     {
         _store = store;
-        Text = "已登記的機密";
+        Text = Strings.Manage_Title;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -288,12 +295,12 @@ internal sealed class ManageSecretsForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         TopMost = true;
 
-        _list.Columns.Add("標籤", 200);
-        _list.Columns.Add("長度", 60);
-        _list.Columns.Add("登記時間", 140);
+        _list.Columns.Add(Strings.Manage_ColumnLabel, 200);
+        _list.Columns.Add(Strings.Manage_ColumnLength, 60);
+        _list.Columns.Add(Strings.Manage_ColumnCreated, 140);
 
-        var remove = new Button { Text = "移除", AutoSize = true };
-        var close = new Button { Text = "關閉", DialogResult = DialogResult.Cancel, AutoSize = true };
+        var remove = new Button { Text = Strings.Manage_Remove, AutoSize = true };
+        var close = new Button { Text = Strings.Common_Close, DialogResult = DialogResult.Cancel, AutoSize = true };
         remove.Click += (_, _) => RemoveSelected();
         CancelButton = close;
 
@@ -315,24 +322,24 @@ internal sealed class ManageSecretsForm : Form
         foreach (var e in _store.Entries)
         {
             // 原文本來就沒存，這裡只能、也只會顯示標籤與長度。
-            var item = new ListViewItem([e.Label, $"{e.Length} 字", e.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm")])
+            var item = new ListViewItem([e.Label, Strings.Manage_LengthValue(e.Length), e.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm")])
             {
                 Tag = e.Id,
             };
             _list.Items.Add(item);
         }
         if (_store.Entries.Count == 0)
-            _list.Items.Add(new ListViewItem(["（尚未登記任何機密）", "", ""]));
+            _list.Items.Add(new ListViewItem([Strings.Manage_Empty, "", ""]));
     }
 
     private void RemoveSelected()
     {
         if (_list.SelectedItems.Count == 0 || _list.SelectedItems[0].Tag is not Guid id) return;
         var label = _list.SelectedItems[0].Text;
-        if (MessageBox.Show($"確定移除「{label}」？", "已登記的機密", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        if (MessageBox.Show(Strings.Manage_ConfirmRemove(label), Strings.Manage_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question)
             != DialogResult.Yes) return;
         try { _store.Remove(id); }
-        catch (IOException ex) { MessageBox.Show(ex.Message, "無法移除", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (IOException ex) { MessageBox.Show(ex.Message, Strings.Manage_RemoveFailed_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         Reload();
     }
 }

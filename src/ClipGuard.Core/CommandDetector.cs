@@ -152,13 +152,29 @@ public static class CommandDetector
         (MsMsdt, "用 ms-msdt: 呼叫疑難排解工具（Follina 手法）"),
     ];
 
+    /// <summary>
+    /// 誘餌註解：# 後面出現「我不是機器人／人機驗證」這類字。英文的 robot、verif、human 也涵蓋了
+    /// 西、葡、法、德、義、印尼文的大部分寫法（robot／roboter、verificación、humano…），其他語言另外列（#27）。
+    /// 只收 ClickFix 誘餌會用、一般註解很少用的字：日文的「認証」、韓文的「인증」單獨出現太常見（認証トークン、인증서），
+    /// 所以只在後面接 ID（認証 ID: 1234）時才算。
+    /// </summary>
+    internal const string BaitCommentPattern =
+        "#.*(robot|captcha|verif|human|cloudflare"
+        + "|驗證|機器人|人機"                    // 繁中
+        + "|验证|机器人|人机"                    // 簡中
+        + @"|ロボット|人間であること|認証\s*id"    // 日
+        + @"|로봇|사람인지|인증\s*id"             // 韓
+        + "|robô|vérif"                          // 葡（robô 不含 robot）、法（vérification 有重音）
+        + "|робот|капч|верифик"                   // 俄
+        + "|người máy|xác minh)";                 // 越
+
     private static readonly (Regex Pattern, string Reason)[] ScamSignals =
     [
         (new(HiddenWindowPattern, Opts), "隱藏視窗執行"),
         (new(@"(?:^|\s)-(e|ec|enc|encodedcommand)\s+[A-Za-z0-9+/=]{16,}", Opts), "執行 Base64 編碼過的指令"),
         (new(@"\b(iex|invoke-expression)\b", Opts), "把下載內容當程式碼執行（iex）"),
         (new(@"(downloadstring|downloadfile|\biwr\b|\birm\b|invoke-webrequest|invoke-restmethod|net\.webclient)", Opts), "從網路下載內容"),
-        (new(@"#.*(robot|captcha|verif|human|cloudflare|驗證|機器人|人機)", Linear), "誘餌註解（假裝是人機驗證）"),
+        (new(BaitCommentPattern, Linear), "誘餌註解（假裝是人機驗證）"),
         (new(@"[✅✔☑]", Opts), "含勾選符號（假驗證常見）"),
         (new(@"(?<!\s)\s{30,}#", Opts), "用大量空白把真正的指令擠出輸入框"),
         (new(@"\bmshta(\.exe)?\s+[""']?https?://", Opts), "mshta 直接執行遠端網址"),

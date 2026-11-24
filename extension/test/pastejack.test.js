@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { analyzeCopy, commandSignals, normalize, preview } from '../lib/pastejack.js';
+import { useLocale } from './locale.js';
+
+// 下面的斷言是 zh_TW 的說明文字（#27 之前只有繁中）；英文版見 i18n.test.js。
+useLocale('zh_TW');
 
 // 惡意指令範例在執行時才拼起來：完整字串寫在原始碼裡會被 Windows Defender 當成 ClickFix 頁面隔離。
 const j = (...parts) => parts.join('');

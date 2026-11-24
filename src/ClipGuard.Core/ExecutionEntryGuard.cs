@@ -83,22 +83,22 @@ public static class ExecutionEntryGuard
 
         var where = entry switch
         {
-            EntryPoint.RunDialog => "「執行」視窗",
-            EntryPoint.FileExplorer => "檔案總管",
-            EntryPoint.FileDialog => "檔案對話框",
-            _ => "終端機",
+            EntryPoint.RunDialog => CoreStrings.Entry_RunDialog,
+            EntryPoint.FileExplorer => CoreStrings.Entry_FileExplorer,
+            EntryPoint.FileDialog => CoreStrings.Entry_FileDialog,
+            _ => CoreStrings.Entry_Terminal,
         };
 
         if (quarantined || currentLevel == ThreatLevel.Malicious)
             return new EntryWarning(entry, ThreatLevel.Malicious,
-                $"小心！你剛打開了{where}",
-                (quarantined ? "剛才攔截的指令已從剪貼簿清空。" : "剪貼簿裡有惡意指令。")
-                + "\n叫你按 Win+R、開檔案總管或終端機貼上指令的「驗證」是詐騙手法，請直接關掉。");
+                CoreStrings.Entry_Malicious_Title(where),
+                (quarantined ? CoreStrings.Entry_Malicious_Quarantined : CoreStrings.Entry_Malicious_InClipboard)
+                + "\n" + CoreStrings.Entry_Malicious_Advice);
 
         if (currentLevel == ThreatLevel.Suspicious)
             return new EntryWarning(entry, ThreatLevel.Suspicious,
-                $"你打開了{where}，剪貼簿裡有會執行程式的指令",
-                "貼上前請確認指令來源可信。網站要你貼上指令「完成驗證」一定是詐騙。");
+                CoreStrings.Entry_Suspicious_Title(where),
+                CoreStrings.Entry_Suspicious_Body);
 
         return null;
     }

@@ -1,0 +1,49 @@
+{
+  "format": 1,
+  "name": "pii-tw",
+  "pack": "TW",
+  "priority": 40,
+  "description": "台灣個資包（#27，原本寫在 SecretDetector.cs 與 secrets.js 裡）：身分證、居留證、統編（要有關鍵字）、手機。分隔符號的限制見 docs/detection-rules.md §5.0。",
+  "rules": [
+    {
+      "id": "tw-national-id",
+      "kind": "national-id",
+      "label": "身分證字號",
+      "regex": "[A-Za-z](?:[ .\\-]|\\r?\\n)?[12](?:(?:[ .\\-]|\\r?\\n)?[0-9]){8}",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "tw-id",
+      "mask": { "keepStart": 3, "keepEnd": 3, "canonical": "alnum-upper" }
+    },
+    {
+      "id": "tw-resident-certificate",
+      "kind": "resident-certificate",
+      "label": "居留證號",
+      "regex": "[A-Za-z](?:[ .\\-]|\\r?\\n)?[89A-Da-d](?:(?:[ .\\-]|\\r?\\n)?[0-9]){8}",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "tw-id",
+      "mask": { "keepStart": 3, "keepEnd": 3, "canonical": "alnum-upper" }
+    },
+    {
+      "id": "tw-ubn",
+      "kind": "business-id",
+      "label": "統一編號",
+      "regex": "[0-9]{8}",
+      "notPrecededBy": "[0-9]",
+      "notFollowedBy": "[0-9]",
+      "validate": "tw-ubn",
+      "context": { "keywords": ["統一編號", "統一編", "統編", "營利事業", "稅籍", "vat", "tax id", "taxid", "tax-id", "ubn"], "before": 20 },
+      "mask": { "keepStart": 3, "keepEnd": 3 }
+    },
+    {
+      "id": "tw-mobile",
+      "kind": "mobile-phone",
+      "label": "手機號碼",
+      "regex": "(?:(?:\\+?886(?:[ .\\-]|\\r?\\n)?0?|0)9[0-9]{2}(?:[ .\\-]|\\r?\\n)?[0-9]{3}(?:[ .\\-]|\\r?\\n)?[0-9]{3}|\\(09\\)(?:[ .\\-]|\\r?\\n)?(?:[0-9]{4}(?:[ .\\-]|\\r?\\n)?[0-9]{4}|[0-9]{2}(?:[ .\\-]|\\r?\\n)?[0-9]{3}(?:[ .\\-]|\\r?\\n)?[0-9]{3}))",
+      "notPrecededBy": "[0-9+]",
+      "notFollowedBy": "[0-9]",
+      "mask": { "keepStart": 3, "keepEnd": 3, "canonical": "tw-mobile" }
+    }
+  ]
+}

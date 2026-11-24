@@ -17,8 +17,8 @@
 | P2 | **一次複製最多一則通知** | 通知會互相覆蓋（攔截通知帶有「點擊還原」），所以依優先順序只顯示一則；不同次複製之間也會節流，不顯示過期的通知。見 §2。 |
 | P3 | **不留存剪貼簿內容** | 不寫檔、不記 log、不連網。被攔截的原文只存在記憶體裡，用於還原。 |
 | P4 | **通知不顯示完整機密** | 一律遮罩，例如 `A12****789`；錢包地址連遮罩版都不顯示，見 §6。 |
-| P5 | **有檢查碼就要驗** | 有檢查碼的格式（身分證、統編、信用卡、BTC 地址）必須通過驗證才算命中，用來壓低誤報。 |
-| P6 | **沒有檢查碼的短格式要有上下文** | 只是 8 位數字這類格式，必須搭配關鍵字才算命中（例如統編）。 |
+| P5 | **有檢查碼就要驗** | 有檢查碼的格式（身分證、統編、信用卡、IBAN、各國身分證號、BTC 地址）必須通過驗證才算命中，用來壓低誤報。例外：韓國住民登錄番號 2020 年後的號碼檢查碼是隨機的，改成一定要有關鍵字（§5.6）。 |
+| P6 | **沒有檢查碼的短格式要有上下文** | 只是 8 位數字這類格式，必須搭配關鍵字才算命中（例如統編、美國 SSN、日本個人番號）。國際電話沒有檢查碼，改成一定要以 `+` 開頭。 |
 | P7 | **Core 是純邏輯** | 判斷都放在 `ClipGuard.Core`，不依賴 WinForms 或 Win32，每條規則都要有單元測試。 |
 
 ## 2. 處理流程與通知優先順序
@@ -149,12 +149,27 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 | 隱藏視窗：`-WindowStyle` 的任何前綴（`-w`、`-win`、`-WindowSt`…，W 開頭的參數只有它）、`-` 或 `/` 開頭（dash 變體由正規化處理），值是 `hidden`（或它的前綴 `h`、`hid`…）或數字 `1`（ProcessWindowStyle：Normal=0、Hidden=1、Minimized=2、Maximized=3），可加引號，也可以寫成 `-w:hidden`（#20 F3） | 強 |
 | 下載後直接執行，而且來源**不在**官方安裝網站清單（見 §3.2，#20 F4） | 強 |
 | `-enc` 系列參數加 16 字以上的 Base64 | 強 |
-| 註解含 robot、captcha、verif、human、cloudflare、驗證、機器人、人機 | 強 |
+| 註解（`#` 之後）含 robot、captcha、verif、human、cloudflare、驗證、機器人、人機，或 #27 加的多語版本（見下方） | 強 |
 | 勾選符號 ✅ ✔ ☑ | 強 |
 | 30 個以上空白後接 `#`（把真正的指令擠出輸入框） | 強 |
 | mshta 直接接遠端 URL | 強 |
 | 從網路下載（iwr、irm、DownloadString、WebClient…） | **弱** |
 | 把內容當程式碼執行（iex / Invoke-Expression） | **弱** |
+
+**誘餌註解的多語版本**（#27，`CommandDetector.BaitCommentPattern`）：
+
+| 語言 | 關鍵字 |
+|---|---|
+| 簡中 | 验证、机器人、人机 |
+| 日 | ロボット、人間であること、認証 ID（「認証」後面要接 ID） |
+| 韓 | 로봇、사람인지、인증 ID（「인증」後面要接 ID） |
+| 葡、法 | robô（不含 robot）、vérif（有重音） |
+| 俄 | робот、капч、верифик |
+| 越 | người máy、xác minh |
+| 西、德、義、印尼、土耳其 | 已經被 robot（roboter、robotem）、verif（verificación、Verifizierung、verifikasi）、human（humano、humain）涵蓋 |
+
+- 只收 ClickFix 誘餌會用、一般註解很少用的字。日文的「認証」、韓文的「인증」單獨出現太常見（認証トークン、인증서＝憑證），所以要後面接 ID 才算，例如假驗證畫面的「認証 ID: 4821」。
+- 跟原本一樣只看 `#` 後面，而且要有執行訊號才會變成 Malicious（P1）；單獨一句「私はロボットではありません」不處理。測試：`CommandBaitTests`，每個語言都有該命中和不該命中的註解。
 
 ### 3.2 判定表
 
@@ -188,11 +203,11 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 - 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
 ### 3.3 白話說明（`CommandExplainer.cs`）
-- 指令被判為 Suspicious 或 Malicious 時，會產生一段 zh-TW 的白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。
+- 指令被判為 Suspicious 或 Malicious 時，會產生一段白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。說明跟著介面語言（zh-TW 或英文，#27），文字在 `src/ClipGuard.Core/Resources/CoreStrings*.resx` 的 `Explain_*`；本文件引用的是 zh-TW 版本。
 - #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
 - 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
 - `-enc` 系列參數會用 UTF-16LE 解碼並顯示；解出來不是合理文字時就不顯示。
-- 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。
+- 通知內容最多 255 字元，標題最多 63 字元，超過的部分以 `…` 截斷。英文比中文長，攔截通知的開頭和結尾句加起來仍要留至少 60 字給白話說明，`LocalizationTests` 會對兩種語言檢查這個空間和標題長度。
 
 ### 3.4 已知缺口（尚未修正）
 | 缺口 | Issue |
@@ -229,7 +244,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 5. 機密偵測
 
-程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`SecretMasker.cs`；規則檔 `rules/*.json`（§5.4）。
+程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`PiiFormats.cs`、`SecretMasker.cs`、`SecretPacks.cs`；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。
 
 API key 分三層（#26）：
 
@@ -257,6 +272,9 @@ API key 分三層（#26）：
 | 信用卡 | 先切出「用分隔符號接起來的數字組」，再找連續幾組合起來 13–19 碼的。有分組時只接受 4-4-4-4（最後一組 1–4 碼）、Amex 4-6-5、Diners 4-6-4，而且分隔符號要一致（換行可以取代任何一種，例如卡號折行）。沒分組的號碼中間不能換行 |
 | 手機 | 只接受固定的分組：`0912-345-678`、`0912-345678`、`(09)1234-5678`、`(09)12-345-678` |
 | 統編 | 不允許分隔符號 |
+| IBAN（#27） | 只接受每 4 碼一個空白（`DE89 3704 0044 …`）或完全不分隔；要大寫 |
+| 國際電話（#27） | `+` 後面的數字組之間可以有一個空白、`.` 或 `-`，區碼可以加括號（`+1 (202) 555-0123`、`+44 (0)20 …`）；不接受換行 |
+| 中國身分證、SSN、個人番號、住民登錄番號（#27） | 只接受各自的固定分段（`110105 19491231 002X`、`078-05-1120`、`1234 5678 9018`、`900101-1234567`），SSN 的兩個分隔符號要一樣 |
 
 **長度**：不會因為總長度就整段跳過。
 
@@ -265,24 +283,25 @@ API key 分三層（#26）：
 | ≤ 1,048,576 字（`MaxScanLength`，等於系統匣讀剪貼簿的上限） | 整段分析 |
 | 更長（只會發生在直接呼叫 Core 時） | 開頭和結尾各 524,288 字，中間不分析。機密常在頭尾（.env、log 最後幾行） |
 
-分析時切成每段 64K 字、往後多看 8K 字的重疊片段（`SegmentStep`、`Overlap`），結果只算在起點所在的那一段，所以短於 8K 字的機密（JWT 的上限也在這之內）一定完整落在某一段裡，不會被切斷或重複。合併重疊結果是線性時間，滿滿都是號碼的內容也不會變成 O(n²)。最壞情況（1 Mi 字、每 11 字一個身分證）約 0.15 秒。
+分析時切成每段 64K 字、往後多看 8K 字、往前多看 64 字（上下文關鍵字最遠 32 字加上關鍵字本身 24 字）的重疊片段（`SegmentStep`、`Overlap`），結果只算在起點所在的那一段，所以短於 8K 字的機密（JWT 的上限也在這之內）一定完整落在某一段裡，不會被切斷或重複。合併重疊結果是線性時間，滿滿都是號碼的內容也不會變成 O(n²)。所有包都開時，1 Mi 字的最壞情況（每 11 字一個身分證、每 14 字一個「統編＋號碼」）C# 約 0.15 秒、插件約 0.13 秒（§5.6）。
 
 ### 規則一覽
 
 | 類型 | 規則 | 驗證 |
 |---|---|---|
 | 身分證、居留證 | 1 個英文字母加 9 位數字；第 2 碼 1、2 是身分證，8、9 是新式居留證，A–D 是舊式居留證。前後不能緊鄰英數字 | 檢查碼 |
-| 統一編號 | 8 位數字，**前面 20 字內**要出現統一編號、統編、營利事業、稅籍、VAT 或 Tax ID 等關鍵字 | 權重 1,2,1,2,1,2,4,1，總和要能被 **5** 整除；第 7 碼是 7 時有特例（依財政部 110-12-22 公告的新規則） |
+| 統一編號 | 8 位數字，**前面 20 字內**要出現統一編號、統一編、統編、營利事業、稅籍、VAT、Tax ID、UBN 等關鍵字（上下文關鍵字，§5.4；#27 起可以隔一個換行，`vat` 不會比到 private） | 權重 1,2,1,2,1,2,4,1，總和要能被 **5** 整除；第 7 碼是 7 時有特例（依財政部 110-12-22 公告的新規則） |
 | 信用卡 | 13–19 碼，分組方式見 §5.0，而且要符合發卡機構的前綴和長度 | Luhn |
 | 手機 | `09` 加 8 碼；`+886 9…` 或沒有加號的 `886 9…`（`+886 0912…` 多寫的 0 也接受）；`(09)` 加 8 碼。市話（`(02)2555-6666`）不偵測：沒有檢查碼，8 碼數字太常見 | 沒有檢查碼 |
+| 其他國家的格式、IBAN、國際電話（#27） | 見 §5.6 | 見 §5.6 |
 | API key（第 1 層，手寫） | 前綴比對：GitHub（`gh?_`、`github_pat_`）、`sk-ant-`、`sk-`、Stripe、AWS（`AKIA` / `ASIA`）、Slack、Google、GitLab、npm、PEM 私鑰標頭。前後不能緊鄰同類字元 | 只比對前綴和長度 |
 | API key（第 1 層，gitleaks） | 198 條服務專屬格式（Shopify、DigitalOcean、Twilio、Postman…），部分要求前面有服務名稱（`adafruit … = <值>`） | 依各規則：固定前綴、長度、gitleaks 的亂度門檻與 allowlist |
 | JWT | `eyJ…` 開頭、三段 base64url（header ≤ 512、payload ≤ 6144、signature ≤ 1024 字，signature 可以是空的）。結尾可以接句點；五段的 JWE 不算 | header 要能解成 JSON 物件，而且有字串型別的 `alg` |
 | 疑似金鑰或密碼、Authorization 權杖（第 2 層） | 見 §5.5 | 長度、亂度、排除佔位字 |
 
 - JWT 歸在 API key 類（`SecretKind.ApiKey`，標籤「JWT」），遮罩成 `eyJ********xyz`（P4）。
-- 所有規則檔的命中都是 `SecretKind.ApiKey`，通知格式跟以前一樣是「標籤 遮罩」：有固定前綴的保留前綴（`shpat_********3f1`、`ghp_********xyz`），沒有前綴的只留最後 3 碼（`********x7Q`）。PEM 只顯示標頭，貼遮罩版時一路遮到 END 行。
-- 重疊時的優先順序：`api-keys.json` → `gitleaks.json` → `context.json` → 個資。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的。
+- API key 類規則檔的命中都是 `SecretKind.ApiKey`，通知格式跟以前一樣是「標籤 遮罩」：有固定前綴的保留前綴（`shpat_********3f1`、`ghp_********xyz`），沒有前綴的只留最後 3 碼（`********x7Q`）。PEM 只顯示標頭，貼遮罩版時一路遮到 END 行。
+- 重疊時的優先順序就是規則的順序：`api-keys.json`（10）→ `gitleaks.json`（20）→ `context.json`（30）→ 國家包（40，依檔名）→ 通用包（50）。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的；`+886 9…` 同時是台灣手機和國際電話時，用台灣手機。#27 之前個資內部的順序是身分證 → 卡號 → 統編 → 手機，現在是身分證 → 統編 → 手機 → 卡號，這幾種實際上不會重疊（數字邊界和分組都不同），所以結果不變。
 - 統編要求關鍵字的原因：改成「能被 5 整除」之後，隨機的 8 位數字約有 1/5 會通過檢查碼，日期和訂單號碼都會誤報（P6）。所以**沒有關鍵字的統編刻意不偵測**（#22 F13），README 的已知限制也有寫。
 - 掃描上限（`SecretDetector.MaxScanLength`）不能超過剪貼簿的讀取上限（§2.2）。
 
@@ -308,7 +327,9 @@ API key 分三層（#26）：
 | 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算 | #26 的取捨 |
 | `curl -u 帳號:密碼`、只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單） | #26 的取捨 |
 | 長於 8K 字的機密（`Overlap`）可能被分段切斷，跟 JWT 一樣 | #22、#26 的取捨 |
-| 只支援台灣的個資格式 | #27 |
+| 個資只有 §5.6 的國家；IBAN 要大寫；國際電話沒有 `+` 就不算，後面緊接著另一組數字（`+1 202 555 0123 4`）時整段被當成太長而漏掉；IBAN 後面空一格接 4 個大寫英數字時也一樣 | #27 的取捨 |
+| 沒有檢查碼的國家格式（SSN、住民登錄番號）和 12 位數的個人番號，前面沒有關鍵字就不偵測；關鍵字不限同一行，可能把上一行的「SSN」算進來 | #27 的取捨（P6） |
+| 中國的 15 碼舊身分證、日本的法人番號、韓國的外國人登錄番號以外的證件不偵測 | #27 的取捨 |
 | 貼上攔截預設只管**登記的機密**；個資與 API key 要自己在系統匣打開才會攔（取捨見 §5.3） | #25 |
 | 貼上攔截攔不到右鍵選單的「貼上」、拖放、程式自己讀剪貼簿，以及系統管理員權限的視窗 | #25 |
 
@@ -357,7 +378,7 @@ API key 分三層（#26）：
 
 ### 5.4 共用規則檔（`rules/*.json`，#26）
 
-桌面版和插件讀**同一份**規則。目前放 API key 類的規則；有檢查碼的個資（身分證、卡號、統編、手機）還寫在程式裡，#27 會拆成各國的規則包。
+桌面版和插件讀**同一份**規則：API key 類的規則（#26），以及 #27 起的個資包（`rules/pii-<包>.json`，§5.6）。
 
 ```
 rules/*.json ──(內嵌資源)──────────────────> C# SecretRules（啟動時編譯一次）
@@ -374,13 +395,15 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 
 | 欄位 | 說明 |
 |---|---|
-| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、gitleaks 20、context 30 |
+| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、gitleaks 20、context 30、國家包 40、通用個資包 50 |
+| `pack`（#27） | 檔案層級：`universal`（沒寫就是這個，一律開啟）或兩個大寫字母的國家代碼（`TW`、`US`…），見 §5.6 |
 | `exclude`、`stopwords`（檔案層級） | 套用到檔案裡每一條規則（gitleaks 的全域 allowlist 就放這裡） |
 | `skipped` | 只有 gitleaks.json 有：沒收的規則和原因（產生的，不要手改） |
 | `rules[].id` | 所有檔案裡不能重複。gitleaks 的加 `gitleaks.` 前綴 |
-| `kind` | 目前只有 `api-key`（對應 `SecretKind.ApiKey`）。#27 加個資時要在 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
+| `kind` | `api-key`、`national-id`、`resident-certificate`、`business-id`、`credit-card`、`mobile-phone`、`phone-number`、`bank-account`，對應 `SecretKind` 的同名值；插件結果的 `type` 就是這個字串（#27 以前是 `tw-id`、`ubn`、`tw-mobile`）。新增時 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
 | `label` | 通知裡顯示的名稱 |
 | `regex`、`ignoreCase` | 語法限制見下方 |
+| `finder`（#27） | 取代 `regex`：regex 寫不出來的格式用程式寫的候選產生器，兩邊各實作一次（`PiiFormats.Finder`、`pii.js` 的 `FINDERS`）。目前只有 `card-groups`（信用卡分組，§5.0：要在幾組數字裡挑第一個 Luhn 對的）。`regex` 和 `finder` 一定要有其中一個 |
 | `secretGroup` | 機密是第幾個群組；沒寫就是第一個有比對到、不是空字串的群組，沒有群組就是整段（同 gitleaks）。結果的位置、遮罩、貼遮罩版都只針對這一段 |
 | `keywords` | 小寫。文字轉小寫後至少出現一個才跑 regex（同 gitleaks 的預先篩選，是效能的關鍵）。沒寫表示一律跑 |
 | `notPrecededBy`、`notFollowedBy` | 取代 lookaround：前一個字元符合 `notPrecededBy`（單一字元的類別）或比對結果後面接著 `notFollowedBy` 時不算 |
@@ -390,8 +413,9 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | `rejectSequential` | 一半以上的相鄰字元相同或連號時不算（`aaaa`、`0123456789abcdef`） |
 | `exclude` | `[{regex, target, ignoreCase}]`，符合就不算。`target`：`secret`（預設）、`match`（整段比對結果）、`line`（所在的那一行）、`key`（群組 1 往前延伸到整個識別字，給金鑰名稱用）。`ignoreCase` 表示先把目標轉小寫，regex 要寫小寫 |
 | `stopwords` | 機密（轉小寫）包含其中一個就不算（同 gitleaks） |
-| `validate` | 額外的驗證，目前只有 `jwt-header`。#27 的檢查碼（`luhn`、`tw-id`…）也照這個方式加，兩邊各實作一次 |
-| `mask` | `{keepStart}`：遮罩時保留的前綴長度；或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行 |
+| `validate` | 額外的驗證，兩邊各實作一次（`PiiFormats.Validator`、`rules.js`／`pii.js` 的 `VALIDATORS`）：`jwt-header`、`tw-id`（含分隔符號最多 3 個）、`tw-ubn`、`iban`、`e164`、`cn-id`、`jp-my-number`、`hk-id`、`sg-nric`、`us-ssn`（含分隔符號一致）。驗證收到的是含分隔符號的字串，自己去掉 |
+| `context`（#27） | `{keywords, before, after}`：機密前面 `before` 字內（關鍵字的結尾）或後面 `after` 字內（關鍵字的開頭）要出現其中一個關鍵字。比對的是**正規化後的文字**，不是 ASCII 版本，所以 `統編`、`マイナンバー`、`주민등록번호` 可以直接寫；英文字母不分大小寫（只轉 A–Z，長度不變），開頭或結尾是英文字母的關鍵字不能緊貼著其他英文字母（`vat` 不比 private、`ssn` 不比 Assn）。關鍵字要小寫、1–24 字，`before`、`after` 0–32 而且不能都是 0（要落在每段往前多看的 64 字內）。整段文字裡沒有任何關鍵字時直接跳過這條規則 |
+| `mask` | `{keepStart, keepEnd, canonical}`：遮罩時保留的開頭、結尾長度（`keepEnd` 預設 3），`canonical` 是遮罩前先換成的標準寫法：`alnum-upper`（只留英數字、轉大寫）、`digits`、`tw-mobile`（`+886 9…` 換成 `09…`）、`e164`（`+` 加數字）。或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行。#27 起插件和桌面版的遮罩字串一樣（`SecretMasker.Mask` ＝ `pii.js` 的 `maskValue`：星號最多 8 個、至少遮 4 個字） |
 
 **regex 語法**：只用 .NET 和 JS（沒有 `u` 旗標）行為一樣的子集合，而且不能用 lookaround、backreference、possessive、atomic group 和行內旗標 `(?i)`（要整條不分大小寫就用 `ignoreCase`）。理由：
 
@@ -450,6 +474,36 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 **誤報樣本**：`tests/fixtures/secret-false-positives.json`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
 
 **效能**（`SecretRulesTests`、`rules.test.js` 會量）：每條規則各跑 5 種 1 Mi 字的病態輸入（關鍵字重複、關鍵字加 `=`、關鍵字加 40 個字母、關鍵字後面接 1 Mi 個字母…），C# 最慢的一條 66 ms、JS 49 ms。整個 `SecretDetector.Find` 在 1 Mi 字、所有規則的關鍵字都出現時約 80 ms，滿滿的 `.env`（2 萬多筆命中）約 145 ms（C#；JS 約 115、155 ms）。不會因為長度整段跳過。
+
+### 5.6 個資規則包（#27）
+
+```
+通用包（一律開）  信用卡 Luhn │ IBAN mod-97 │ 以 + 開頭的國際電話 │ API key（§5.4、§5.5）
+國家包（依地區）  TW CN JP KR HK SG US
+桌面版：RegionInfo.CurrentRegion → 國家包，加上 secret-packs.json 的 extra、拿掉 disabled
+插件：navigator.languages 的每一個語言 → 國家包（聯集）
+```
+
+| 包 | 規則 | 驗證 | 上下文 |
+|---|---|---|---|
+| 通用 | 信用卡（§5.0 的分組） | IIN 前綴＋Luhn | 不需要 |
+| 通用 | IBAN：國家代碼＋2 碼檢查碼＋BBAN，每 4 碼一個空白或不分隔 | 國家在 SWIFT 的長度表裡、長度剛好、mod 97 = 1 | 不需要 |
+| 通用 | 國際電話：**一定要以 `+` 開頭**，數字共 8–15 碼 | 國碼是 ITU 已分配的；+1、+7 剛好 11 碼，北美區碼不能 0、1 開頭 | 不需要（`+` 本身就是上下文） |
+| TW | 身分證、居留證、統編、手機（§5 的規則一覽） | 同以前 | 統編要（前 20 字） |
+| CN | 居民身分證 18 碼（地區碼 1–8 開頭、出生日期、順序碼、檢查碼 0–9/X） | ISO 7064 MOD 11-2，出生日期是真的日期 | 不需要 |
+| JP | 個人番號 12 碼（4-4-4） | 檢查碼（番号法施行令第 8 條） | **要**：マイナンバー、個人番号、My Number（前 32 字）。12 位數太常見，隨機 12 位數有 1/10 會通過檢查碼 |
+| KR | 住民登錄番號 YYMMDD-SNNNNNN（S 1–8） | 只檢查月日；2020 年 10 月後的號碼最後一碼是隨機的，不驗檢查碼 | **要**：주민등록번호、주민번호、주민등록、RRN（前 32 字） |
+| HK | 身分證：1–2 個字母＋6 碼＋檢查碼（0–9 或 A） | mod 11 | 檢查碼在括號裡（`A123456(3)`）不需要；沒括號（`A1234563`）要：HKID、Hong Kong ID、identity card、身份證、身分證（前 32 字） |
+| SG | NRIC（S、T）、FIN（F、G、M）：字母＋7 碼＋檢查字母 | 權重 2,7,6,5,4,3,2，T/G 加 4、M 加 3，查表 | 不需要（跟台灣身分證一樣明確） |
+| US | SSN 3-2-4（分隔符號一致或沒有） | 沒有檢查碼；排除區碼 000、666、900–999，組號 00，序號 0000 | **要**：SSN、Social Security、Soc Sec、SS#、社會安全（前 32 字或後 16 字） |
+
+- **種類**：各國身分證號是 `NationalId`，居留證、新加坡 FIN 是 `ResidentCertificate`，國際電話是新的 `PhoneNumber`，IBAN 是新的 `BankAccount`（兩個都加在 `SecretKind` 最後面）。標籤在規則檔裡，目前是 zh-TW。
+- **遮罩**：IBAN、卡號留前 4 後 4（`DE89********3000`），國際電話留國碼開頭 3 字和最後 3 碼（`+44*******958`），沒有前綴意義的號碼（SSN、個人番號、住民登錄番號）只留最後 3–4 碼，其他國家的身分證留前後幾碼（`110********02X`、`A*****63`、`S******7D`）。
+- **選擇包**（`SecretPacks`）：`CountryOf` 把地區代碼（`TW`）或語系名稱（`zh-TW`、`zh-Hant-HK`、`zh_CN`）的地區部分對到國家包；只有語言時只認 `ja` → JP、`ko` → KR（其他語言跨太多國家）。`ForRegion(地區, extra, disabled)` 回傳要開的包，不認得的代碼忽略。`SecretDetector.Find(text)` 沒指定包時用 `SecretPacks.Default`（通用＋TW，#27 之前的行為）。
+- **桌面版**：`SecretGuard` 啟動時讀 `RegionInfo.CurrentRegion` 和 `%LOCALAPPDATA%\ClipGuard\secret-packs.json`（`{"extra": ["JP"], "disabled": ["TW"]}`，目前沒有設定畫面，手動編輯；檔案壞掉就只依地區），之後不再重讀。
+- **插件**：`content.js` 用 `packsForLocales(navigator.languages)`，每個偏好語言都算（`zh-TW`、`en-US` 都列著就開 TW 和 US）。插件沒有設定畫面，所以用聯集；美國包要關鍵字、其他包要檢查碼，多開一個包的誤報有限。
+- **誤報樣本**：`SecretPacksTests`／`packs.test.js` 在所有包都開時跑日期、時間戳記、訂單與追蹤號碼、沒有關鍵字的 12 位數、美國格式的市話、UUID、大寫 hex、Base64、版本號（含 semver 的 `+`）、IP、時區 `UTC+0800`、檢查碼不對的型號、ISBN，以及共用的 `secret-false-positives.json`，都不能有任何命中。
+- **效能**：每條個資規則各跑 14 種 1 Mi 字的病態輸入（滿滿的數字、`1 `、`+1 `、`A1`、`DE89 `、括號、關鍵字加號碼、只有關鍵字…）：C# 最慢一條 135 ms、JS 47 ms；所有包都開時整個 `Find` 最慢 145 ms（C#，每 14 字一個統編）、126 ms（JS，每 25 字一個個人番號）。
 
 ## 6. 隱藏字元與錢包掉包
 
@@ -517,26 +571,25 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 | Pastejacking | 比對「使用者選取的文字」和「頁面寫進剪貼簿的內容」。被取代、多了指令或換行、多了隱形字元時警告。複製後 2 秒內頁面又寫入剪貼簿，而且使用者這段期間沒有任何點擊或按鍵，才算是被改寫 |
 | 權限 | 不使用 `permissions`、`host_permissions`；不連網、不存資料、沒有 service worker |
 
-**機密規則的來源**：API key、JWT、PEM、上下文＋亂度跟桌面版共用 `rules/*.json`（§5.4），比對引擎在 `extension/lib/rules.js`，跟 C# 的 `SecretRules` 逐項對應（ASCII 版本、`keywords` 預先篩選、群組、亂度、排除、驗證），兩邊的測試用同一組亂數種子和同一份誤報樣本。個資規則還是兩邊各寫一份（#27）。
+**介面語言**：插件的文字在 `_locales/en`（預設）和 `_locales/zh_TW`，用 `chrome.i18n` 取；偵測器回傳的 `label` 不翻譯，提示框顯示時才用 `lib/i18n.js` 的 `displayLabel` 依規則 id（`rule_<id>`，個資也是規則）換成目前語言，規則名稱的翻譯跟桌面版的 `RuleLabel_<id>` 一樣（測試會比對）。
+
+**機密規則的來源**：所有規則（API key、JWT、PEM、上下文＋亂度、#27 起的個資包）跟桌面版共用 `rules/*.json`（§5.4），比對引擎在 `extension/lib/rules.js`，檢查碼、信用卡分組、遮罩在 `extension/lib/pii.js`，跟 C# 的 `SecretRules`、`PiiFormats`、`Checksums`、`SecretMasker` 逐項對應，兩邊的測試用同樣的樣本（`SecretPacksTests` ＝ `packs.test.js`）。#27 以前的不一致（舊式居留證、統編關鍵字距離、重疊取哪一筆、遮罩字串、API key 留幾碼）都已經統一。
 
 **目前和 C# 端不一致的地方**（見 #27）：
 
 | 項目 | C#（桌面） | JS（插件） |
 |---|---|---|
-| 居留證第 2 碼 | 1、2、8、9、A–D | 1、2、8、9 |
-| 統編關鍵字距離 | 前 20 字內 | 前 12 字內 |
+| 國家包怎麼選（§5.6） | 一個地區設定（`RegionInfo.CurrentRegion`）加上 `secret-packs.json` | `navigator.languages` 裡每個語言的聯集，沒有手動設定 |
 | 機密的正規化、分隔符號、JWT、長度上限（§5.0） | 有 | 同一套（`normalizeForSecrets`、`cardCandidates`、`MAX_SCAN_LENGTH` = 1 Mi 字頭尾）。插件不分段，頭尾各一次正規化 |
-| 重疊的機密取哪一筆 | 依類型優先順序（API key > 身分證 > 卡號 > 統編 > 手機） | 起點較早的（同起點取較長的） |
-| 遮罩字串 | `A12****789`、`4111********1111`、`eyJ********xyz`（API key 留最後 3 碼） | 保留分隔符號，例如 `**** **** **** 1111`；API key 保留的前綴一樣（規則檔的 `keepStart`），但留最後 4 碼：`eyJ********wxyz` |
 | 規則檔的 regex 引擎 | NonBacktracking（保證線性時間），群組在比對到的那段重比 | V8 的回溯引擎；會變成 O(n²) 的規則在轉換時就不收（§5.4），兩邊的測試都量每條規則 |
-| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler |
+| 指令樣式 | 完整版 `CommandDetector` | 只有少數幾種（用於判斷 Pastejacking）；沒有 #20 的「下載後直接執行」、官方網站清單，也沒有 #21 的 LOLBin、UNC/WebDAV、protocol handler，也沒有誘餌註解（含 #27 的多語版本） |
 | 指令正規化（§3.0） | 有（`CommandNormalizer`） | 沒有：完整路徑、`^`、引號拆字、dash 變體都認不得 |
 | 貼上提示的 Enter | 取消（§5.3） | 貼遮罩版。插件直接插入文字，不必換剪貼簿，沒有桌面版的副作用 |
 | 貼上攔截的範圍 | 預設只攔登記的機密 | 所有偵測到的機密（插件沒有登記機密） |
 | 看不見的字元（§6.1） | 各字元有例外規則（區旗、斷字點、韓文組合、單一變體選擇符） | 同一份清單加上 U+200E／200F、U+2061–2064，但**沒有例外規則**，也不看 U+FE00–FE0F：插件比的是「網頁寫入」比「使用者選取」多出來的數量，使用者自己選到的區旗、斷字點兩邊都有，會互相抵銷 |
 
 ## 8. 測試資料規範
-- 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、明顯是假的 key。
+- 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、明顯是假的 key。#27 的國家包用官方或規格公布的範例號碼（GB 11643 的 `11010519491231002X`、ECBS／SWIFT 的 IBAN 範例、SSA 已作廢的 `078-05-1120`、`219-09-9999`、各國保留給虛構用的電話號碼），其他在測試裡用另外寫的演算法補上檢查碼（`SecretPacksTests` 的 `Iban`、`ChinaId`、`MyNumber`），順便跟 `Checksums` 交叉驗證。
 - 網址一律用 `example.invalid`。惡意指令樣本要在執行時用片段組合，不要以完整字串寫進檔案（理由同文件開頭的防毒說明）。
 - 偵測規則的測試要同時有「該命中」和「不該命中」兩種樣本。誤報樣本至少包含：日期、訂單號碼、UUID、hash、Base64、一般中英文句子、官方安裝指令。
 - **API key 樣本不能完整寫進檔案**（包括規則檔和測試）：GitHub 的 push protection 會擋，防毒也可能有反應。測試用「前綴 + 固定種子的亂數」在執行時產生（C# 的 `SecretRulesTests.Gen` 和 JS 的 `gen` 產生一樣的字串）。規則檔只放 regex；`SecretRulesTests` 會掃一次規則檔，確認裡面沒有長得像 key 的字串。
@@ -557,3 +610,4 @@ Review 一個會動到偵測行為的 PR 時，逐項確認：
 - [ ] **C# / JS 一致**：改到兩邊都有的規則時，兩邊都要改，或是在 §7 的不一致表裡記下來。
 - [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `tools/convert-gitleaks.mjs` 更新，不手改 `rules/gitleaks.json`。
 - [ ] **測試資料**：符合 §8 的規範。
+- [ ] **介面文字**：新的通知、說明、機密名稱放進 `.resx`（桌面）或 `_locales`（插件），英文和 zh-TW 都要有，`{0}` 參數一致；改了 `.resx` 有重新執行 `node tools/gen-resx-accessors.mjs`。

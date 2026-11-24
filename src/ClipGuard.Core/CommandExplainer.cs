@@ -8,7 +8,7 @@ namespace ClipGuard.Core;
 /// </summary>
 public sealed record CommandExplanation(string? DecodedCommand, IReadOnlyList<string> Actions)
 {
-    public string Summary => string.Join("；", Actions);
+    public string Summary => string.Join(CoreStrings.Explain_ActionSeparator, Actions);
 
     /// <summary>
     /// 給通知用的短文字：第一行白話，第二行解碼內容（壓成一行）。
@@ -16,9 +16,9 @@ public sealed record CommandExplanation(string? DecodedCommand, IReadOnlyList<st
     /// </summary>
     public string ToDisplayText(int maxLength)
     {
-        var text = "白話：" + Summary;
+        var text = CoreStrings.Explain_Display(Summary);
         if (DecodedCommand is not null)
-            text += "\n解碼：" + Regex.Replace(DecodedCommand, @"\s+", " ").Trim();
+            text += "\n" + CoreStrings.Explain_Decoded(Regex.Replace(DecodedCommand, @"\s+", " ").Trim());
         return text.Length <= maxLength ? text : text[..Math.Max(0, maxLength - 1)] + "…";
     }
 }
@@ -85,36 +85,38 @@ public static class CommandExplainer
         var all = decoded is null ? text : text + "\n" + decoded;
 
         var hosts = Hosts(all);
-        var from = hosts.Count > 0 ? $"從 {string.Join("、", hosts)} " : "從網路";
+        var from = hosts.Count > 0
+            ? CoreStrings.Explain_SourceHosts(string.Join(CoreStrings.ListSeparator, hosts))
+            : CoreStrings.Explain_SourceInternet;
         var actions = new List<string>();
 
         var downloadAndRun = Download.IsMatch(all) && Execute.IsMatch(all) || DownloadExecution.IsMatch(all);
         if (downloadAndRun)
-            actions.Add($"{from}下載並執行");
+            actions.Add(CoreStrings.Explain_DownloadAndRun(from));
         if (Mshta.IsMatch(all))
-            actions.Add(hosts.Count > 0 ? $"用 mshta 執行 {hosts[0]} 上的程式" : "用 mshta 執行一段腳本");
+            actions.Add(hosts.Count > 0 ? CoreStrings.Explain_MshtaHost(hosts[0]) : CoreStrings.Explain_MshtaScript);
         if (Regsvr32.IsMatch(all))
-            actions.Add($"{from}載入並執行遠端腳本");
+            actions.Add(CoreStrings.Explain_Regsvr32(from));
         if (Msiexec.IsMatch(all))
-            actions.Add($"{from}下載並安裝套件");
+            actions.Add(CoreStrings.Explain_Msiexec(from));
         if (!downloadAndRun && DownloadFile.IsMatch(all))
-            actions.Add($"{from}下載檔案");
+            actions.Add(CoreStrings.Explain_DownloadFile(from));
         if (Rundll32Script.IsMatch(all))
-            actions.Add("用 rundll32 執行一段腳本");
+            actions.Add(CoreStrings.Explain_Rundll32);
         AddLolbinActions(all, actions);
         if (StartProcess.IsMatch(all))
-            actions.Add(RunAs.IsMatch(all) ? "以系統管理員權限啟動其他程式" : "啟動其他程式");
+            actions.Add(RunAs.IsMatch(all) ? CoreStrings.Explain_StartProcessAdmin : CoreStrings.Explain_StartProcess);
         if (Hidden.IsMatch(all))
-            actions.Add("隱藏視窗，執行過程你看不到");
+            actions.Add(CoreStrings.Explain_Hidden);
         if (Bypass.IsMatch(all))
-            actions.Add("關閉 PowerShell 的腳本安全限制");
+            actions.Add(CoreStrings.Explain_Bypass);
         if (Defender.IsMatch(all))
-            actions.Add("修改 Windows Defender 設定");
+            actions.Add(CoreStrings.Explain_Defender);
         if (encoded is not null)
-            actions.Add(decoded is null ? "藏了一段無法解碼的編碼指令" : "藏了一段編碼過的指令");
+            actions.Add(decoded is null ? CoreStrings.Explain_EncodedUndecodable : CoreStrings.Explain_Encoded);
 
         if (actions.Count == 0)
-            actions.Add("會執行系統指令");
+            actions.Add(CoreStrings.Explain_Generic);
 
         return new CommandExplanation(decoded, actions);
     }
@@ -155,34 +157,34 @@ public static class CommandExplainer
     // #21 的系統程式、遠端檔案與 protocol handler。樣式跟偵測共用，說明跟判斷不會對不上。
     private static void AddLolbinActions(string text, List<string> actions)
     {
-        var share = UncHost.Match(text) is { Success: true } m ? m.Groups["host"].Value.ToLowerInvariant() + " " : "";
+        var share = UncHost.Match(text) is { Success: true } m ? m.Groups["host"].Value.ToLowerInvariant() : null;
 
         if (CommandDetector.DelayedExpansion.IsMatch(text))
-            actions.Add("用 cmd 的延遲展開（!變數!）把指令拆開藏起來");
+            actions.Add(CoreStrings.Explain_DelayedExpansion);
         if (CommandDetector.ScriptHost.IsMatch(text))
-            actions.Add("用 wscript／cscript 執行腳本檔");
+            actions.Add(CoreStrings.Explain_ScriptHost);
         if (CommandDetector.HtmlHelp.IsMatch(text))
-            actions.Add("用 hh 開啟說明檔，裡面可以藏腳本");
+            actions.Add(CoreStrings.Explain_HtmlHelp);
         if (CommandDetector.Cmstp.IsMatch(text))
-            actions.Add("用 cmstp 安裝連線設定檔，可藉此執行任意程式");
+            actions.Add(CoreStrings.Explain_Cmstp);
         if (CommandDetector.Pcalua.IsMatch(text))
-            actions.Add("透過 pcalua 間接啟動其他程式");
+            actions.Add(CoreStrings.Explain_Pcalua);
         if (CommandDetector.Odbcconf.IsMatch(text))
-            actions.Add("用 odbcconf 載入並執行 DLL");
+            actions.Add(CoreStrings.Explain_Odbcconf);
         if (CommandDetector.InstallUtil.IsMatch(text))
-            actions.Add("用 InstallUtil 執行 .NET 程式");
+            actions.Add(CoreStrings.Explain_InstallUtil);
         if (CommandDetector.FtpScript.IsMatch(text))
-            actions.Add("用 ftp 照一份指令檔執行");
+            actions.Add(CoreStrings.Explain_FtpScript);
         if (CommandDetector.RemoteFile.IsMatch(text))
-            actions.Add($"執行 {share}網路分享上的檔案");
+            actions.Add(share is null ? CoreStrings.Explain_RemoteFile : CoreStrings.Explain_RemoteFileHost(share));
         else if (CommandDetector.WebDav.IsMatch(text))
-            actions.Add($"連到 {share}的 WebDAV 遠端資料夾");
+            actions.Add(share is null ? CoreStrings.Explain_WebDav : CoreStrings.Explain_WebDavHost(share));
         if (CommandDetector.NetUseThenRun(text))
-            actions.Add("掛載網路磁碟後執行裡面的程式");
+            actions.Add(CoreStrings.Explain_NetUse);
         if (CommandDetector.SearchMs.IsMatch(text))
-            actions.Add("用 search-ms: 開啟搜尋視窗，裡面的檔案可能來自遠端");
+            actions.Add(CoreStrings.Explain_SearchMs);
         if (CommandDetector.MsMsdt.IsMatch(text))
-            actions.Add("用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）");
+            actions.Add(CoreStrings.Explain_MsMsdt);
     }
 
     private static List<string> Hosts(string text) => DownloadExecution.Hosts(text).Take(3).ToList();

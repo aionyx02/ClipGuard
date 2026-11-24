@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "name": "pii-jp",
+  "pack": "JP",
+  "priority": 40,
+  "description": "日本個資包（#27）：個人番號（マイナンバー，12 碼，有檢查碼）。12 位數字太常見（追蹤號碼、訂單號碼），隨機的 12 位數有 1/10 會通過檢查碼，所以前面要有關鍵字（P6）。",
+  "rules": [
+    {
+      "id": "jp-my-number",
+      "kind": "national-id",
+      "label": "個人番號（My Number）",
+      "regex": "[0-9]{4}[ \\-]?[0-9]{4}[ \\-]?[0-9]{4}",
+      "notPrecededBy": "[A-Za-z0-9]",
+      "notFollowedBy": "[A-Za-z0-9]",
+      "validate": "jp-my-number",
+      "context": { "keywords": ["マイナンバー", "個人番号", "個人番號", "my number", "mynumber"], "before": 32 },
+      "mask": { "keepStart": 0, "keepEnd": 4, "canonical": "digits" }
+    }
+  ]
+}

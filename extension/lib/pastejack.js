@@ -1,4 +1,6 @@
 // Pastejacking 判斷：使用者選取的文字 vs. 網頁實際寫進剪貼簿的文字。純函式，可單元測試。
+// 說明文字用 _locales 的訊息（#27），名稱見 COMMAND_SIGNALS 和下面的 t(…)。
+import { t } from './i18n.js';
 
 // 看不見的字元：零寬、Bidi、soft hyphen、蒙古文分隔符、韓文填充字元、Unicode TAG（U+E0000–E007F，
 // 可藏給 AI 的指令）、補充區變體選擇符。這裡比較的是「網頁寫入」比「使用者選取」多出來的數量，
@@ -9,19 +11,19 @@ const HIDDEN_CHARS = /[\u00AD\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-
 // 完整規則日後應與 C# 端共用（見 extension/README.md）。
 const COMMAND_SIGNALS = [
   // 程式名稱後面要接參數、引號、註解或結尾，才像在下指令（同 C# 的 Invocation()）。
-  [/(?:^|[\s;&|("'])(?:powershell|pwsh)(?:\.exe)?(?=\s+[-/"'#a-z0-9]|\s*$|\s*[|;&])/im, '呼叫 PowerShell'],
-  [/(?:^|[\s;&|("'])mshta(?:\.exe)?(?=\s+[-/"'#a-z0-9]|\s*$|\s*[|;&])/im, '呼叫 mshta'],
-  [/\bcmd(?:\.exe)?\s+\/[ck]\b/i, '呼叫 cmd 執行指令'],
-  [/\b(?:curl|wget)\b[^|\n]*\|\s*(?:ba|z)?sh\b/i, '下載後直接交給 shell 執行'],
-  [/\b(?:iex|invoke-expression)\b/i, '把內容當程式碼執行（iex）'],
-  [/\b(?:certutil|bitsadmin|rundll32|regsvr32|msiexec)(?:\.exe)?\b/i, '呼叫常被濫用的系統程式'],
-  [/\bsudo\s+\S/i, '以 sudo 執行指令'],
+  [/(?:^|[\s;&|("'])(?:powershell|pwsh)(?:\.exe)?(?=\s+[-/"'#a-z0-9]|\s*$|\s*[|;&])/im, 'pj_sig_powershell'],
+  [/(?:^|[\s;&|("'])mshta(?:\.exe)?(?=\s+[-/"'#a-z0-9]|\s*$|\s*[|;&])/im, 'pj_sig_mshta'],
+  [/\bcmd(?:\.exe)?\s+\/[ck]\b/i, 'pj_sig_cmd'],
+  [/\b(?:curl|wget)\b[^|\n]*\|\s*(?:ba|z)?sh\b/i, 'pj_sig_pipe_shell'],
+  [/\b(?:iex|invoke-expression)\b/i, 'pj_sig_iex'],
+  [/\b(?:certutil|bitsadmin|rundll32|regsvr32|msiexec)(?:\.exe)?\b/i, 'pj_sig_lolbin'],
+  [/\bsudo\s+\S/i, 'pj_sig_sudo'],
 ];
 
-/** 回傳文字中命中的指令訊號說明。 */
+/** 回傳文字中命中的指令訊號說明（目前語系）。 */
 export function commandSignals(text) {
   if (typeof text !== 'string' || !text) return [];
-  return COMMAND_SIGNALS.filter(([re]) => re.test(text)).map(([, reason]) => reason);
+  return COMMAND_SIGNALS.filter(([re]) => re.test(text)).map(([, key]) => t(key));
 }
 
 /** 比較用的正規化：統一換行、不換行空白，壓縮連續空白，去頭尾。 */
@@ -56,15 +58,15 @@ export function analyzeCopy({ selection, written }) {
   if (!wr && hiddenCharCount(written) === 0) return { verdict: 'empty', warn: false, reasons };
 
   const newHidden = hiddenCharCount(written) > hiddenCharCount(selection);
-  if (newHidden) reasons.push('含有看不見的字元（零寬或雙向控制字元）');
+  if (newHidden) reasons.push(t('pj_hidden'));
 
   // 指令訊號只算「網頁額外加進來的」，使用者自己選取的指令（教學文件）不算。
   const selSignals = new Set(commandSignals(selection));
   const addedSignals = commandSignals(written).filter((r) => !selSignals.has(r));
   // 多行內容的換行等於按 Enter，貼進終端機會直接執行。
   const addedNewlineExec = /\n/.test(String(written ?? '').trim()) && !/\n/.test(String(selection ?? '').trim()) && addedSignals.length > 0;
-  reasons.push(...addedSignals.map((r) => `網頁加入的內容${r}`));
-  if (addedNewlineExec) reasons.push('加入換行，貼進終端機會直接執行');
+  reasons.push(...addedSignals.map((r) => t('pj_added', r)));
+  if (addedNewlineExec) reasons.push(t('pj_newline'));
 
   if (!sel) {
     return { verdict: 'unselected', warn: addedSignals.length > 0 || newHidden, reasons };
@@ -76,7 +78,7 @@ export function analyzeCopy({ selection, written }) {
     // 附加「本文出處」之類的文字很常見，不值得打擾；只有附加內容可疑才警告。
     return { verdict: 'appended', warn: reasons.length > 0, reasons };
   }
-  reasons.unshift('寫入剪貼簿的內容和你選取的文字不同');
+  reasons.unshift(t('pj_replaced'));
   return { verdict: 'replaced', warn: true, reasons };
 }
 
