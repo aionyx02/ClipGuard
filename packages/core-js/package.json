@@ -1,0 +1,35 @@
+{
+  "name": "@paste-warden/core",
+  "version": "0.1.0",
+  "description": "PasteWarden detection engine (WASM, with a wasm2js fallback) for browsers, extensions, userscripts and Node.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "biome check . && tsc -p tsconfig.json --noEmit",
+    "test": "node --test test/",
+    "size": "node scripts/size.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "binaryen": "132.0.0",
+    "typescript": "^7.0.2"
+  }
+}
