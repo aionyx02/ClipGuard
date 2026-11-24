@@ -22,6 +22,10 @@ secret-rule-label = { $id ->
     [sg-nric] 新加坡 NRIC
     [sg-fin] 新加坡 FIN
     [us-ssn] 社會安全號碼（SSN）
+    [context-assignment-cjk] 疑似金鑰或密碼
+    [conn-string-url] 資料庫連線密碼
+    [conn-string-odbc] 資料庫連線密碼
+    [bip39-mnemonic] 錢包助記詞（{ $words } 個字）
    *[other] { $label }
 }
 

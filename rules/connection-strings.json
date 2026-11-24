@@ -1,0 +1,35 @@
+{
+  "format": 1,
+  "name": "connection-strings",
+  "priority": 25,
+  "description": "含密碼的資料庫連線字串（phase 1b）：URL 形式（postgres://帳號:密碼@主機…）和 ODBC／ADO.NET 形式（Server=…;User Id=…;Password=…）。只遮密碼那一段；佔位字和常見的預設密碼不算。見 docs/spec/detection-rules.md §5.8。",
+  "rules": [
+    {
+      "id": "conn-string-url",
+      "kind": "api-key",
+      "label": "資料庫連線密碼",
+      "regex": "\\b(?:postgres(?:ql)?|mysql|mariadb|mongodb|rediss?|amqps?|mssql|sqlserver|cockroachdb|clickhouse)(?:\\+[a-z0-9]+)?://(?:[^\\s:/?#@\"'<>]{0,128}):([^\\s/?#@\"'<>\\x1a]{1,256})@[a-z0-9_.\\[-]",
+      "ignoreCase": true,
+      "keywords": ["postgres", "mysql", "mariadb", "mongodb", "redis", "amqp", "mssql", "sqlserver", "cockroachdb", "clickhouse"],
+      "minLength": 3,
+      "maxLength": 256,
+      "mask": { "keepStart": 0, "keepEnd": 0 }
+    },
+    {
+      "id": "conn-string-odbc",
+      "kind": "api-key",
+      "label": "資料庫連線密碼",
+      "regex": "\\b(?:server|data source|host|hostname|address|addr|network address|uid|user id|userid|user|username|database|initial catalog|dsn|driver|provider)[ \\t]*=[^;\\r\\n]*;(?:[ \\t]*[a-z][a-z0-9 _]{0,31}=[^;\\r\\n]*;){0,8}[ \\t]*(?:password|pwd)[ \\t]*=[ \\t]*(?:\\{([^}\\r\\n]{1,256})\\}|\"([^\"\\r\\n]{1,256})\"|'([^'\\r\\n]{1,256})'|([^;\\s\"'{}\\x1a]{1,256}))",
+      "ignoreCase": true,
+      "keywords": ["password", "pwd"],
+      "minLength": 3,
+      "maxLength": 256,
+      "mask": { "keepStart": 0, "keepEnd": 0 }
+    }
+  ],
+  "exclude": [
+    { "ignoreCase": true, "regex": "example|sample|dummy|placeholder|changeme|change[_.-]?me|replace|insert|redacted|xxxx|todo|fixme|fake|not[_.-]?(?:a[_.-]?)?real|your[_.-]?pass|your[_.-]|[_.-]here$|<|>|\\$\\{|\\{\\{|%\\(|\\.\\.\\." },
+    { "ignoreCase": true, "regex": "^(?:pass|passwd|password[0-9]*|passw0rd|p[a@]ssw[o0]rd|pwd|pw|secret|my[_.-]?pass(?:word)?|db[_.-]?pass(?:word)?|user[_.-]?pass(?:word)?|root|admin|guest|postgres|mysql|test|\\*+|x+|\\.+|-+|\\?+)$" },
+    { "regex": "^(?:\\$[A-Za-z_][A-Za-z0-9_]*|\\$\\([^)]*\\)|%[sd]|\\{[A-Za-z0-9_]*\\}|:[A-Za-z_]+)$" }
+  ]
+}

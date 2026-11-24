@@ -246,13 +246,13 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 5. 機密偵測
 
-程式：`src/ClipGuard.Core/SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`PiiFormats.cs`、`SecretMasker.cs`、`SecretPacks.cs`；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。
+程式：`crates/core/src/secret/`（`engine.rs`、`normalize.rs`、`checksum.rs`、`pii.rs`、`mask.rs`、`packs.rs`，1b 加上 `mnemonic.rs`）、`crates/rules/src/secret.rs`（舊版 `SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`PiiFormats.cs`、`SecretMasker.cs`、`SecretPacks.cs`）；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。Phase 1b 新增錢包助記詞（§5.7）和含密碼的資料庫連線字串（§5.8）。
 
 API key 分三層（#26）：
 
 | 層 | 規則 | 位置 |
 |---|---|---|
-| 1. 已知格式 | 手寫的前綴規則（GitHub、sk-、AWS、Stripe、JWT、PEM…），加上從 gitleaks 轉換的 198 條服務格式 | `rules/api-keys.json`、`rules/gitleaks.json` |
+| 1. 已知格式 | 手寫的前綴規則（GitHub、sk-、AWS、Stripe、JWT、PEM…），加上從 gitleaks 轉換的 198 條服務格式；1b 加上資料庫連線字串（§5.8）和 gitleaks 的 2 條 curl 規則（排在第 2 層後面） | `rules/api-keys.json`、`rules/gitleaks.json`、`rules/connection-strings.json`、`rules/gitleaks-late.json` |
 | 2. 上下文＋亂度 | 值前面有像金鑰的名稱（`api_key=`、`"token": `、`Authorization: Bearer`），而且值夠長、夠亂 | `rules/context.json`，§5.5 |
 | 3. 自行登記 | 前兩層都抓不到的，使用者自己登記（HMAC） | §5.1 |
 
@@ -300,10 +300,14 @@ API key 分三層（#26）：
 | API key（第 1 層，gitleaks） | 198 條服務專屬格式（Shopify、DigitalOcean、Twilio、Postman…），部分要求前面有服務名稱（`adafruit … = <值>`） | 依各規則：固定前綴、長度、gitleaks 的亂度門檻與 allowlist |
 | JWT | `eyJ…` 開頭、三段 base64url（header ≤ 512、payload ≤ 6144、signature ≤ 1024 字，signature 可以是空的）。結尾可以接句點；五段的 JWE 不算 | header 要能解成 JSON 物件，而且有字串型別的 `alg` |
 | 疑似金鑰或密碼、Authorization 權杖（第 2 層） | 見 §5.5 | 長度、亂度、排除佔位字 |
+| 錢包助記詞（1b） | 連續 12、15、18、21、24 個 BIP-39 英文單字，見 §5.7 | BIP-39 checksum（SHA-256） |
+| 資料庫連線密碼（1b） | `postgres://帳號:密碼@主機`、`Server=…;User Id=…;Password=…`，見 §5.8 | 排除佔位字和常見的預設密碼 |
+| curl 的帳密與標頭（1b，gitleaks） | `curl -u 帳號:密碼`、`curl -H "Authorization: …"`／`-H "X-Token: …"`，可以跨 5 行 | gitleaks 的亂度門檻與 allowlist |
 
 - JWT 歸在 API key 類（`SecretKind.ApiKey`，標籤「JWT」），遮罩成 `eyJ********xyz`（P4）。
+- **佔位字（1b）**：手寫前綴規則（`api-keys.json`）的值如果是「英文前綴＋全部是 x」（`sk_test_xxxxxxxxxxxxxxxx`、`sk-XXXX…`，至少 6 個 x、大小寫一致）就不算，這是文件和 `.env.example` 的寫法（良性語料 `benign.text.083`）。只排除整段都是 x 的；值裡面有一段 x、其他是亂數的照樣算，所以不會變成繞過的方法。
 - API key 類規則檔的命中都是 `SecretKind.ApiKey`，通知格式跟以前一樣是「標籤 遮罩」：有固定前綴的保留前綴（`shpat_********3f1`、`ghp_********xyz`），沒有前綴的只留最後 3 碼（`********x7Q`）。PEM 只顯示標頭，貼遮罩版時一路遮到 END 行。
-- 重疊時的優先順序就是規則的順序：`api-keys.json`（10）→ `gitleaks.json`（20）→ `context.json`（30）→ 國家包（40，依檔名）→ 通用包（50）。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的；`+886 9…` 同時是台灣手機和國際電話時，用台灣手機。#27 之前個資內部的順序是身分證 → 卡號 → 統編 → 手機，現在是身分證 → 統編 → 手機 → 卡號，這幾種實際上不會重疊（數字邊界和分組都不同），所以結果不變。
+- 重疊時的優先順序就是規則的順序：`api-keys.json`（10）→ `mnemonic.json`（15，1b）→ `gitleaks.json`（20）→ `connection-strings.json`（25，1b）→ `context.json`（30）→ `gitleaks-late.json`（35，1b）→ 國家包（40，依檔名）→ 通用包（50）。同一把 key 被手寫規則和 gitleaks 同時抓到時，標籤用手寫的；`+886 9…` 同時是台灣手機和國際電話時，用台灣手機。#27 之前個資內部的順序是身分證 → 卡號 → 統編 → 手機，現在是身分證 → 統編 → 手機 → 卡號，這幾種實際上不會重疊（數字邊界和分組都不同），所以結果不變。
 - 統編要求關鍵字的原因：改成「能被 5 整除」之後，隨機的 8 位數字約有 1/5 會通過檢查碼，日期和訂單號碼都會誤報（P6）。所以**沒有關鍵字的統編刻意不偵測**（#22 F13），README 的已知限制也有寫。
 - 掃描上限（`SecretDetector.MaxScanLength`）不能超過剪貼簿的讀取上限（§2.2）。
 
@@ -322,12 +326,15 @@ API key 分三層（#26）：
 |---|---|
 | 超過 1 Mi 字時，中間那段不分析（只分析頭尾）；長於 8K 字的 JWT、JWE（五段）不偵測 | #22 的取捨 |
 | 沒有關鍵字的統編刻意不偵測（P6，見上） | #22 F13，刻意的 |
-| 兩個以上連續分隔符號（`A12345  6789`）、分隔符號超過上限、不在上述分組裡的卡號或手機寫法（例如 `09-1234-5678`、`41 11 11…`） | #22 的取捨 |
+| 兩個以上連續分隔符號（`A12345  6789`）、分隔符號超過上限、不在上述分組裡的卡號或手機寫法（例如 `09-1234-5678`、`41 11 11…`） | #22 的取捨；1b 檢討後保留：放寬分隔符號會把表格、日期清單裡不相干的數字湊成號碼（P6），而 `09-1234-5678` 不是台灣手機的慣用寫法 |
 | 號碼前面緊貼著零寬字元和英數字時（`X​A123456789`），零寬字元刪掉後會黏在一起，不算命中 | #22 的取捨 |
 | 登記的機密仍只掃前 20,000 字，也沒有正規化（比對的是 HMAC，全形版本是另一個字串） | 尚未開 issue |
-| 沒有固定前綴、前面也沒有金鑰名稱的 key（例如一行裡只有一串亂碼）不偵測；名稱是中文（`金鑰：…`、`密碼=…`）也不算（§5.5） | #26 的取捨 |
-| 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算 | #26 的取捨 |
-| `curl -u 帳號:密碼`、只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單） | #26 的取捨 |
+| 沒有固定前綴、前面也沒有金鑰名稱的 key（例如一行裡只有一串亂碼）不偵測 | #26 的取捨 |
+| 中日韓的金鑰名稱（1b，§5.5 `context-assignment-cjk`）只認清單裡的詞（密碼、金鑰、密鑰、私鑰、權杖、令牌、口令、パスワード、비밀번호…），而且名稱的最後一個字要緊接在 `=`／`:` 前面（中間只能有引號和空白）；`密碼（API）：…` 這種名稱和冒號之間夾著括號的不算 | 1b 的取捨：清單外的詞（例如「憑證」也指 certificate）誤報太高 |
+| 第 2 層的值不能有空白、引號、`$`、`&`、括號，所以含這些字元的密碼抓不到；短於 16 字、亂度不夠（例如 `password=hunter2`、由英文單字組成的密碼）、32 字以下又沒有數字的也不算。1b 起資料庫連線字串裡的短密碼（`postgres://app:hunter2@…`）由 §5.8 抓 | #26 的取捨 |
+| 只看檔名的規則（`.p12`、Terraform、NuGet 設定）、Kubernetes Secret YAML 沒有收（§5.4 的略過清單）。`curl -u 帳號:密碼` 在 1b 補上（gitleaks `curl-auth-user`） | #26 的取捨 |
+| 助記詞（§5.7）：只認英文 BIP-39 單字表（日文、中文等其他語言的表、Electrum 的 seed 不算）；只認完整的一串，前後緊接著清單裡的字就整串不算（`my seed phrase abandon … about` 的 seed、phrase 都在清單裡，變成 14 個字），要用冒號、句點或清單外的字隔開；只寫前 4 個字母的縮寫、用 `-`、`|` 或表格框線分隔的不算 | 1b 的取捨：只認整串、不在長串裡挑視窗，誤報才壓得低（P6） |
+| 資料庫連線字串（§5.8）：ODBC 形式的 `Password=` 前面要有另一個連線參數（`Server=`、`User Id=`…）；一般網址的帳密（`https://user:pass@`）、`mysql -pSecret` 這類命令列參數、密碼含空白或引號（沒加引號時）、URL 編碼的 `@` 以外的特殊寫法不偵測；`postgres:postgres`、`guest`、`root`、`admin` 這類預設密碼刻意不算 | 1b 的取捨：預設帳密出現在教學文件和 docker-compose 範例裡，每次都警告會讓人關掉功能 |
 | 長於 8K 字的機密（`Overlap`）可能被分段切斷，跟 JWT 一樣 | #22、#26 的取捨 |
 | 個資只有 §5.6 的國家；IBAN 要大寫；國際電話沒有 `+` 就不算，後面緊接著另一組數字（`+1 202 555 0123 4`）時整段被當成太長而漏掉；IBAN 後面空一格接 4 個大寫英數字時也一樣 | #27 的取捨 |
 | 沒有檢查碼的國家格式（SSN、住民登錄番號）和 12 位數的個人番號，前面沒有關鍵字就不偵測；關鍵字不限同一行，可能把上一行的「SSN」算進來 | #27 的取捨（P6） |
@@ -389,6 +396,8 @@ rules/*.json ──(內嵌資源)───────────────�
 gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（commit 進 repo）
 ```
 
+Rust 版（phase 1）：`crates/rules` 用 `include_str!` 內嵌 `rules/*.json` 和 `rules/secret/bip39-english.txt`；擴充功能改用 WASM，不再需要第二份規則。gitleaks 的轉換改成 `cargo xtask rules gitleaks <toml> <版本> <commit>`（`xtask/src/rules.rs`，舊版 `convert-gitleaks.mjs` 的移植，同一份 toml 產生的 `gitleaks.json` 除了說明文字和下面的 curl 規則之外完全相同）。
+
 - **桌面版**：`ClipGuard.Core.csproj` 把 `rules/*.json` 內嵌進組件，執行時不讀檔、不連網（P3）。
 - **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs` 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
 - **gitleaks**：toml 先另外下載（`gh api`），再用 `tools/convert-gitleaks.mjs <toml> <版本> <commit>` 轉換；執行時從不連網。授權見 `THIRD_PARTY_NOTICES.md`。目前是 v8.30.1（commit `5f6ec56`）。
@@ -397,15 +406,15 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 
 | 欄位 | 說明 |
 |---|---|
-| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、gitleaks 20、context 30、國家包 40、通用個資包 50 |
+| `name`、`priority` | 檔案依 `priority` 由小到大排（同值依檔名），前面的規則在重疊時優先。目前 api-keys 10、mnemonic 15、gitleaks 20、connection-strings 25、context 30、gitleaks-late 35、國家包 40、通用個資包 50 |
 | `pack`（#27） | 檔案層級：`universal`（沒寫就是這個，一律開啟）或兩個大寫字母的國家代碼（`TW`、`US`…），見 §5.6 |
 | `exclude`、`stopwords`（檔案層級） | 套用到檔案裡每一條規則（gitleaks 的全域 allowlist 就放這裡） |
-| `skipped` | 只有 gitleaks.json 有：沒收的規則和原因（產生的，不要手改） |
+| `skipped` | 只有 gitleaks 產生的檔案有：沒收的規則和原因（產生的，不要手改；gitleaks-late.json 的是空的） |
 | `rules[].id` | 所有檔案裡不能重複。gitleaks 的加 `gitleaks.` 前綴 |
-| `kind` | `api-key`、`national-id`、`resident-certificate`、`business-id`、`credit-card`、`mobile-phone`、`phone-number`、`bank-account`，對應 `SecretKind` 的同名值；插件結果的 `type` 就是這個字串（#27 以前是 `tw-id`、`ubn`、`tw-mobile`）。新增時 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
+| `kind` | `api-key`、`national-id`、`resident-certificate`、`business-id`、`credit-card`、`mobile-phone`、`phone-number`、`bank-account`、`mnemonic`（1b），對應 `SecretKind` 的同名值；插件結果的 `type` 就是這個字串（#27 以前是 `tw-id`、`ubn`、`tw-mobile`）。新增時 C# 的 `ReadRule` 和 JS 的 `KINDS` 兩邊一起加 |
 | `label` | 通知裡顯示的名稱 |
 | `regex`、`ignoreCase` | 語法限制見下方 |
-| `finder`（#27） | 取代 `regex`：regex 寫不出來的格式用程式寫的候選產生器，兩邊各實作一次（`PiiFormats.Finder`、`pii.js` 的 `FINDERS`）。目前只有 `card-groups`（信用卡分組，§5.0：要在幾組數字裡挑第一個 Luhn 對的）。`regex` 和 `finder` 一定要有其中一個 |
+| `finder`（#27） | 取代 `regex`：regex 寫不出來的格式用程式寫的候選產生器，兩邊各實作一次（`PiiFormats.Finder`、`pii.js` 的 `FINDERS`）。目前有 `card-groups`（信用卡分組，§5.0：要在幾組數字裡挑第一個 Luhn 對的）和 `bip39`（1b，助記詞，§5.7）。`regex` 和 `finder` 一定要有其中一個 |
 | `secretGroup` | 機密是第幾個群組；沒寫就是第一個有比對到、不是空字串的群組，沒有群組就是整段（同 gitleaks）。結果的位置、遮罩、貼遮罩版都只針對這一段 |
 | `keywords` | 小寫。文字轉小寫後至少出現一個才跑 regex（同 gitleaks 的預先篩選，是效能的關鍵）。沒寫表示一律跑 |
 | `notPrecededBy`、`notFollowedBy` | 取代 lookaround：前一個字元符合 `notPrecededBy`（單一字元的類別）或比對結果後面接著 `notFollowedBy` 時不算 |
@@ -417,18 +426,18 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | `stopwords` | 機密（轉小寫）包含其中一個就不算（同 gitleaks） |
 | `validate` | 額外的驗證，兩邊各實作一次（`PiiFormats.Validator`、`rules.js`／`pii.js` 的 `VALIDATORS`）：`jwt-header`、`tw-id`（含分隔符號最多 3 個）、`tw-ubn`、`iban`、`e164`、`cn-id`、`jp-my-number`、`hk-id`、`sg-nric`、`us-ssn`（含分隔符號一致）。驗證收到的是含分隔符號的字串，自己去掉 |
 | `context`（#27） | `{keywords, before, after}`：機密前面 `before` 字內（關鍵字的結尾）或後面 `after` 字內（關鍵字的開頭）要出現其中一個關鍵字。比對的是**正規化後的文字**，不是 ASCII 版本，所以 `統編`、`マイナンバー`、`주민등록번호` 可以直接寫；英文字母不分大小寫（只轉 A–Z，長度不變），開頭或結尾是英文字母的關鍵字不能緊貼著其他英文字母（`vat` 不比 private、`ssn` 不比 Assn）。關鍵字要小寫、1–24 字，`before`、`after` 0–32 而且不能都是 0（要落在每段往前多看的 64 字內）。整段文字裡沒有任何關鍵字時直接跳過這條規則 |
-| `mask` | `{keepStart, keepEnd, canonical}`：遮罩時保留的開頭、結尾長度（`keepEnd` 預設 3），`canonical` 是遮罩前先換成的標準寫法：`alnum-upper`（只留英數字、轉大寫）、`digits`、`tw-mobile`（`+886 9…` 換成 `09…`）、`e164`（`+` 加數字）。或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行。#27 起插件和桌面版的遮罩字串一樣（`SecretMasker.Mask` ＝ `pii.js` 的 `maskValue`：星號最多 8 個、至少遮 4 個字） |
+| `mask` | `{keepStart, keepEnd, canonical}`：遮罩時保留的開頭、結尾長度（`keepEnd` 預設 3），`canonical` 是遮罩前先換成的標準寫法：`alnum-upper`（只留英數字、轉大寫）、`digits`、`tw-mobile`（`+886 9…` 換成 `09…`）、`e164`（`+` 加數字）。或 `"pem-block"`：只顯示標頭，貼遮罩版遮到 END 行；或 `"word-count"`（1b，助記詞）：什麼字都不留，遮罩是 `******** (12)`，字數也放進標籤的參數 `words`。#27 起插件和桌面版的遮罩字串一樣（`SecretMasker.Mask` ＝ `pii.js` 的 `maskValue`：星號最多 8 個、至少遮 4 個字） |
 
 **regex 語法**：只用 .NET 和 JS（沒有 `u` 旗標）行為一樣的子集合，而且不能用 lookaround、backreference、possessive、atomic group 和行內旗標 `(?i)`（要整條不分大小寫就用 `ignoreCase`）。理由：
 
-- **線性時間**：.NET 用 `RegexOptions.NonBacktracking` 編譯（不支援 lookaround），最壞情況也是線性。JS 是回溯引擎，所以 gitleaks 規則裡在 JS 會變成 O(n²) 的（curl 那兩條）不收；兩邊的測試都會拿每條規則跑 1 Mi 字的病態輸入。
+- **線性時間**：.NET 用 `RegexOptions.NonBacktracking` 編譯（不支援 lookaround），最壞情況也是線性。JS 是回溯引擎，所以 gitleaks 規則裡在 JS 會變成 O(n²) 的（curl 那兩條）舊版不收；Rust 的 `regex` 保證線性，1b 收回來了。測試會拿每條規則跑 1 Mi 字的病態輸入。
 - **`$`** 是「整段結尾」（JS 沒有 `m` 旗標時的意思）；.NET 的 `$` 在最後一個換行前也成立，所以載入時換成 `\z`。
 - **ASCII 版本**：`\b`、`\w`、不分大小寫在 .NET 認 Unicode，在 JS 只認 ASCII。所以規則比對的是「非 ASCII 字元都換成 U+001A」的版本（長度不變，位置直接對回原文），兩邊結果一樣，而且中文緊貼著 key（`金鑰dop_v1_…`）也找得到。
 - **NonBacktracking 的群組**：.NET 9 的 NonBacktracking 找到的範圍正確，但有些 pattern 的捕獲群組是空的（實測 context-assignment），所以範圍交給 NonBacktracking，群組在那一小段裡用一般引擎（`^(?:…)\z`，逾時 200 ms）重比一次。
 
 **gitleaks 怎麼轉**（`tools/convert-gitleaks.mjs`）：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
 
-**沒收的 gitleaks 規則**（24 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
+**沒收的 gitleaks 規則**（22 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
 
 | 原因 | 規則 |
 |---|---|
@@ -436,17 +445,19 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | 手寫規則已涵蓋 | github-pat、github-oauth、github-app-token、github-refresh-token、github-fine-grained-pat、jwt、private-key |
 | client ID 是公開的識別碼 | adobe、asana、bitbucket、discord、linkedin、looker、messagebird、plaid 的 client-id |
 | 只在特定檔案類型才成立（剪貼簿沒有檔名） | freemius-secret-key、hashicorp-tf-password、kubernetes-secret-yaml、nuget-config-password、pkcs12-file |
-| JS 會變成 O(n²) | curl-auth-header、curl-auth-user |
 | 會把 git SHA 當成 token | sourcegraph-access-token（有一個分支是單獨的 40 位 hex） |
+
+**curl 的兩條規則（1b）**：舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user`，Rust 版收回來，但放在另一個產生的檔案 `rules/gitleaks-late.json`（priority 35，排在第 2 層 context.json 後面）：它們把 `curl -H` 後面的任何值都當成權杖，比第 2 層泛，重疊時讓校準過亂度的 context-authorization／context-assignment 保留原本的標籤（舊語料 `secret.rules.context-bearer` 等），curl 規則只補第 2 層抓不到的：`curl -u 帳號:密碼`、短於 16 字的 Basic 值、沒寫 Bearer 的 `Authorization:`、`X-Token:` 這類自訂標頭。哪些規則放進 late 檔由 `xtask/src/rules.rs` 的 `LATE` 決定。1 Mi 字的病態輸入（滿滿的 `curl -u aaa:`、`curl\n`）最慢一條 38 ms（release）。
 
 ### 5.5 上下文＋亂度（第 2 層，`rules/context.json`）
 
-兩條規則：
+三條規則（第三條是 1b 加的）：
 
 | 規則 | 上下文 | 值 |
 |---|---|---|
 | context-assignment（疑似金鑰或密碼） | 名稱含 `api_key`／`apikey`／`api-key`、`secret`、`token`、`password`／`passwd`、`pwd`、`credential`、`private_key`、`access_key`、`auth_key`、`signing_key`、`encryption_key`、`master_key`、`session_key`（不分大小寫，`.`、`_`、`-` 都可以），後面接 `=`、`:`、`:=`、`=>`、`?=`、`+=`，名稱和值可以有引號。涵蓋 `.env` 的 `KEY=value`、`export`、JSON 的 `"apiKey": "…"`、YAML、程式碼的指定、`X-API-Key:` 標頭、`$env:X = "…"` | 16–512 字的 `[A-Za-z0-9_+/=.~!@#%^*-]`，後面要接空白、引號、`;`、`,`、`)`、`}`、`]`、`>`、`&` 或結尾 |
 | context-authorization（Authorization 權杖） | `Authorization:`（或 `=`）加 `Bearer`、`Token`、`Basic`、`ApiKey`，包括 `curl -H "Authorization: Bearer …"` | 16–1024 字的 `[A-Za-z0-9_+/=.~-]` |
+| context-assignment-cjk（疑似金鑰或密碼，1b） | 中日韓的金鑰名稱緊接著 `=`、`:`、`:=`、`=>`（全形 `：`、`＝` 正規化後也算），名稱和值可以有引號。名稱用 `context` 關鍵字比對（值前面 16 字內）：密碼、密码、金鑰、密鑰、密钥、秘鑰、秘钥、私鑰、私钥、權杖、令牌、口令、パスワード、秘密鍵、暗号鍵、アクセスキー、トークン、비밀번호、암호、토큰 | 同 context-assignment；結尾還可以接中文標點（`。`） |
 
 值要再通過：
 
@@ -472,6 +483,8 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 | `id: <UUID>`、`token_id: <UUID>`、`commit: <SHA>`、`password_hash: <hex>`、`git log` 輸出 | 不警告 | 沒有金鑰名稱，或名稱表示它是識別碼或雜湊 |
 
 `token = GetToken()`、`password = input()` 這類程式碼不會命中：值後面接的是 `(`，不是結尾字元。
+
+context-assignment-cjk 的 regex 比的是 ASCII 版本（§5.4），中文字都是 U+001A，所以 regex 只要求「分隔符號前面是一個非 ASCII 字」，名稱本身交給 `context` 檢查；整段文字沒有任何一個關鍵字時直接跳過這條規則。值的條件（亂度、數字、連號、佔位字）跟 context-assignment 一樣，所以 `密碼：hunter2`、`密碼：請洽管理員` 不算。
 
 **誤報樣本**：`tests/fixtures/secret-false-positives.json`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
 
@@ -506,6 +519,35 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 - **插件**：`content.js` 用 `packsForLocales(navigator.languages)`，每個偏好語言都算（`zh-TW`、`en-US` 都列著就開 TW 和 US）。插件沒有設定畫面，所以用聯集；美國包要關鍵字、其他包要檢查碼，多開一個包的誤報有限。
 - **誤報樣本**：`SecretPacksTests`／`packs.test.js` 在所有包都開時跑日期、時間戳記、訂單與追蹤號碼、沒有關鍵字的 12 位數、美國格式的市話、UUID、大寫 hex、Base64、版本號（含 semver 的 `+`）、IP、時區 `UTC+0800`、檢查碼不對的型號、ISBN，以及共用的 `secret-false-positives.json`，都不能有任何命中。
 - **效能**：每條個資規則各跑 14 種 1 Mi 字的病態輸入（滿滿的數字、`1 `、`+1 `、`A1`、`DE89 `、括號、關鍵字加號碼、只有關鍵字…）：C# 最慢一條 135 ms、JS 47 ms；所有包都開時整個 `Find` 最慢 145 ms（C#，每 14 字一個統編）、126 ms（JS，每 25 字一個個人番號）。
+
+### 5.7 錢包助記詞（1b，`rules/mnemonic.json`、`crates/core/src/secret/mnemonic.rs`）
+
+助記詞（seed phrase）就是錢包本身：貼出去等於把錢交出去。所以只要格式和 checksum 都對就警告，不需要關鍵字。
+
+| 項目 | 規則 |
+|---|---|
+| 單字表 | BIP-39 官方英文表 2048 個字（`rules/secret/bip39-english.txt`，bitcoin/bips，MIT，來源見 THIRD_PARTY_NOTICES.md）。載入時檢查剛好 2048 個、3–8 個小寫字母、依字母排序（所以二分搜尋的位置就是 11 bit 的值） |
+| 一串 | 連續的清單單字，字和字之間只能是：空白、換行、tab（最多 16 字）、一個逗號，以及一個清單編號（`2.`、`2)`、`2:`、`(2)`、`2 `，1–2 位數）。其他東西（句點、冒號、`-`、清單外的英文字、中文字）都會把一串切斷。字不分大小寫；緊貼著數字或 `_` 的字（`abandon1`、`x_ability`）是識別字，不算 |
+| 長度 | 整串剛好 12、15、18、21、24 個字。**不在比較長的一串裡挑視窗**：13 個字就整串不算 |
+| checksum | 把每個字的 11 bit 接起來，前 `字數 × 32 / 3` bit 是 entropy，最後 `字數 / 3` bit 要等於 SHA-256(entropy) 的開頭。隨機的 12 個清單單字通過的機率是 1/16，24 個是 1/256 |
+| 種類、標籤 | `SecretKind::Mnemonic`（`mnemonic`）；標籤「錢包助記詞（12 個字）」／「Wallet recovery phrase (12 words)」，字數是 Fluent 參數 `words` |
+| 遮罩 | `******** (12)`：一個字都不留，只留字數。範圍從第一個字到最後一個字（中間的編號一起遮掉） |
+
+- **誤報**：一般英文很少連續 12 個字都在清單裡（the、and、of、your、with 都不在），就算有，checksum 也只有 1/16 會過。語料 `secret-1b-mnemonic.jsonl` 有 12 個字都在清單裡但 checksum 不對的句子、11／13／25 個字、checksum 錯的 12／24 個字、用 `-` 或句點連接的寫法。良性語料全部 0 筆。
+- **分段**：一串最長 24 個字 × (8 + 16) 字，遠小於每段往後多看的 8K 字；分隔最多 16 字，所以從上一段延續過來的一串，在這一段看到的第一個字一定落在往前多看的 64 字裡，不會被當成新的一串重複回報。
+- **效能**：1 Mi 字的 `abandon `、`1. abandon\n` 等病態輸入，整個 `find` 約 25 ms（release）：只切一次字、查二分表，一串超過 24 個字就不再記錄。
+
+### 5.8 含密碼的資料庫連線字串（1b，`rules/connection-strings.json`）
+
+| 規則 | 寫法 | 機密 |
+|---|---|---|
+| conn-string-url | `postgres(ql)://`、`mysql://`、`mariadb://`、`mongodb(+srv)://`、`redis(s)://`、`amqp(s)://`、`mssql://`、`sqlserver://`、`cockroachdb://`、`clickhouse://`，scheme 可以帶驅動（`postgresql+psycopg2://`）；`帳號:密碼@主機`，帳號可以是空的（`redis://:密碼@`） | 只有密碼那一段（3–256 字，不含空白、`/`、`?`、`#`、`@`、引號、`<>`） |
+| conn-string-odbc | ODBC／ADO.NET／JDBC 的 `key=value;`：前面要先有一個連線參數（`Server`、`Data Source`、`Host`、`Address`、`Uid`、`User Id`、`User`、`Username`、`Database`、`Initial Catalog`、`DSN`、`Driver`、`Provider`），之後最多 8 個參數內出現 `Password=` 或 `Pwd=` | 值：`{…}`、`"…"`、`'…'` 裡面的內容，或到 `;`、空白、引號為止 |
+
+- 種類是 `api_key`（跟「疑似金鑰或密碼」同一類），標籤「資料庫連線密碼」。遮罩只遮密碼、什麼都不留（`********`，最多 8 個星號）；貼遮罩版會保留帳號、主機、資料庫名稱（`postgres://app:********@db…/app`）。
+- **不算的**：佔位字（同 §5.5：`example`、`changeme`、`your_…`、`<…>`、`${…}`、`{{…}}`、`%(…)s`、`…`）；`password`、`pass`、`pwd`、`secret`、`root`、`admin`、`guest`、`postgres`、`mysql`、`test`、全是 `*`／`x`／`.` 的值；`$VAR`、`$(cmd)`、`%s`、`{name}`、`:name` 這類變數。預設帳密刻意不算的理由見 §5.2。
+- 不要求亂度：連線字串本身就是很強的上下文，而且資料庫密碼常常是短的、人取的（`hunter2`）。
+- 排在 gitleaks（20）後面、第 2 層（30）前面：`DB_PASSWORD=` 這類同時符合第 2 層的寫法用連線字串的標籤。
 
 ## 6. 隱藏字元與錢包掉包
 

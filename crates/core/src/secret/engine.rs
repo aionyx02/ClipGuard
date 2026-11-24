@@ -18,7 +18,7 @@ use regex::bytes::Regex;
 use zeroize::Zeroizing;
 
 use super::normalize::{Normalized, normalize};
-use super::{PackSet, SecretKind, SecretMatch, mask, pii};
+use super::{PackSet, SecretKind, SecretMatch, mask, mnemonic, pii};
 use crate::Message;
 
 /// Longest text analyzed in full, in chars. Longer texts are analyzed at the head and
@@ -46,6 +46,11 @@ pub const MAX_KEY_EXTENSION: usize = 40;
 /// Fluent id of a rule's display label. Arguments: `id` (rule id) and `label` (the
 /// rule file's label, used when the locale has no translation for `id`).
 pub const RULE_LABEL_ID: &str = "secret-rule-label";
+
+/// Mask of a `word-count` rule (BIP-39 phrase): stars plus the word count, e.g.
+/// `******** (12)`. Nothing of the words is kept; the label carries the count too
+/// (argument `words`).
+pub const WORD_COUNT_MASK_STARS: &str = "********";
 
 /// Byte that replaces every non-ASCII char in the ASCII view.
 const SUBSTITUTE: u8 = 0x1A;
@@ -204,10 +209,27 @@ impl Rule {
         self.def.keywords.is_empty() || self.def.keywords.iter().any(|k| lower.contains(k.as_str()))
     }
 
+    /// The localizable display label of one match: [`Rule::label`], plus the
+    /// argument `words` for `word-count` rules.
+    fn match_label(&self, words: Option<usize>) -> Message {
+        match words {
+            Some(n) => self.label().arg("words", n),
+            None => self.label(),
+        }
+    }
+
+    /// Word count of `secret` when this rule masks by word count.
+    fn words_of(&self, secret: &str) -> Option<usize> {
+        matches!(self.def.mask, MaskSpec::WordCount).then(|| mnemonic::word_count(secret))
+    }
+
     /// The mask shown for `secret` (PEM headers are shown as is).
     pub fn mask(&self, secret: &str) -> String {
         match &self.def.mask {
             MaskSpec::PemBlock => secret.to_owned(),
+            MaskSpec::WordCount => {
+                format!("{WORD_COUNT_MASK_STARS} ({})", mnemonic::word_count(secret))
+            }
             MaskSpec::Keep {
                 keep_start,
                 keep_end,
@@ -236,8 +258,12 @@ impl Rule {
             Zeroizing::new(chars.get(i..i + len).unwrap_or_default().iter().collect())
         };
         match &self.def.matcher {
-            Matcher::Finder(rules::FinderKind::CardGroups) => {
-                for (index, len) in pii::card_candidates(ascii) {
+            Matcher::Finder(finder) => {
+                let candidates = match finder {
+                    rules::FinderKind::CardGroups => pii::card_candidates(ascii),
+                    rules::FinderKind::Bip39 => mnemonic::candidates(ascii),
+                };
+                for (index, len) in candidates {
                     if len < self.def.min_length || len > self.def.max_length {
                         continue;
                     }
@@ -507,6 +533,8 @@ pub fn builtin() -> &'static RuleSet {
 struct Found {
     rule: usize,
     masked: String,
+    /// Word count (`word-count` rules), for the label.
+    words: Option<usize>,
     bytes: Range<usize>,
     chars: Range<usize>,
 }
@@ -598,7 +626,7 @@ impl RuleSet {
                 Some(SecretMatch {
                     kind: rule.kind,
                     rule_id: rule.def.id.clone(),
-                    label: rule.label(),
+                    label: rule.match_label(f.words),
                     masked: f.masked,
                     span: f.bytes,
                 })
@@ -641,6 +669,7 @@ impl RuleSet {
                     Found {
                         rule: k,
                         masked: rule.mask(&secret),
+                        words: rule.words_of(&secret),
                         bytes: o.byte_start..o.byte_end,
                         chars: o.char_start..o.char_end,
                     },
@@ -773,6 +802,30 @@ mod perf {
         t.elapsed()
     }
 
+    /// Phase 1b pathological units (each repeated to 1 Mi chars).
+    const PATHOLOGICAL_1B: &[&str] = &[
+        "abandon ",
+        "1. abandon\n",
+        "abandon, ",
+        "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote\n",
+        "curl ",
+        "curl\n",
+        "curl -H \"Authorization: ",
+        "curl -H 'X-Key: aaaaaaaa ",
+        "curl -u a",
+        "curl -u aaa:",
+        "postgres://",
+        "postgres://a:",
+        "postgres://a:b",
+        "redis://:a@",
+        "Server=a;",
+        "Server=a;b=c;",
+        "Server=a;Password=",
+        "密碼：",
+        "密碼：a",
+        "金鑰 = \"aB3",
+    ];
+
     fn scan_rule(rule: &Rule, text: &str) -> usize {
         let chars: Vec<char> = text.chars().collect();
         let ascii = ascii_view(&chars);
@@ -800,6 +853,11 @@ mod perf {
                 fill(&format!("{kw}{} ", "a".repeat(40)), N),
                 format!("{kw}{}", "a".repeat(N.saturating_sub(kw.len()))),
             ];
+            // Phase 1b: BIP-39 runs, curl headers / credentials over many lines,
+            // connection strings, CJK key names.
+            for u in PATHOLOGICAL_1B {
+                inputs.push(fill(u, N));
+            }
             if rule.kind != SecretKind::ApiKey {
                 for u in [
                     "1",
@@ -853,6 +911,14 @@ mod perf {
             fill("A123456789 ", N),
             fill("統編 12345675 ", N),
             fill("マイナンバー 1234 5678 9018 ", N),
+            fill("abandon ", N),
+            fill("1. abandon\n", N),
+            fill("curl -u aaa:", N),
+            fill("curl\n", N),
+            fill("curl -H \"Authorization: ", N),
+            fill("Server=a;b=c;", N),
+            fill("postgres://a:b", N),
+            fill("密碼：aB3", N),
         ];
         let all = PackSet::all();
         for (i, input) in inputs.iter().enumerate() {
