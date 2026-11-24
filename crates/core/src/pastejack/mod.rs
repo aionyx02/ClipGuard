@@ -6,28 +6,26 @@
 //! including JS-specific details: `\s` / `trim()` use the ECMAScript whitespace
 //! set, `\b` is an ASCII word boundary and `/i` folds ASCII letters only.
 
-use std::sync::OnceLock;
+mod data;
 
-use regex::Regex;
+pub use data::{PastejackRules, SignalMatcher, SignalRule};
 
 use crate::Message;
 
 /// Default `max` of [`preview`] (legacy `preview(text, max = 160)`), in UTF-16 code units.
 pub const PREVIEW_MAX: usize = 160;
 
-/// Invisible characters counted and stripped by the extension (legacy `HIDDEN_CHARS`).
-/// Unlike the desktop detector there are no exception rules: only the count the page
-/// *added* matters, so a flag or soft hyphen the user selected cancels out.
+/// Invisible characters counted and stripped by the extension (legacy `HIDDEN_CHARS`,
+/// now `rules/pastejack/hidden-chars.json`). Unlike the desktop detector there are no
+/// exception rules: only the count the page *added* matters, so a flag or soft hyphen
+/// the user selected cancels out.
 pub fn is_hidden_char(c: char) -> bool {
-    matches!(c,
-        '\u{00AD}' | '\u{115F}' | '\u{1160}' | '\u{180E}'
-        | '\u{200B}'..='\u{200F}'
-        | '\u{202A}'..='\u{202E}'
-        | '\u{2060}'..='\u{2064}'
-        | '\u{2066}'..='\u{2069}'
-        | '\u{3164}' | '\u{FEFF}' | '\u{FFA0}'
-        | '\u{E0000}'..='\u{E007F}'
-        | '\u{E0100}'..='\u{E01EF}')
+    // Fast path: everything listed is outside ASCII.
+    !c.is_ascii()
+        && PastejackRules::embedded()
+            .hidden_chars
+            .iter()
+            .any(|r| r.contains(&c))
 }
 
 /// ECMAScript `WhiteSpace` + `LineTerminator` (what JS `\s` and `trim()` match).
@@ -105,49 +103,26 @@ impl CommandSignal {
         })
     }
 
+    /// Matches the ASCII-lowercased text with this signal's rule from
+    /// `rules/pastejack/signals.json` (no rule = never matches).
     fn matches(self, lower: &str) -> bool {
-        match self {
-            CommandSignal::PowerShell => invocation(lower, &["powershell", "pwsh"]),
-            CommandSignal::Mshta => invocation(lower, &["mshta"]),
-            other => regexes()
-                .get(other as usize)
-                .is_some_and(|r| r.is_match(lower)),
+        match PastejackRules::embedded()
+            .signal(self.as_str())
+            .map(|r| &r.matcher)
+        {
+            Some(SignalMatcher::Invocation(names)) => invocation(lower, names),
+            Some(SignalMatcher::Regex(re)) => re.is_match(lower),
+            None => false,
         }
     }
-}
-
-/// JS `\s` / `\S` as regex classes.
-const WS: &str = r"[\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]";
-const NWS: &str = r"[^\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]";
-
-/// Regex signals, indexed by `CommandSignal as usize` (the first two are unused
-/// placeholders; they need a lookahead and are matched by [`invocation`]).
-/// Patterns run on ASCII-lowercased text (JS `/i` without `u` folds ASCII only).
-fn regexes() -> &'static [Regex] {
-    static RE: OnceLock<Vec<Regex>> = OnceLock::new();
-    RE.get_or_init(|| {
-        let b = r"(?-u:\b)";
-        [
-            "^$".to_owned(),
-            "^$".to_owned(),
-            format!(r"{b}cmd(?:\.exe)?{WS}+/[ck]{b}"),
-            format!(r"{b}(?:curl|wget){b}[^|\n]*\|{WS}*(?:ba|z)?sh{b}"),
-            format!(r"{b}(?:iex|invoke-expression){b}"),
-            format!(r"{b}(?:certutil|bitsadmin|rundll32|regsvr32|msiexec)(?:\.exe)?{b}"),
-            format!(r"{b}sudo{WS}+{NWS}"),
-        ]
-        .iter()
-        .filter_map(|p| Regex::new(p).ok())
-        .collect()
-    })
 }
 
 /// `(?:^|[\s;&|("'])(?:name)(?:\.exe)?(?=\s+[-/"'#a-z0-9]|\s*$|\s*[|;&])` with `/im`:
 /// the program name must be followed by an argument, a quote, a comment, the end
 /// of a line or a pipe / separator to count as a call (like C# `Invocation()`).
-fn invocation(lower: &str, names: &[&str]) -> bool {
+fn invocation(lower: &str, names: &[String]) -> bool {
     names.iter().any(|name| {
-        lower.match_indices(name).any(|(at, _)| {
+        lower.match_indices(name.as_str()).any(|(at, _)| {
             let before_ok = lower[..at]
                 .chars()
                 .next_back()
@@ -354,6 +329,23 @@ mod tests {
         assert_eq!(command_signals("sudo rm"), [CommandSignal::Sudo]);
         assert!(command_signals("pseudo x").is_empty());
         assert!(!command_signals("éiex").is_empty()); // ASCII \b: é is not a word char
+    }
+
+    #[test]
+    fn every_signal_has_exactly_one_rule() {
+        let rules = PastejackRules::load().unwrap_or_else(|e| panic!("{e}"));
+        let ids: Vec<&str> = rules.signals.iter().map(|r| r.id.as_str()).collect();
+        let want: Vec<&str> = CommandSignal::ALL.iter().map(|s| s.as_str()).collect();
+        assert_eq!(ids, want, "rules/pastejack/signals.json ids / order");
+    }
+
+    #[test]
+    fn new_hidden_chars() {
+        assert!(is_hidden_char('\u{034F}'));
+        assert!(is_hidden_char('\u{17B4}'));
+        assert!(is_hidden_char('\u{17B5}'));
+        assert!(!is_hidden_char('\u{17B6}'));
+        assert!(!is_hidden_char('a'));
     }
 
     #[test]

@@ -1,0 +1,38 @@
+{
+  "_comment": "Command signals of the browser extension (legacy extension/lib/pastejack.js COMMAND_SIGNALS, §7): a compact subset of the desktop command detector that only decides whether page-added content looks like something to run. Order matters (reasons are listed in this order). 'invocation': program names that count when called: preceded by the start, whitespace or ; & | ( \" ' and followed by an argument, quote, comment, line end or a pipe / separator (an optional .exe is allowed). 'regex': run on the ASCII-lowercased text; placeholders {b} = ASCII word boundary, {WS} / {NWS} = the ECMAScript whitespace class / its complement (what JS \\s / \\S match). Ids are fixed: they select the pastejack-sig-<id> message.",
+  "signals": [
+    {
+      "id": "powershell",
+      "invocation": [
+        "powershell",
+        "pwsh"
+      ]
+    },
+    {
+      "id": "mshta",
+      "invocation": [
+        "mshta"
+      ]
+    },
+    {
+      "id": "cmd",
+      "regex": "{b}cmd(?:\\.exe)?{WS}+/[ck]{b}"
+    },
+    {
+      "id": "pipe-shell",
+      "regex": "{b}(?:curl|wget){b}[^|\\n]*\\|{WS}*(?:ba|z)?sh{b}"
+    },
+    {
+      "id": "iex",
+      "regex": "{b}(?:iex|invoke-expression){b}"
+    },
+    {
+      "id": "lolbin",
+      "regex": "{b}(?:certutil|bitsadmin|rundll32|regsvr32|msiexec)(?:\\.exe)?{b}"
+    },
+    {
+      "id": "sudo",
+      "regex": "{b}sudo{WS}+{NWS}"
+    }
+  ]
+}

@@ -12,10 +12,14 @@
 //! Every check is a linear scan; nothing is skipped because of the total length.
 //! Reasons carry counts and code points only, never the original text (P4).
 
+mod data;
+
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use regex::Regex;
+
+pub use data::{HiddenRules, MAX_TAG_SPEC_LEN};
 
 use crate::{Level, Message, Verdict};
 
@@ -67,12 +71,7 @@ pub fn analyze(text: &str) -> Verdict {
         reasons.push(Message::new("hidden-bidi").arg("count", bidi));
     }
 
-    if let Some(glyph) = find_homoglyph(text) {
-        let script = if glyph >= '\u{0400}' {
-            "cyrillic"
-        } else {
-            "greek"
-        };
+    if let Some((glyph, script)) = find_homoglyph(text) {
         reasons.push(
             Message::new("hidden-homoglyph")
                 .arg("script", script)
@@ -130,33 +129,66 @@ fn count_zero_width(chars: &[(usize, char)]) -> usize {
 }
 
 fn is_legit_joiner(chars: &[(usize, char)], k: usize) -> bool {
+    let rules = HiddenRules::embedded();
     let Some(&(_, c)) = chars.get(k) else {
         return false;
     };
-    let prev = k.checked_sub(1).and_then(|p| chars.get(p)).map(|x| x.1);
-    let next = chars.get(k + 1).map(|x| x.1);
+    let at = |i: Option<usize>| i.and_then(|i| chars.get(i)).map(|x| x.1);
+    let prev = at(k.checked_sub(1));
+    let next = at(k.checked_add(1));
+    if c == '\u{200D}' && is_virama_joiner(rules, at(k.checked_sub(2)), prev, next) {
+        return true;
+    }
     let (Some(prev), Some(next)) = (prev, next) else {
         return false;
     };
-    if c == '\u{200D}' && is_emoji_like(prev) && is_emoji_like(next) {
+    if c == '\u{200D}' && rules.is_emoji_like(prev) && rules.is_emoji_like(next) {
         return true;
     }
     is_complex_script_letter(prev) && is_complex_script_letter(next)
 }
 
-fn is_emoji_like(c: char) -> bool {
-    let cp = u32::from(c);
-    cp >= 0x1F000 // most emoji, skin tones
-        || (0x2600..=0x27BF).contains(&cp) // ♀ ♂ ⚕ ❤ …
-        || (0x2B00..=0x2BFF).contains(&cp)
-        || cp == 0xFE0F // emoji variation selector
+/// Letter + VIRAMA + ZWJ of the same Indic block: a half form, or in Malayalam a
+/// chillu letter (`ന്‍` = NA + VIRAMA + ZWJ, the pre-Unicode-5.1 encoding still
+/// produced by many keyboards), which ends a word. So the ZWJ may be followed by
+/// whitespace, punctuation, another letter of the same block or the end of the
+/// text, but not by a Latin letter, a digit or another invisible character.
+fn is_virama_joiner(
+    rules: &HiddenRules,
+    base: Option<char>,
+    prev: Option<char>,
+    next: Option<char>,
+) -> bool {
+    let Some(v) = prev.and_then(|p| rules.virama(p)) else {
+        return false;
+    };
+    if !base.is_some_and(|b| v.block.contains(&b) && is_letter(b)) {
+        return false;
+    }
+    next.is_none_or(|n| v.block.contains(&n) || n.is_whitespace() || is_punctuation(n))
 }
 
-/// Hebrew through Indic / Southeast Asian scripts (U+0590–U+1CFF), where ZWNJ / ZWJ
-/// control glyph joining: Lo, Mn, Mc or Me.
+/// General category P* (`\p{P}`).
+fn is_punctuation(c: char) -> bool {
+    static RE: OnceLock<Option<Regex>> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"\A\p{P}\z").ok())
+        .as_ref()
+        .is_some_and(|re| char_matches(re, c))
+}
+
+/// General category M* (`\p{M}`).
+fn is_mark(c: char) -> bool {
+    static RE: OnceLock<Option<Regex>> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"\A\p{M}\z").ok())
+        .as_ref()
+        .is_some_and(|re| char_matches(re, c))
+}
+
+/// Hebrew through Indic / Southeast Asian scripts (`joiners.json`
+/// `complex_script_range`), where ZWNJ / ZWJ control glyph joining: Lo, Mn, Mc or Me.
 fn is_complex_script_letter(c: char) -> bool {
     static RE: OnceLock<Option<Regex>> = OnceLock::new();
-    ('\u{0590}'..='\u{1CFF}').contains(&c)
+    HiddenRules::embedded().complex_script_range.contains(&c)
         && RE
             .get_or_init(|| Regex::new(r"\A[\p{Lo}\p{Mn}\p{Mc}\p{Me}]\z").ok())
             .as_ref()
@@ -165,9 +197,9 @@ fn is_complex_script_letter(c: char) -> bool {
 
 // ---------- Unicode TAG (U+E0000–U+E007F) ----------
 
-/// Subdivision flags with a standard (RGI) emoji: England, Scotland, Wales.
-/// Any other tag sequence shows as a plain black flag, so its tags stay invisible.
-const RGI_FLAG_TAGS: [&str; 3] = ["gbeng", "gbsct", "gbwls"];
+/// Subdivision flags with a standard (RGI) emoji are listed in
+/// `rules/hidden/tag-sequences.json` (England, Scotland, Wales). Any other tag
+/// sequence shows as a plain black flag, so its tags stay invisible.
 const BLACK_FLAG: char = '\u{1F3F4}';
 const CANCEL_TAG: char = '\u{E007F}';
 
@@ -195,15 +227,15 @@ fn count_tag_chars(chars: &[(usize, char)]) -> usize {
 /// If an RGI flag's tag part (including the cancel tag) starts at `start`, its
 /// length in chars, else 0.
 fn rgi_flag_tag_len(chars: &[(usize, char)], start: usize) -> usize {
-    let mut spec = String::with_capacity(9);
+    let mut spec = String::with_capacity(MAX_TAG_SPEC_LEN + 1);
     let mut k = start;
     // Legacy bound: stop once more than 8 tag letters were read.
     while let Some(&(_, c)) = chars.get(k).filter(|(_, c)| is_tag(*c)) {
-        if spec.len() > 8 {
+        if spec.len() > MAX_TAG_SPEC_LEN {
             break;
         }
         if c == CANCEL_TAG {
-            return if RGI_FLAG_TAGS.contains(&spec.as_str()) {
+            return if HiddenRules::embedded().rgi_flag_tags.contains(&spec) {
                 k + 1 - start
             } else {
                 0
@@ -219,8 +251,10 @@ fn rgi_flag_tag_len(chars: &[(usize, char)], start: usize) -> usize {
 
 /// Soft hyphens (unless a hyphenation point between letters on a line that is not a
 /// command or URL), the Mongolian vowel separator (unless between Mongolian letters),
-/// Hangul fillers (unless composing jamo), and variation-selector smuggling.
-/// Returns the count and up to [`MAX_INVISIBLE_SAMPLES`] distinct code points.
+/// Hangul fillers (unless composing jamo), variation-selector smuggling, the
+/// combining grapheme joiner (unless before a combining mark), Khmer inherent vowels
+/// (unless between Khmer characters) and invisible math operators (in a run of
+/// invisible characters, or on a command / URL line). Returns the count and up to [`MAX_INVISIBLE_SAMPLES`] distinct code points.
 fn find_other_invisible(text: &str, chars: &[(usize, char)]) -> (usize, Vec<char>) {
     let mut count = 0usize;
     let mut samples: Vec<char> = Vec::with_capacity(MAX_INVISIBLE_SAMPLES);
@@ -231,7 +265,7 @@ fn find_other_invisible(text: &str, chars: &[(usize, char)]) -> (usize, Vec<char
         }
     };
 
-    let mut soft_hyphen_lines: HashMap<usize, bool> = HashMap::new();
+    let mut command_lines: HashMap<usize, bool> = HashMap::new();
     let mut line_start = 0usize;
     let mut k = 0usize;
     while let Some(&(offset, c)) = chars.get(k) {
@@ -263,14 +297,21 @@ fn find_other_invisible(text: &str, chars: &[(usize, char)]) -> (usize, Vec<char
         }
 
         let suspicious = match c {
-            '\u{00AD}' => is_suspicious_soft_hyphen(
-                text,
-                offset,
-                line_start,
-                prev,
-                next,
-                &mut soft_hyphen_lines,
-            ),
+            '\u{00AD}' => {
+                is_suspicious_soft_hyphen(text, offset, line_start, prev, next, &mut command_lines)
+            }
+            // Combining grapheme joiner: only meaningful before a combining mark
+            // (blocks canonical reordering / collation contraction).
+            '\u{034F}' => !next.is_some_and(is_mark),
+            // Khmer inherent vowels: deprecated, invisible; tolerated inside Khmer text.
+            '\u{17B4}' | '\u{17B5}' => !(prev.is_some_and(is_khmer) && next.is_some_and(is_khmer)),
+            // Invisible math operators: Word / MathML equations put a single one
+            // between operands (`sin⁡x`); steganography tools (StegCloak) emit runs.
+            '\u{2061}'..='\u{2064}' => {
+                prev.is_some_and(is_zero_width_like)
+                    || next.is_some_and(is_zero_width_like)
+                    || line_is_command_or_url(text, offset, line_start, &mut command_lines)
+            }
             '\u{180E}' => !(prev.is_some_and(is_mongolian) && next.is_some_and(is_mongolian)),
             '\u{115F}' => !next
                 .is_some_and(|n| matches!(n, '\u{1161}'..='\u{11A7}' | '\u{D7B0}'..='\u{D7C6}')),
@@ -285,6 +326,16 @@ fn find_other_invisible(text: &str, chars: &[(usize, char)]) -> (usize, Vec<char
         k += 1;
     }
     (count, samples)
+}
+
+/// Zero-width characters and invisible math operators (used together in runs by
+/// zero-width steganography).
+fn is_zero_width_like(c: char) -> bool {
+    matches!(c, '\u{200B}'..='\u{200D}' | '\u{2060}'..='\u{2064}' | '\u{FEFF}')
+}
+
+fn is_khmer(c: char) -> bool {
+    ('\u{1780}'..='\u{17FF}').contains(&c)
 }
 
 fn is_variation_selector(c: char) -> bool {
@@ -314,7 +365,19 @@ fn is_suspicious_soft_hyphen(
         return true;
     }
     // Commands and URLs never contain hyphenation points (powe<SHY>rshell,
-    // exam<SHY>ple.com). Each line is judged once.
+    // exam<SHY>ple.com).
+    line_is_command_or_url(text, offset, line_start, line_cache)
+}
+
+/// Does the line around `offset` (invisible characters removed) contain a URL or
+/// look like a shell command? Each line is judged once; at most
+/// [`MAX_SOFT_HYPHEN_COMMAND_CHECKS`] lines get the command check.
+fn line_is_command_or_url(
+    text: &str,
+    offset: usize,
+    line_start: usize,
+    line_cache: &mut HashMap<usize, bool>,
+) -> bool {
     if let Some(&cached) = line_cache.get(&line_start) {
         return cached;
     }
@@ -322,10 +385,10 @@ fn is_suspicious_soft_hyphen(
         .get(offset..)
         .and_then(|rest| rest.find(['\r', '\n']))
         .map_or(text.len(), |e| offset + e);
-    let line = text
-        .get(line_start..line_end)
-        .unwrap_or_default()
-        .replace('\u{00AD}', "");
+    let line = text.get(line_start..line_end).unwrap_or_default().replace(
+        ['\u{00AD}', '\u{2061}', '\u{2062}', '\u{2063}', '\u{2064}'],
+        "",
+    );
     let line = line.trim();
     let result = line.contains("://")
         || line.to_ascii_lowercase().contains("www.")
@@ -342,32 +405,20 @@ fn is_bidi_control(c: char) -> bool {
 
 // ---------- homoglyphs ----------
 
-/// Cyrillic / Greek letters that look (almost) exactly like Latin letters.
-const CONFUSABLES: &[char] = &[
-    // Cyrillic lowercase
-    'а', 'е', 'о', 'р', 'с', 'у', 'х', 'і', 'ј', 'ѕ', 'ԁ', 'һ', 'ӏ', 'ԛ', 'ԝ', 'ү',
-    // Cyrillic uppercase
-    'А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'Х', 'І', 'Ј', 'Ѕ', 'Ү',
-    // Greek lowercase
-    'ο', 'ν', 'ρ', 'ι', // Greek uppercase
-    'Α', 'Β', 'Ε', 'Ζ', 'Η', 'Ι', 'Κ', 'Μ', 'Ν', 'Ο', 'Ρ', 'Τ', 'Υ', 'Χ',
-];
-
 fn is_latin_letter(c: char) -> bool {
     c.is_ascii_alphabetic() || ('\u{00C0}'..='\u{024F}').contains(&c) && is_letter(c)
 }
 
-fn is_cyrillic_or_greek(c: char) -> bool {
-    matches!(c, '\u{0370}'..='\u{03FF}' | '\u{0400}'..='\u{052F}' | '\u{1F00}'..='\u{1FFF}')
-}
-
+/// Cyrillic / Greek look-alikes come from `rules/hidden/homoglyphs.json`.
 /// Two patterns count as a homoglyph attack:
 /// 1. a word mixing Latin letters and confusables (`powershеll`);
 /// 2. no genuine (non-confusable) Cyrillic / Greek letter anywhere, yet a word made
 ///    only of confusables among English words (`echo һоѕt`).
 ///
 /// Real Russian or Greek text always contains non-confusable letters (и, л, λ…).
-fn find_homoglyph(text: &str) -> Option<char> {
+/// Returns the first offending look-alike and its script.
+fn find_homoglyph(text: &str) -> Option<(char, &'static str)> {
+    let rules = HiddenRules::embedded();
     // Legacy words are runs of UTF-16 letters, so supplementary-plane chars split words.
     static WORDS: OnceLock<Option<Regex>> = OnceLock::new();
     let words = WORDS
@@ -385,11 +436,11 @@ fn find_homoglyph(text: &str) -> Option<char> {
             if is_latin_letter(c) {
                 latin = true;
             }
-            if CONFUSABLES.contains(&c) {
-                confusable = confusable.or(Some(c));
+            if let Some(script) = rules.confusable_script(c) {
+                confusable = confusable.or(Some((c, script)));
             } else {
                 all_confusable = false;
-                if is_cyrillic_or_greek(c) {
+                if rules.in_homoglyph_script(c) {
                     has_genuine_foreign = true;
                 }
             }
@@ -412,97 +463,6 @@ fn find_homoglyph(text: &str) -> Option<char> {
 }
 
 // ---------- trailing newline ----------
-
-/// Programs that make a line look like a shell command.
-const SHELL_COMMANDS: &[&str] = &[
-    "sudo",
-    "su",
-    "git",
-    "gh",
-    "npm",
-    "npx",
-    "pnpm",
-    "yarn",
-    "pip",
-    "pip3",
-    "python",
-    "python3",
-    "py",
-    "node",
-    "deno",
-    "bun",
-    "dotnet",
-    "cargo",
-    "go",
-    "docker",
-    "kubectl",
-    "helm",
-    "terraform",
-    "az",
-    "aws",
-    "gcloud",
-    "curl",
-    "wget",
-    "ssh",
-    "scp",
-    "rm",
-    "del",
-    "rmdir",
-    "rd",
-    "mv",
-    "cp",
-    "copy",
-    "move",
-    "chmod",
-    "chown",
-    "cd",
-    "ls",
-    "dir",
-    "cat",
-    "echo",
-    "mkdir",
-    "touch",
-    "make",
-    "apt",
-    "apt-get",
-    "yum",
-    "dnf",
-    "pacman",
-    "brew",
-    "winget",
-    "choco",
-    "scoop",
-    "powershell",
-    "pwsh",
-    "cmd",
-    "bash",
-    "sh",
-    "zsh",
-    "start",
-    "iex",
-    "irm",
-    "iwr",
-    "invoke-webrequest",
-    "invoke-restmethod",
-    "invoke-expression",
-    "start-process",
-    "set-executionpolicy",
-    "reg",
-    "net",
-    "netsh",
-    "sc",
-    "taskkill",
-    "schtasks",
-    "wmic",
-    "shutdown",
-    "mshta",
-    "certutil",
-    "bitsadmin",
-    "rundll32",
-    "regsvr32",
-    "msiexec",
-    "conhost",
-];
 
 fn has_trailing_newline_after_command(text: &str) -> bool {
     if !text.ends_with(['\n', '\r']) {
@@ -533,7 +493,8 @@ fn looks_like_shell_command(line: &str) -> bool {
         return false;
     }
 
-    if command_detector_flags(line) {
+    // Legacy: `CommandDetector.Analyze(line).Level != None`.
+    if crate::command::analyze(line).level != Level::None {
         return true;
     }
 
@@ -547,9 +508,10 @@ fn looks_like_shell_command(line: &str) -> bool {
         }
         _ => first,
     };
-    let known = SHELL_COMMANDS
-        .iter()
-        .any(|c| c.eq_ignore_ascii_case(program))
+    // Programs from `rules/hidden/shell-commands.json` (lowercase).
+    let known = HiddenRules::embedded()
+        .shell_commands
+        .contains(&program.to_ascii_lowercase())
         || program.starts_with("./")
         || program.starts_with(".\\");
     if !known {
@@ -560,17 +522,6 @@ fn looks_like_shell_command(line: &str) -> bool {
         .next()
         .and_then(|t| t.chars().next())
         .is_none_or(|c| !is_cjk(c))
-}
-
-/// Stand-in for legacy `CommandDetector.Analyze(line).Level != None`.
-///
-/// The full command detector lives in [`crate::command`] (ported in parallel); until
-/// the two are wired together this uses the extension's execution-signal subset
-/// ([`crate::pastejack::command_signals`]), which covers the program invocations
-/// (PowerShell, mshta, cmd /c, download-pipe-to-shell, iex, LOLBins, sudo) the
-/// corpus relies on.
-fn command_detector_flags(line: &str) -> bool {
-    !crate::pastejack::command_signals(line).is_empty()
 }
 
 fn is_cjk(c: char) -> bool {
@@ -614,7 +565,7 @@ mod tests {
     }
 
     #[test]
-    fn trailing_newline_uses_command_signals() {
+    fn trailing_newline_uses_command_detector() {
         assert_eq!(
             ids("PS C:\\> Remove-Item foo; pwsh -c whoami\n"),
             ["hidden-trailing-newline"]
@@ -636,6 +587,83 @@ mod tests {
             m.args
                 .contains(&("cp2".into(), crate::Arg::Str("U+00AD".into())))
         );
+    }
+
+    #[test]
+    fn virama_joiners() {
+        // Malayalam chillu (NA + VIRAMA + ZWJ) before a space, punctuation, end.
+        assert_eq!(analyze("അവന്\u{200d} വന്നു"), Verdict::CLEAN);
+        assert_eq!(analyze("അവന്\u{200d}, വന്നു"), Verdict::CLEAN);
+        assert_eq!(analyze("അവന്\u{200d}"), Verdict::CLEAN);
+        assert_eq!(analyze("അവന്\u{200d}\n"), Verdict::CLEAN);
+        // Devanagari half form at a word end.
+        assert_eq!(analyze("क्\u{200d} "), Verdict::CLEAN);
+        // Not after a virama of the same block / Latin around / runs / ZWNJ.
+        assert_eq!(ids("pow\u{200d}ershell"), ["hidden-zero-width"]);
+        assert_eq!(ids("a\u{0d4d}\u{200d} b"), ["hidden-zero-width"]);
+        assert_eq!(ids("क\u{0d4d}\u{200d} "), ["hidden-zero-width"]);
+        assert_eq!(ids("\u{0d4d}\u{200d} "), ["hidden-zero-width"]);
+        assert_eq!(ids("അവന്\u{200d}powershell"), ["hidden-zero-width"]);
+        assert_eq!(ids("അവന്\u{200d}1"), ["hidden-zero-width"]);
+        assert_eq!(ids("അവന്\u{200d}\u{200d} "), ["hidden-zero-width"]);
+        assert_eq!(ids("അവന്\u{200c} "), ["hidden-zero-width"]);
+    }
+
+    #[test]
+    fn new_invisible_characters() {
+        // Combining grapheme joiner: only before a combining mark.
+        assert_eq!(analyze("u\u{034f}\u{0308}"), Verdict::CLEAN);
+        assert_eq!(ids("pay\u{034f}pal"), ["hidden-other-invisible"]);
+        // Khmer inherent vowels: only inside Khmer text.
+        assert_eq!(analyze("\u{1780}\u{17b4}\u{1781}"), Verdict::CLEAN);
+        assert_eq!(ids("adm\u{17b5}in"), ["hidden-other-invisible"]);
+        // Invisible math operators: single ones in equations are fine.
+        assert_eq!(analyze("sin\u{2061}x + 2\u{2062}y"), Verdict::CLEAN);
+        assert_eq!(
+            ids("Hi\u{2062}\u{2063}\u{2064} there"),
+            ["hidden-other-invisible"]
+        );
+        assert_eq!(
+            ids("hello\u{200c}\u{2061}world"),
+            ["hidden-zero-width", "hidden-other-invisible"]
+        );
+        assert_eq!(
+            ids("https://exam\u{2062}ple.invalid"),
+            ["hidden-other-invisible"]
+        );
+        assert_eq!(ids("git pu\u{2063}ll"), ["hidden-other-invisible"]);
+    }
+
+    /// 1 Mi-char pathological inputs; timing only asserted in optimized builds.
+    #[test]
+    fn pathological_inputs_are_fast() {
+        const N: usize = 1 << 20;
+        let line = format!("{}\n", "git pu\u{ad}ll ".repeat(400));
+        let inputs = [
+            "\u{200d}".repeat(N),
+            "\u{0d28}\u{0d4d}\u{200d}".repeat(N / 3),
+            "a\u{2061}".repeat(N / 2),
+            "\u{2062}".repeat(N),
+            format!("{}\n", "git pu\u{2063}ll ".repeat(N / 12)),
+            line.repeat(N / line.chars().count()),
+            "u\u{034f}".repeat(N / 2),
+            "\u{17b4}".repeat(N),
+            "еa ".repeat(N / 3),
+            format!("{}\n", "curl x | sh ".repeat(N / 12)),
+        ];
+        for input in &inputs {
+            let start = std::time::Instant::now();
+            let v = analyze(input);
+            let elapsed = start.elapsed();
+            assert!(v.reasons.len() <= 7);
+            if !cfg!(debug_assertions) {
+                assert!(
+                    elapsed.as_millis() <= 150,
+                    "{} chars took {elapsed:?}",
+                    input.chars().count()
+                );
+            }
+        }
     }
 
     #[test]
