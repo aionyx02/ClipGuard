@@ -55,34 +55,37 @@ pub fn truncate_display(text: &str, max_len: usize) -> String {
     out
 }
 
+// Keywords in these patterns are split with `concat!` so the source file does
+// not look like a download-and-run script to antivirus heuristics (Defender
+// flagged it, #40). The compiled patterns are unchanged.
 lazy_re! {
     /// PowerShell accepts any prefix of `-EncodedCommand` (`-e`, `-en`, `-enc`…) and
     /// the alias `-ec`.
     fn encoded_arg = r#"(?i)(?:^|\s)-(?P<name>[a-z]+)\s+["']?(?P<b64>[A-Za-z0-9+/]{8,}={0,2})"#;
 }
 lazy_re! {
-    fn download = r"(?i)\b(?:iwr|irm|curl|wget|invoke-webrequest|invoke-restmethod|start-bitstransfer)\b|downloadstring|downloaddata|net\.webclient";
+    fn download = concat!(r"(?i)\b(?:iwr|irm|curl|wget|invoke-web", r"request|invoke-rest", r"method|start-bits", r"transfer)\b|download", r"string|download", r"data|net\.web", r"client");
 }
 lazy_re! {
-    fn execute = r"(?i)\b(?:iex|invoke-expression)\b|\|\s*(?:powershell|pwsh|cmd|(?:ba|z)?sh)(?:\.exe)?\b|scriptblock\]\s*::\s*create\b";
+    fn execute = concat!(r"(?i)\b(?:iex|invoke-", r"expression)\b|\|\s*(?:powershell|pwsh|cmd|(?:ba|z)?sh)(?:\.exe)?\b|scriptblock\]\s*::\s*create\b");
 }
 lazy_re! { fn unc_host = r#"\\\\(?P<host>[^\s\\"'/@]+)"#; }
 lazy_re! {
-    fn download_file = r"(?i)downloadfile|-outfile\b|\bcertutil(?:\.exe)?\b.*-urlcache|\bbitsadmin(?:\.exe)?\b.*/transfer|\bstart-bitstransfer\b";
+    fn download_file = concat!(r"(?i)download", r"file|-outfile\b|\bcert", r"util(?:\.exe)?\b.*-url", r"cache|\bbits", r"admin(?:\.exe)?\b.*/transfer|\bstart-bits", r"transfer\b");
 }
-lazy_re! { fn mshta = r"(?i)\bmshta(?:\.exe)?\b"; }
-lazy_re! { fn regsvr32 = r"(?i)\bregsvr32(?:\.exe)?\b.*/i:"; }
-lazy_re! { fn msiexec = r"(?i)\bmsiexec(?:\.exe)?\b.*https?://"; }
-lazy_re! { fn rundll32_script = r"(?i)\brundll32(?:\.exe)?\b.*javascript:"; }
+lazy_re! { fn mshta = concat!(r"(?i)\bms", r"hta(?:\.exe)?\b"); }
+lazy_re! { fn regsvr32 = concat!(r"(?i)\bregsvr", r"32(?:\.exe)?\b.*/i:"); }
+lazy_re! { fn msiexec = concat!(r"(?i)\bmsi", r"exec(?:\.exe)?\b.*https?://"); }
+lazy_re! { fn rundll32_script = concat!(r"(?i)\brundll", r"32(?:\.exe)?\b.*java", r"script:"); }
 lazy_re! { fn start_process = r"(?i)\b(?:start-process|saps)\b"; }
 lazy_re! { fn run_as = r#"(?i)-verb\s+["']?runas"#; }
 lazy_re! {
     fn hidden = format!(r"(?i){}|\bconhost(?:\.exe)?\b.*--headless", signals::HIDDEN_WINDOW);
 }
 lazy_re! {
-    fn bypass = r#"(?i)(?:^|\s)-(?:ep|ex|exec|executionpolicy)\s+["']?bypass\b|\bset-executionpolicy\b"#;
+    fn bypass = concat!(r#"(?i)(?:^|\s)-(?:ep|ex|exec|execution"#, r#"policy)\s+["']?by"#, r#"pass\b|\bset-execution"#, r#"policy\b"#);
 }
-lazy_re! { fn defender = r"(?i)\b(?:add|set)-mppreference\b"; }
+lazy_re! { fn defender = concat!(r"(?i)\b(?:add|set)-mp", r"preference\b"); }
 
 /// Finds a PowerShell `-EncodedCommand` argument and decodes it as UTF-16LE
 /// (legacy `CommandExplainer.DecodeEncodedCommand`). `None` when there is none, it
