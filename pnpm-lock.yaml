@@ -232,6 +232,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.6.8
         version: 2.6.8
+      '@paste-warden/userscript':
+        specifier: workspace:*
+        version: link:../userscript
       '@playwright/test':
         specifier: 1.65.1
         version: 1.65.1
