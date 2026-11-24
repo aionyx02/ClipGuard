@@ -11,6 +11,9 @@ fuzz_target!(|data: &[u8]| {
     assert_eq!(normalized, command::normalize(&text));
     let _ = command::explain(&text);
     let _ = command::decode_encoded(&text);
+    let d = command::deobfuscate(&text);
+    assert!(d.layers.len() <= 64, "too many deobfuscation steps");
+    let _ = command::analyze_in(&text, &paste_warden_core::Context::default());
     for host in command::download_hosts(&text) {
         let _ = command::is_official_host(&host);
     }
