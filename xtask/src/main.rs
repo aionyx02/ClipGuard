@@ -208,6 +208,21 @@ fn corpus_lint() -> Result<bool> {
         leak_scan_case(l, &here, &mut r)?;
     }
 
+    for area in AREAS {
+        let mut seen_ops: BTreeMap<String, usize> = BTreeMap::new();
+        for line in ops_doc(area).lines().filter(|l| l.starts_with('#')) {
+            if let Some(op) = line.split('`').nth(1) {
+                *seen_ops.entry(op.to_string()).or_insert(0) += 1;
+            }
+        }
+        for (op, n) in seen_ops.into_iter().filter(|(_, n)| *n > 1) {
+            r.err(
+                format!("corpus/ops/{area}*.md"),
+                format!("op `{op}` is defined {n} times"),
+            );
+        }
+    }
+
     for rules in rule_files()? {
         let text = fs::read_to_string(&rules)?;
         let json: Value =

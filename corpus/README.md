@@ -68,7 +68,7 @@ state = seed (u32)
 
 - **API key 不能完整寫成字面文字**：一律用 `parts` 或 `rand` 組合，否則會被 GitHub push protection 擋下。例外：廠商公開的範例 key（例如 AWS 文件的 `AKIAIOSFODNN7EXAMPLE`）也要拆開。
 - **惡意指令不能完整寫成字面文字**：執行程式名稱（`powershell`、`mshta`…）要和危險參數或下載網址分在不同片段。
-- 網址一律用 `example.invalid`（或它的子網域）。
+- 網址只能用保留網域（`.invalid`、`.example`、`example.com` 等 RFC 2606 / 6761 網域），或 `docs/spec/detection-rules.md` §3.2 官方安裝網站清單裡的真實網域（測試官方清單時需要）。新寫的案例優先用 `example.invalid`。
 - 個資只用自己算出能通過檢查碼的假號碼，或發卡機構公開的測試卡號。
 
 ## 4. 位置

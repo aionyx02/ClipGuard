@@ -14,3 +14,5 @@
 | 位置 | `span_utf16: [index, length]`（UTF-16 code unit，指原文） |
 | 舊版的中文訊息 | 只用來表達「訊息內容要提到什麼」：`*_contain: ["零寬字元"]` 是子字串比對（zh-TW）。Phase 1 會把它對應到訊息 ID 的 zh-TW 翻譯 |
 | 訊息語言 | 舊測試在 zh-TW 文化下執行（`TestCulture`）；除非 op 另有 `locale` 參數，訊息一律以 zh-TW 比對 |
+| 舊版傳 `null` | 省略 `input`（或該 Text 欄位）。Rust 沒有 null 字串，runner 一律當成 `""` |
+| 孤立的 UTF-16 代理字元 | JSON / Rust 字串存不下。從 UTF-16 轉進來（WASM、Windows 剪貼簿）時一律換成 U+FFFD，語料用 `�` 表示 |

@@ -9,7 +9,8 @@
   - `packs`：個資包陣列；沒寫 = `["universal", "tw"]`
 - `expect`：
   - `matches`：**完整**結果（數量、順序都要一樣）。每一筆只寫有檢查的欄位：
-    `kind`、`label`、`masked`（Text）、`span_utf16`
+    `kind`、`label`、`masked`（Text）、`span_utf16`（`[起點, 長度]`）、`index_utf16`（只檢查起點時用）、
+    `masked_contain`（字串陣列，`masked` 要包含這些子字串，例如 `["*"]`）
   - `matches_include`：結果裡**至少**要有這幾筆（同樣每筆只寫有檢查的欄位）
   - `matches_exclude`：結果裡**不能**有符合這些條件的項目
   - `count`：結果數量
