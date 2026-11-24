@@ -6,6 +6,8 @@
 //! - `programs.json`: programs whose full paths the normalizer shortens, and the
 //!   fixed system environment variables it expands
 //! - `official-hosts.json`: official installer hosts (§3.2)
+//! - `official-paths.json`: official installer URL path prefixes on shared hosts
+//!   such as raw.githubusercontent.com (§3.2, phase-1.md §1.8)
 //! - `bait-keywords.json`: multilingual bait-comment keywords (§3.1, #27)
 //! - `extensions.json`: executable / script file extensions
 //!
@@ -17,6 +19,7 @@ use serde::Deserialize;
 
 const PROGRAMS_JSON: &str = include_str!("../../../rules/command/programs.json");
 const OFFICIAL_HOSTS_JSON: &str = include_str!("../../../rules/command/official-hosts.json");
+const OFFICIAL_PATHS_JSON: &str = include_str!("../../../rules/command/official-paths.json");
 const BAIT_KEYWORDS_JSON: &str = include_str!("../../../rules/command/bait-keywords.json");
 const EXTENSIONS_JSON: &str = include_str!("../../../rules/command/extensions.json");
 
@@ -33,6 +36,32 @@ pub struct OfficialHost {
     pub host: String,
     #[serde(default)]
     pub note: String,
+}
+
+/// An official installer URL prefix on a shared host: `host/segment/…/` (always
+/// ends with `/`, at least two path segments).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct OfficialPath {
+    pub prefix: String,
+    #[serde(default)]
+    pub note: String,
+}
+
+impl OfficialPath {
+    /// The host part (before the first `/`).
+    pub fn host(&self) -> &str {
+        self.prefix.split('/').next().unwrap_or_default()
+    }
+
+    /// The path segments after the host (without the trailing empty one).
+    pub fn segments(&self) -> impl Iterator<Item = &str> {
+        self.prefix.split('/').skip(1).filter(|s| !s.is_empty())
+    }
+}
+
+#[derive(Deserialize)]
+struct PathsFile {
+    prefixes: Vec<OfficialPath>,
 }
 
 /// Bait-comment keywords of one language. Each pattern is a regex fragment.
@@ -77,6 +106,7 @@ pub struct CommandRules {
     pub known_programs: Vec<String>,
     pub known_env: Vec<EnvVar>,
     pub official_hosts: Vec<OfficialHost>,
+    pub official_paths: Vec<OfficialPath>,
     pub bait: Vec<BaitLanguage>,
     pub extensions: Extensions,
 }
@@ -88,6 +118,8 @@ impl CommandRules {
             .map_err(|e| format!("rules/command/programs.json: {e}"))?;
         let hosts: HostsFile = serde_json::from_str(OFFICIAL_HOSTS_JSON)
             .map_err(|e| format!("rules/command/official-hosts.json: {e}"))?;
+        let paths: PathsFile = serde_json::from_str(OFFICIAL_PATHS_JSON)
+            .map_err(|e| format!("rules/command/official-paths.json: {e}"))?;
         let bait: BaitFile = serde_json::from_str(BAIT_KEYWORDS_JSON)
             .map_err(|e| format!("rules/command/bait-keywords.json: {e}"))?;
         let extensions: Extensions = serde_json::from_str(EXTENSIONS_JSON)
@@ -96,6 +128,7 @@ impl CommandRules {
             known_programs: programs.known_programs,
             known_env: programs.known_env,
             official_hosts: hosts.hosts,
+            official_paths: paths.prefixes,
             bait: bait.languages,
             extensions,
         };
@@ -140,16 +173,25 @@ impl CommandRules {
             check_list(name, list, word, &mut problems);
         }
         let hosts: Vec<String> = self.official_hosts.iter().map(|h| h.host.clone()).collect();
+        check_list("official_hosts", &hosts, is_domain, &mut problems);
+        let prefixes: Vec<String> = self
+            .official_paths
+            .iter()
+            .map(|p| p.prefix.clone())
+            .collect();
         check_list(
-            "official_hosts",
-            &hosts,
-            |h| {
-                h.split('.').count() >= 2
-                    && h.split('.').all(|label| {
-                        !label.is_empty()
-                            && label
-                                .chars()
-                                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+            "official_paths",
+            &prefixes,
+            |p| {
+                let segments: Vec<&str> = p.split('/').collect();
+                p.ends_with('/')
+                    && segments.len() >= 4
+                    && segments.first().is_some_and(|h| is_domain(h))
+                    && segments[1..segments.len() - 1].iter().all(|s| {
+                        !s.is_empty()
+                            && !s.chars().all(|c| c == '.')
+                            && s.chars()
+                                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
                     })
             },
             &mut problems,
@@ -171,6 +213,17 @@ impl CommandRules {
         }
         problems
     }
+}
+
+/// Lowercase ASCII domain name with at least two labels.
+fn is_domain(h: &str) -> bool {
+    h.split('.').count() >= 2
+        && h.split('.').all(|label| {
+            !label.is_empty()
+                && label
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        })
 }
 
 fn check_list(name: &str, list: &[String], ok: impl Fn(&str) -> bool, problems: &mut Vec<String>) {
@@ -216,7 +269,32 @@ mod tests {
         });
         rules.known_programs.push("mshta".into());
         rules.bait[0].patterns.push("(".into());
+        for bad in [
+            "raw.githubusercontent.com/Homebrew/",
+            "raw.githubusercontent.com/Homebrew/install",
+            "raw.githubusercontent.com/../install/",
+            "raw.githubusercontent.com/a%2f/b/",
+            "Raw.example/a/b/",
+        ] {
+            rules.official_paths.push(OfficialPath {
+                prefix: bad.into(),
+                note: String::new(),
+            });
+        }
         let problems = rules.validate();
-        assert_eq!(problems.len(), 3, "{problems:?}");
+        assert_eq!(problems.len(), 8, "{problems:?}");
+    }
+
+    #[test]
+    fn official_path_parts() {
+        let rules = CommandRules::load().unwrap_or_default();
+        let brew = rules
+            .official_paths
+            .iter()
+            .find(|p| p.prefix.contains("Homebrew"))
+            .cloned()
+            .unwrap_or_else(|| panic!("no Homebrew prefix"));
+        assert_eq!(brew.host(), "raw.githubusercontent.com");
+        assert_eq!(brew.segments().collect::<Vec<_>>(), ["Homebrew", "install"]);
     }
 }

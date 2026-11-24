@@ -26,6 +26,10 @@ cmd-reason-search-ms = 用 search-ms: 開啟搜尋視窗（可指向遠端資料
 cmd-reason-ms-msdt = 用 ms-msdt: 呼叫疑難排解工具（Follina 手法）
 cmd-reason-net-use = 掛載網路磁碟後執行裡面的檔案
 cmd-reason-download-exec = 下載後直接執行
+cmd-reason-osascript = 用 osascript 執行 AppleScript
+cmd-reason-quarantine = 移除 macOS 的隔離標記（跳過 Gatekeeper 檢查）
+cmd-reason-decode-shell = 把藏起來的編碼內容解開後交給 shell 執行
+cmd-reason-dev-tcp = 從 shell 開網路連線（/dev/tcp、nc）
 
 ## 判定理由：詐騙訊號
 
@@ -38,6 +42,37 @@ cmd-reason-check-mark = 含勾選符號（假驗證常見）
 cmd-reason-padding = 用大量空白把真正的指令擠出輸入框
 cmd-reason-mshta-remote = mshta 直接執行遠端網址
 cmd-reason-unofficial-source = 下載並執行的來源不是已知的官方安裝網站
+cmd-reason-reverse-shell = 把 shell 的控制權交給遠端電腦（反向 shell）
+cmd-reason-background = 在背景脫離執行，而且不顯示任何輸出
+cmd-reason-msiexec-quiet = 用 msiexec 靜默安裝遠端套件
+cmd-reason-obfuscated = 用混淆手法（拼字串、編碼）藏住要執行的東西
+
+## 解混淆步驟（洋蔥 trace）
+# $count = 這一步改了幾處。
+
+cmd-deob-invisible = 拿掉看不見的字元
+cmd-deob-dash = 把長得像 - 的字換成 -
+cmd-deob-caret = 拿掉 cmd 的 ^ 跳脫
+cmd-deob-variable = 代入 cmd 的 %變數%
+cmd-deob-quote = 合併字中間的引號
+cmd-deob-program-path = 把程式的完整路徑縮成檔名
+cmd-deob-markdown = 拿掉 markdown 的程式碼標記
+cmd-deob-full-width = 把全形英文字母換成半形
+cmd-deob-backtick = 拿掉 PowerShell 的反引號跳脫
+cmd-deob-url-decode = 解開網址編碼（%xx）
+cmd-deob-hex-decode = 解開十六進位編碼
+cmd-deob-char-code = 把 [char] 字碼換成字母
+cmd-deob-concat = 接起用 + 拼出來的字串
+cmd-deob-join = 算出 -join 的結果
+cmd-deob-format = 算出 -f 格式化的結果
+cmd-deob-replace = 算出 -replace／.Replace() 的結果
+cmd-deob-string-method = 算出 [string]::Concat／Join／Format 的結果
+cmd-deob-ps-variable = 代入 PowerShell 的字串變數
+cmd-deob-unwrap = 拆開被當成指令執行的字串
+cmd-deob-base64 = 解開 Base64
+cmd-deob-encoded-command = 解開 PowerShell 的 -EncodedCommand
+cmd-deob-cmd-substring = 展開 cmd 的子字串（%x:~a,b%）
+cmd-deob-nested-variable = 代入藏在其他變數裡的 cmd 變數
 
 ## 白話說明
 # $count = 來源主機數（0 = 不知道來源），$h1..$h3 = 主機名稱（最多 3 個）。
