@@ -221,7 +221,7 @@ pub fn run(cli: Cli) -> u8 {
                 return EXIT_ERROR;
             }
             if let Some(agent) = print_config {
-                let exe = std::env::current_exe().unwrap_or_else(|_| "paste-warden".into());
+                let exe = install::exe_path().unwrap_or_else(|_| "paste-warden".into());
                 out(&mcp::print_config(agent, &exe));
                 return 0;
             }

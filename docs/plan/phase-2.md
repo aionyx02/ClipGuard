@@ -52,6 +52,7 @@
 
 - 不讀剪貼簿（CLI 沒有這個功能，避免成為外洩管道）。
 - 錯誤訊息不含輸入內容（P3）。
+- 實作備註：用法錯誤（clap）也是 exit 3，因為 2 已代表 quarantine。`bench` 每行輸出 `{"id","action","level","risk_score","secrets","hidden"}`，最後一行是 `{"summary":{…}}`；格式錯誤的行寫到 stderr（只有行號）並計入 `errors`。另有 `mcp --print-config <agent>` 印出 MCP 設定片段（MCP 不自動安裝）。
 
 ## 2.4 Agent hook（強制防護）
 
@@ -62,6 +63,12 @@
 - **opencode**：產生 V2 plugin（`ctx.tool.hook("execute.before")`），由 plugin 呼叫 `paste-warden hook opencode`，判定擋下時 throw Error。**不能用 V1 寫法**（會靜默失效）。
 - **Fail-closed**：hook 內部用 `std::panic::catch_unwind` 加上自己的 timeout（預設 2 秒）；解析失敗、panic、逾時一律 deny（Claude Code 對非 0/2 的 exit code 是 fail-open）。整合測試要覆蓋這三種情況。
 - `hook install` 預設 `--scope user`。安裝後印出如何驗證（例如請 agent 執行無害的測試指令）與如何移除。
+- 實作備註（偏離與補充，理由見 `docs/integrations/agent-hooks.md`）：
+  - matcher 為 `^(Bash|WebFetch|WebSearch|Write|Edit|MultiEdit|NotebookEdit|mcp__(?!paste-warden__).*)$`，hook 內部也再排除自家工具。`Write`/`Edit` 的內容含惡意指令也 deny（S7：先寫 script 再執行）；寫入機密不擋。
+  - Bash 含機密時：指令會連網（`curl`、`wget`、`nc`…）→ deny，否則 → ask。
+  - 解析失敗、panic、逾時：Claude Code 用 exit 2 加 stderr 理由（不知道事件種類時也能擋）；opencode 輸出 `{"block":true}` 並 exit 2。
+  - opencode plugin 沒有 ask：`warn` 在 opencode 放行，只有 deny 會擋。
+  - `UserPromptSubmit` 的關閉方式：`hook install --no-prompt-guard`（不安裝該 entry）。
 
 ## 2.5 MCP server（分析與解釋，不是防護）
 
@@ -72,6 +79,7 @@
   - `scan_secrets { text, packs? }` → `secrets[]`（只有種類和遮罩）
   - `mask { text }` → 遮罩後的文字
 - **沒有讀剪貼簿的工具**（T9）。輸入長度上限 1 Mi 字，超過回錯誤。工具描述寫死在程式裡。
+- 實作備註：MCP 的 `structuredContent` 必須是物件，所以 `scan_secrets` 回傳 `{ secrets: [...] }`、`mask` 回傳 `{ masked }`；`deobfuscate_trace` 另有 `capped`；`scan_secrets` 也接受 `locale?`（label 的語言）。超過上限是工具錯誤（`isError: true`）。
 - `redteam` profile（`validate_syntax`、`run_benchmark`）在 Phase 5 加入。
 
 ## 2.6 WASM：`crates/wasm` + `@paste-warden/core`

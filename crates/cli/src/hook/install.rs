@@ -69,6 +69,18 @@ impl Scope {
     }
 }
 
+/// Absolute path of the running executable for config files. Resolved on
+/// Unix (`..`, symlinked build dirs); left as is on Windows, where
+/// `canonicalize` would produce a `\\?\` path.
+pub fn exe_path() -> std::io::Result<PathBuf> {
+    let exe = std::env::current_exe()?;
+    if cfg!(windows) {
+        Ok(exe)
+    } else {
+        Ok(exe.canonicalize().unwrap_or(exe))
+    }
+}
+
 /// Where things live, taken from the process environment by the caller so
 /// tests can point everything at a temp dir.
 #[derive(Debug, Clone)]
@@ -95,8 +107,7 @@ impl InstallEnv {
             Some(p) => p,
             None => std::env::current_dir()?,
         };
-        let exe = std::env::current_exe()?;
-        let exe = exe.canonicalize().unwrap_or(exe);
+        let exe = exe_path()?;
         Ok(InstallEnv {
             home,
             claude_config_dir: var("CLAUDE_CONFIG_DIR"),

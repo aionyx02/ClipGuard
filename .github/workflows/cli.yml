@@ -1,0 +1,53 @@
+name: cli
+
+# The hook must fail closed in the binary users actually run: a release build
+# (LTO; a `panic = "abort"` profile would turn a panic into a crash, which
+# Claude Code treats as "allow"). ci.yml runs the debug tests; this job runs the
+# hook / MCP integration tests and a smoke check against the release build.
+
+on:
+  push:
+    branches: [dev, main]
+    paths: ['crates/cli/**', 'crates/core/**', 'crates/rules/**', 'crates/i18n/**', 'locales/**', 'rules/**', 'Cargo.lock', '.github/workflows/cli.yml']
+  pull_request:
+    branches: [dev, main]
+    paths: ['crates/cli/**', 'crates/core/**', 'crates/rules/**', 'crates/i18n/**', 'locales/**', 'rules/**', 'Cargo.lock', '.github/workflows/cli.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release-hook:
+    name: release hook (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: hook, install and MCP integration tests (release)
+        run: cargo test --release --locked -p paste-warden-cli --test hook --test install --test mcp
+      - name: fail-closed smoke test on the release binary
+        shell: bash
+        run: |
+          cargo build --release --locked -p paste-warden-cli
+          bin=target/release/paste-warden
+          set +e
+          echo 'not json' | "$bin" hook claude-code; code=$?
+          [ "$code" = 2 ] || { echo "::error::malformed input must exit 2, got $code"; exit 1; }
+          echo '{}' | PASTE_WARDEN_HOOK_FAULT=panic "$bin" hook claude-code; code=$?
+          [ "$code" = 2 ] || { echo "::error::panic must exit 2, got $code"; exit 1; }
+          echo '{}' | PASTE_WARDEN_HOOK_FAULT=hang "$bin" hook claude-code --timeout-ms 300; code=$?
+          [ "$code" = 2 ] || { echo "::error::timeout must exit 2, got $code"; exit 1; }
+          out=$(echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"echo hello"}}' | "$bin" hook claude-code); code=$?
+          [ "$code" = 0 ] && [ -z "$out" ] || { echo "::error::echo hello must pass silently"; exit 1; }
