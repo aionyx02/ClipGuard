@@ -81,7 +81,15 @@ export async function startSite(): Promise<TestSite> {
     url: (variant, page = 'index.html') => `${origin}/${variant}/${page}`,
     close: async () => {
       await Promise.all(
-        servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))),
+        servers.map(
+          (s) =>
+            new Promise<void>((resolve) => {
+              // Browsers keep connections alive; without this, close() waits for
+              // them and the worker fixture times out during teardown on CI.
+              s.closeAllConnections();
+              s.close(() => resolve());
+            }),
+        ),
       );
     },
   };
