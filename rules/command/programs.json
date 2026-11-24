@@ -1,0 +1,20 @@
+{
+  "_comment": "Programs whose full paths the command normalizer shortens to the bare name (docs/spec/detection-rules.md §3.0, legacy CommandNormalizer.KnownPrograms). Add a program here when a new rule matches it; names that share a prefix list the longer one first (net1 before net).",
+  "known_programs": [
+    "powershell", "pwsh", "mshta", "cmd", "certutil", "bitsadmin", "rundll32", "regsvr32",
+    "msiexec", "conhost", "curl", "wget",
+    "wscript", "cscript", "hh", "cmstp", "pcalua", "odbcconf", "installutil", "ftp",
+    "explorer", "net1", "net"
+  ],
+  "_comment_env": "Fixed system environment variables expanded by the normalizer (%x%, !x! and $env:x). Never read from the real environment. Names match case-insensitively.",
+  "known_env": [
+    { "name": "SystemRoot", "value": "C:\\Windows" },
+    { "name": "windir", "value": "C:\\Windows" },
+    { "name": "SystemDrive", "value": "C:" },
+    { "name": "ComSpec", "value": "C:\\Windows\\System32\\cmd.exe" },
+    { "name": "ProgramFiles", "value": "C:\\Program Files" },
+    { "name": "ProgramW6432", "value": "C:\\Program Files" },
+    { "name": "ProgramFiles(x86)", "value": "C:\\Program Files (x86)" },
+    { "name": "CommonProgramFiles", "value": "C:\\Program Files\\Common Files" }
+  ]
+}
