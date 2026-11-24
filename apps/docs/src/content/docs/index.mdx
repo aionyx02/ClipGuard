@@ -1,0 +1,34 @@
+---
+title: PasteWarden 剪貼簿守門員
+description: 把剪貼簿當成信任邊界：擋下 ClickFix 假驗證指令、Pastejacking，也防止機密被貼出去。
+template: splash
+hero:
+  title: PasteWarden
+  tagline: 把剪貼簿當成信任邊界。網頁塞進來的惡意指令先攔下，要貼出去的機密先遮起來。全部在你的電腦上判斷，不連網。
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: 安裝擴充功能
+      link: user/install/chrome-edge/
+      icon: right-arrow
+    - text: 認識 PasteWarden
+      link: user/intro/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="擋下假驗證指令" icon="warning">
+    「按 Win+R、貼上、Enter 就能通過驗證」是 ClickFix 攻擊。PasteWarden 在網頁寫入剪貼簿的當下就判定，危險的指令不會留在剪貼簿裡。
+  </Card>
+  <Card title="洋蔥視圖" icon="magnifier">
+    攻擊指令常常包了好幾層混淆。PasteWarden 一層一層剝開，讓你看到它真正會做什麼。
+  </Card>
+  <Card title="機密不外洩" icon="seti:lock">
+    要把身分證字號、信用卡號、API key 貼到網頁時先問你，預設貼遮罩版。
+  </Card>
+  <Card title="只在你的電腦上執行" icon="laptop">
+    偵測引擎是本機的 WebAssembly，不上傳、不記錄原文、預設零遙測。AI 功能預設關閉。
+  </Card>
+</CardGrid>

@@ -1,0 +1,9 @@
+@import "@paste-warden/ui/styles.css";
+@source "../";
+
+body {
+  margin: 0;
+  background: var(--pw-canvas);
+  color: var(--pw-fg);
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@paste-warden/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PasteWarden documentation site (Starlight), served at /docs/.",
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-docs.mjs",
+    "dev": "node scripts/sync-docs.mjs && astro dev",
+    "build": "node scripts/sync-docs.mjs && astro build && node scripts/check-site.mjs",
+    "preview": "astro preview",
+    "lint": "biome check . && node scripts/check-content.mjs",
+    "test": "node --test \"scripts/*.test.mjs\"",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.4.13",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "playwright": "^1.65.1"
+  }
+}

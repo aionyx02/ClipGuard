@@ -1,0 +1,59 @@
+/*
+ * PasteWarden palette for Starlight (matches packages/ui/src/styles.css):
+ * ink-navy surfaces from the banner, teal accent #5EEAD4. Starlight already follows the system
+ * colour scheme and offers an auto / light / dark picker.
+ */
+
+/* Dark (Starlight's default block) */
+:root {
+  --sl-color-accent-low: #0c2a2a;
+  --sl-color-accent: #2dd4bf;
+  --sl-color-accent-high: #99f6e4;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #e8edf3;
+  --sl-color-gray-2: #c3cdd9;
+  --sl-color-gray-3: #8b9bb0;
+  --sl-color-gray-4: #566780;
+  --sl-color-gray-5: #26364c;
+  --sl-color-gray-6: #142236;
+  --sl-color-black: #0b1220;
+
+  --sl-font: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #c8fff4;
+  --sl-color-accent: #0f766e;
+  --sl-color-accent-high: #134e4a;
+  --sl-color-white: #0b1220;
+  --sl-color-gray-1: #17263a;
+  --sl-color-gray-2: #26364c;
+  --sl-color-gray-3: #4a5b72;
+  --sl-color-gray-4: #7a8aa0;
+  --sl-color-gray-5: #c3cdd9;
+  --sl-color-gray-6: #e8edf3;
+  --sl-color-gray-7: #f3f6f9;
+  --sl-color-black: #ffffff;
+}
+
+/* Wordmark: "Paste" + teal "Warden", like the banner. */
+.site-title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Hero on the landing page */
+.hero .tagline {
+  max-width: 38rem;
+}
+
+[data-has-hero] .page {
+  background:
+    radial-gradient(
+      60rem 30rem at 85% -10%,
+      color-mix(in srgb, var(--sl-color-accent) 14%, transparent),
+      transparent 70%
+    ),
+    var(--sl-color-black);
+}

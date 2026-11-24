@@ -1,0 +1,27 @@
+{
+  "name": "@paste-warden/overlay",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PasteWarden's in-page warning layer: closed Shadow DOM, no framework, follows the OS colour scheme.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build && node scripts/size.mjs",
+    "lint": "biome check . && tsc --noEmit",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-check.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@paste-warden/ui": "workspace:*",
+    "@types/node": "^24",
+    "happy-dom": "^21.0.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
+    "playwright": "^1.65.1"
+  }
+}

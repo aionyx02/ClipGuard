@@ -49,8 +49,8 @@
 | T13 | 規則包或更新被替換 | Tampering | ed25519 簽章的規則包；Tauri updater 簽章；Artifact Attestations | 3、6 |
 | T14 | PasteWarden 自己把剪貼簿內容寫進 log 或檔案 | Info disclosure | P3：不寫檔、不寫 log；`zeroize`；review 檢查清單 | 全部 |
 | T15 | 登記的機密被反推 | Info disclosure | 只存 HMAC-SHA256，金鑰放在 OS keyring；禁止單純 SHA-256 | 4 |
-| T17 | 網頁偽造或攔截 MAIN world 與 content script 之間的 `CustomEvent` 通道（看到判定、送假請求） | Spoofing / Info disclosure | 通道只傳「要判定的文字」與「判定結果」，不傳機密原文或設定；判定以 isolated world 為準；事件名稱每頁隨機 | 3 |
-| T18 | 網頁從 iframe 取得未被 hook 的原生 `clipboard` 函式，繞過寫入攔截 | Evasion | `all_frames` + `match_origin_as_fallback` 注入所有 frame；桌面版和執行入口警告仍是第二道防線 | 3 |
+| T17 | 網頁偽造或攔截 MAIN world 與 content script 之間的 `CustomEvent` 通道（看到判定、送假請求） | Spoofing / Info disclosure | 通道只傳「要判定的文字」與「判定結果」，不傳機密原文或設定；判定以 isolated world 為準；事件名稱每頁隨機；已配對但沒有回應時 fail closed（擋下寫入） | 3 ✅ |
+| T18 | 網頁從 iframe 取得未被 hook 的原生 `clipboard` 函式，繞過寫入攔截 | Evasion | `all_frames` + `match_origin_as_fallback` 注入所有 frame；同源子 frame 在取用 `contentWindow` 或插入時補 hook。**已知缺口**：直接用 `frames[i]`、`innerHTML` 插入後立刻取用；Firefox 未驗證 `match_origin_as_fallback`。桌面版和執行入口警告是第二道防線 | 3 ⚠️ |
 | T16 | 擴充功能和桌面程式的互通管道被冒用 | Spoofing | Native Messaging 只接受已知的 extension ID；訊息不含機密原文 | 4 |
 
 ## 4. 不在防護範圍內
