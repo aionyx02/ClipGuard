@@ -82,8 +82,9 @@ JS 的 Biome 檢查等 Phase 3 有前端程式碼時再加入 CI。
 
 ## 0.6 完成條件
 
-- [ ] `corpus/legacy-index.json` 涵蓋舊版所有的 C# 和 JS 測試案例；`xtask corpus coverage` 的遺漏數為 0。
-- [ ] 良性語料各類達到規定數量。
-- [ ] C# 和舊插件已刪除，CI 全綠。
-- [ ] S1–S9 都有報告；有 ❌ 的項目已經更新到 roadmap 的平台能力對照表。
-- [ ] 完成 `docs/THREAT_MODEL.md` 初版：要防的威脅、不防的範圍、信任邊界。
+- [x] `corpus/legacy-index.json` 涵蓋舊版所有的 C# 和 JS 測試案例；`xtask corpus coverage` 的遺漏數為 0。
+- [x] 良性語料各類達到規定數量。
+- [x] C# 和舊插件已刪除，CI 全綠。
+- [x] S1、S2、S4–S8 與 S9（macOS）都有報告。
+- [ ] **S3（Windows）與 S9 的 Windows 部分改為後續 PR 補做**（需要 Windows 實機，見 `docs/spikes/HOWTO.md`），不阻擋 Phase 1；Phase 4 開始前必須完成。
+- [x] 完成 `docs/THREAT_MODEL.md` 初版：要防的威脅、不防的範圍、信任邊界。
