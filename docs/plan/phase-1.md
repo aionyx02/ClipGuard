@@ -80,7 +80,7 @@ pub struct Report {
 - `cargo xtask corpus run`：用 Rust 跑每一筆語料，和 `expect` 比對，輸出失敗報表（`cargo test` 也會跑同一套）。
 - 每一筆失敗只有兩種處理：
   - 修正 Rust
-  - 確定舊的預期本身不對，或是刻意改變行為時，寫進 `corpus/divergences.toml`：
+  - 確定舊的預期本身不對，或是刻意改變行為時，寫進 `corpus/divergences/<area>.toml`：
     ```toml
     [[divergence]]
     id = "secret.card.017"
@@ -115,7 +115,7 @@ pub struct Report {
 | 種類 | 內容 |
 |---|---|
 | 單元測試 | 每個模組都要有，包含命中和不命中 |
-| 語料測試 | `cargo test` 會跑全部語料，並套用 `divergences.toml` |
+| 語料測試 | `cargo test` 會跑全部語料，並套用 `corpus/divergences/<area>.toml` |
 | proptest | 遮罩結果不包含機密原文；位置對照表的範圍落在 char 邊界上；正規化跑兩次結果不變；解混淆的層數和長度不超過上限；`analyze` 的結果是固定的（同樣輸入，同樣輸出） |
 | fuzz（`cargo-fuzz`） | 涵蓋 `analyze`、命令正規化、機密正規化、解混淆、`masked`、規則載入。CI 每個 target 跑 60 秒，用 nightly，放在獨立的 job |
 | 效能（criterion） | 一般 1 KB 輸入 ≤ 1 ms；1 Mi 字的病態輸入（所有關鍵字都出現）≤ 150 ms；每條規則的病態輸入 ≤ 50 ms。CI 只有在超過預算 2 倍時才失敗 |
@@ -123,7 +123,7 @@ pub struct Report {
 
 ## 1.7 完成條件
 
-- [ ] `xtask corpus run`：失敗數為 0（不算 `divergences.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
+- [ ] `xtask corpus run`：失敗數為 0（不算 `corpus/divergences/<area>.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
 - [ ] 1b 的每一項都完成，或在本文件中註明延後的理由。
 - [ ] 良性語料的誤報數不超過 1a 完成時的數字。
 - [ ] proptest、fuzz smoke、效能預算、WASM 編譯都在 CI 通過。
@@ -132,7 +132,7 @@ pub struct Report {
 
 ## 1.8 已定案
 
-- **長度用 char 計算**：舊版的長度上限、登記機密的長度與滑動視窗、通知字數都用 UTF-16 code unit（`🔑` 算 2）。Rust 內部一律用 char；語料中因此不同的案例在 `divergences.toml` 標為 `unicode-count`。
+- **長度用 char 計算**：舊版的長度上限、登記機密的長度與滑動視窗、通知字數都用 UTF-16 code unit（`🔑` 算 2）。Rust 內部一律用 char；語料中因此不同的案例在 `corpus/divergences/<area>.toml` 標為 `unicode-count`。
 - **孤立的 UTF-16 代理字元**：從 UTF-16 轉進來（WASM、Windows 剪貼簿）時換成 U+FFFD（`corpus/ops/README.md`）。
 - **重複的 op**：`paste.mask` 和 `secret.mask_text` 都描述舊版 `PasteGuard.MaskText`，1a 時合併成一個。
 - **raw.githubusercontent.com 的官方安裝指令**（Homebrew、nvm、oh-my-zsh）：1b 改用「網址路徑白名單」，例如 `raw.githubusercontent.com/Homebrew/install/`。良性語料中標了 `spec-escalates` 的案例，在 1b 完成後應降為 Suspicious。比對規則同主機白名單：拼出來的網址不套用、其他強訊號照樣判 Malicious。

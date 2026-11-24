@@ -1,0 +1,21 @@
+[package]
+name = "paste-warden-conformance"
+description = "Runs the corpus (corpus/cases, corpus/benign) against the Rust engine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+paste-warden-core.workspace = true
+paste-warden-i18n.workspace = true
+paste-warden-corpus.workspace = true
+
+[lints]
+workspace = true

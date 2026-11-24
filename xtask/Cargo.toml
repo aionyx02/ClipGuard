@@ -12,6 +12,7 @@ regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 paste-warden-corpus.workspace = true
+paste-warden-conformance.workspace = true
 
 [lints]
 workspace = true
