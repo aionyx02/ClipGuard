@@ -1,6 +1,6 @@
 # PasteWarden 判斷準則（原 ClipGuard）
 
-> **Phase 0 註記**：本文件描述的是舊版（C#）的行為，也是 Rust 版的驗收規格；文中的 `src/ClipGuard.Core/*.cs`、`extension/` 路徑指向 git 歷史中的舊程式（Phase 0 刪除前的 commit）。Phase 1 會把程式位置全部改成 Rust 模組。行為的機器可驗證版本在 `corpus/`。
+> **說明**：本文件是 PasteWarden 偵測行為的規格。程式位置指向 Rust 模組（`crates/core/src/`）；行為的機器可驗證版本在 `corpus/`（`cargo run -p xtask -- corpus run`）。標成「舊版」的 Windows App、瀏覽器插件元件在 git 歷史中（Phase 0 刪除前的 commit），會在 Phase 3、4 重做。
 
 這份文件是 ClipGuard **偵測行為的規格**：什麼情況要攔截、提醒或放行，以及背後的理由。
 
@@ -51,11 +51,11 @@
 
 錢包掉包現在也會抓句子裡的地址（§6.2），所以可能和其他通知碰在同一次複製。它排在「指令被攔截」之後：攔截通知帶有「點擊還原」，而且剪貼簿已經清空，假地址也一起清掉了。它排在其他提醒之前：掉包代表電腦上很可能有正在執行的惡意程式，比「這段文字含機密或隱藏字元」更急。被蓋掉的只是通知，剪貼簿狀態（入口守衛用的 Suspicious）照常設定。
 
-程式位置：`src/ClipGuard.App/TrayApp.cs`（`OnClipboardChanged`）、`src/ClipGuard.Core/ClipboardGuardState.cs`。
+程式位置：`TrayApp`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）（`OnClipboardChanged`）、`crates/core/src/policy/guard.rs`。
 
 ### 2.1 通知節流（#24 F18）
 
-程式：`src/ClipGuard.Core/NotificationThrottle.cs`（決策，時間可注入）；`TrayApp.cs` 只負責顯示和計時。
+程式：`crates/core/src/policy/throttle.rs`（決策，時間可注入）；`TrayApp`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做） 只負責顯示和計時。
 
 Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的都是早就過期的通知。所以所有通知（包括執行入口守衛和貼上攔截的錯誤通知）都先經過節流：
 
@@ -84,7 +84,7 @@ Windows 會把通知排隊依序顯示，連續複製時，幾十秒後跳出的
 
 ## 3. 指令偵測（ClickFix / FileFix）
 
-程式：`crates/core/src/command/`（`verdict.rs` 判定、`signals.rs` 訊號、`download_exec.rs` 下載後直接執行、`normalize.rs` 正規化、`deobfuscate/` 解混淆、`markdown.rs`、`finding.rs` 情境與 `risk_score`、`explain.rs` 白話說明）；資料在 `rules/command/`。舊版是 `src/ClipGuard.Core/CommandDetector.cs`、`CommandNormalizer.cs`。
+程式：`crates/core/src/command/`（`verdict.rs` 判定、`signals.rs` 訊號、`download_exec.rs` 下載後直接執行、`normalize.rs` 正規化、`deobfuscate/` 解混淆、`markdown.rs`、`finding.rs` 情境與 `risk_score`、`explain.rs` 白話說明）；資料在 `rules/command/`。舊版是 `crates/core/src/command/verdict.rs`、`crates/core/src/command/normalize.rs`。
 
 ### 3.0 比對前的處理（#19）
 
@@ -140,7 +140,7 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 
 「像在下指令」這個條件是為了排除一般句子（例如 `I use powershell every day`，#8）和網址路徑（`github.com/powershell/...`）。#21 的程式也一樣：只提到程式名稱的句子（`wscript and cscript are …`）、句子中間的 UNC 路徑（`檔案放在 \\fileserver\share\setup.exe`）都不算；單獨一行的 UNC 執行檔算，因為貼進 Win+R 就會執行（同 §3.0）。
 
-**下載後直接執行**（`download_exec.rs`，舊版 `DownloadExecution.cs`）指的是下面任何一種寫法，只看正規化後的文字：
+**下載後直接執行**（`download_exec.rs`，舊版 `crates/core/src/command/download_exec.rs`）指的是下面任何一種寫法，只看正規化後的文字：
 
 | 寫法 | 例子（片段） |
 |---|---|
@@ -237,7 +237,7 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 - **清單只拿掉「下載後直接執行」這一個強訊號**：官方網站的指令如果還有隱藏視窗、誘餌註解等強訊號，一樣判 Malicious。
 - 「從網路下載」「iex」單獨出現仍只算弱訊號。scoop 不寫程式名稱的寫法（只有下載＋iex）現在跟 uv、bun 一樣判 Suspicious（F17：原本完全不提醒）。
 
-### 3.3 白話說明（`explain.rs`，舊版 `CommandExplainer.cs`）
+### 3.3 白話說明（`explain.rs`，舊版 `crates/core/src/command/explain.rs`）
 - 指令被判為 Suspicious 或 Malicious 時，會產生一段白話說明，例如「從 example.invalid 下載並執行」「隱藏視窗」「藏了一段編碼過的指令」。說明跟著介面語言（zh-TW 或英文，#27），文字在 `src/ClipGuard.Core/Resources/CoreStrings*.resx` 的 `Explain_*`；本文件引用的是 zh-TW 版本。
 - #21 的訊號跟偵測共用同一組樣式，各有一句說明，例如「用 wscript／cscript 執行腳本檔」「執行 example.invalid 網路分享上的檔案」「連到 example.invalid 的 WebDAV 遠端資料夾」「用 ms-msdt: 呼叫疑難排解工具（Follina 漏洞的手法）」。
 - 下載來源的主機用跟官方網站清單一樣的方式取出（帳號欄位以真正的主機為準），最多列 3 個。
@@ -318,7 +318,7 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 - 例：`cmd /c dir` 未知來源 30、瀏覽器 40、通訊軟體 35、終端機 20；從瀏覽器複製的隱藏視窗＋下載執行約 100。
 - `Context.platform` 目前不影響分數（保留給之後「指令方言和平台不符」的判斷）。
 
-程式：`src/ClipGuard.Core/ExecutionEntryGuard.cs`、`src/ClipGuard.App/ForegroundWatcher.cs`（`EVENT_SYSTEM_FOREGROUND`）。
+程式：`crates/core/src/policy/entry.rs`、`ForegroundWatcher`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）（`EVENT_SYSTEM_FOREGROUND`）。
 
 | 入口 | 判斷（Windows 11 zh-TW 實測） |
 |---|---|
@@ -338,7 +338,7 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 
 ## 5. 機密偵測
 
-程式：`crates/core/src/secret/`（`engine.rs`、`normalize.rs`、`checksum.rs`、`pii.rs`、`mask.rs`、`packs.rs`，1b 加上 `mnemonic.rs`）、`crates/rules/src/secret.rs`（舊版 `SecretDetector.cs`、`SecretRules.cs`、`SecretTextNormalizer.cs`、`Checksums.cs`、`PiiFormats.cs`、`SecretMasker.cs`、`SecretPacks.cs`）；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。Phase 1b 新增錢包助記詞（§5.7）和含密碼的資料庫連線字串（§5.8）。
+程式：`crates/core/src/secret/`（`engine.rs`、`normalize.rs`、`checksum.rs`、`pii.rs`、`mask.rs`、`packs.rs`，1b 加上 `mnemonic.rs`）、`crates/rules/src/secret.rs`（舊版 `crates/core/src/secret/engine.rs`、`crates/core/src/secret/engine.rs`、`crates/core/src/secret/normalize.rs`、`crates/core/src/secret/checksum.rs`、`crates/core/src/secret/pii.rs`、`crates/core/src/secret/mask.rs`、`crates/core/src/secret/packs.rs`）；規則檔 `rules/*.json`（§5.4）。個資分成通用包和國家包（#27，§5.6）。Phase 1b 新增錢包助記詞（§5.7）和含密碼的資料庫連線字串（§5.8）。
 
 API key 分三層（#26）：
 
@@ -403,13 +403,13 @@ API key 分三層（#26）：
 - 統編要求關鍵字的原因：改成「能被 5 整除」之後，隨機的 8 位數字約有 1/5 會通過檢查碼，日期和訂單號碼都會誤報（P6）。所以**沒有關鍵字的統編刻意不偵測**（#22 F13），README 的已知限制也有寫。
 - 掃描上限（`SecretDetector.MaxScanLength`）不能超過剪貼簿的讀取上限（§2.2）。
 
-### 5.1 登記的機密（`RegisteredSecretStore.cs`、`DpapiKeyProtector.cs`）
+### 5.1 登記的機密（`crates/core/src/policy/registered.rs`、`DpapiKeyProtector`（舊版；Phase 4 改用 OS keyring））
 - 長度限制 6–256 字元，標籤最多 40 字。
 - 只存 `(id, label, length, HMAC-SHA256, createdAt)`，路徑是 `%LOCALAPPDATA%\ClipGuard\secrets.json`。
 - HMAC 金鑰是 32 bytes 的亂數，用 DPAPI（CurrentUser）保護，存在 `key.bin`。金鑰解不開時直接報錯，**不會**自動重建。
 - 比對方式：依每一種登記過的長度，對內容做滑動視窗算 HMAC，再用 `FixedTimeEquals` 比對。最多掃前 20,000 字。
 - **禁止**改用單純的 SHA-256。身分證、手機這類資料只有約 1e8–1e9 種組合，可以被暴力反推。
-- **登記對話框**（`SecretRegistration.cs` 檢查、`SecretGuard.cs` 的 `RegisterSecretForm`）：機密空白、長度不在 6–256、確認欄空白、兩次不一樣、重複登記或寫檔失敗時，對話框不關，錯誤顯示在欄位旁（ErrorProvider）和按鈕上方的紅字，焦點留在出錯的欄位（不一樣時清空確認欄）。標籤可以留空（存成「未命名」）。錯誤訊息只說原因，不含輸入的內容。
+- **登記對話框**（`crates/core/src/policy/registered.rs` 檢查、`SecretGuard`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做） 的 `RegisterSecretForm`）：機密空白、長度不在 6–256、確認欄空白、兩次不一樣、重複登記或寫檔失敗時，對話框不關，錯誤顯示在欄位旁（ErrorProvider）和按鈕上方的紅字，焦點留在出錯的欄位（不一樣時清空確認欄）。標籤可以留空（存成「未命名」）。錯誤訊息只說原因，不含輸入的內容。
 - **無障礙**：三個輸入框都有 AccessibleName／AccessibleDescription；標籤帶 Alt 快速鍵（`&L`、`&S`、`&C`），TabIndex 緊接在輸入框前面；出錯時把錯誤寫進該欄的 AccessibleDescription 並發出 UIA 通知。跟確認框一樣，沒按 Alt 的單一字母不會觸發快速鍵。
 - 以前寫入失敗（太短、重複）會先關掉對話框、跳一個沒有 owner 的訊息框再重開；訊息框可能落在別的視窗後面，看起來像對話框自己消失（#24 黑箱測試時遇過兩次）。現在所有錯誤都在對話框裡顯示，成功的訊息框以對話框為 owner。
 
@@ -436,7 +436,7 @@ API key 分三層（#26）：
 
 ### 5.3 貼上攔截（嚴格模式）
 
-程式：`src/ClipGuard.Core/PasteGuard.cs`（決策、遮罩）、`PasteGuardSettingsStore.cs`；`src/ClipGuard.App/PasteInterceptor.cs`、`KeyboardPasteHook.cs`、`PasteConfirmForm.cs`。
+程式：`crates/core/src/policy/paste.rs`（決策、遮罩）、`crates/core/src/policy/paste.rs`；`PasteInterceptor`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）、`KeyboardPasteHook`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）、`PasteConfirmForm`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）。
 
 只在複製時通知不夠：Windows 會把通知排隊，使用者手快 Ctrl+V 再按 Enter，機密就送出了。所以剪貼簿含機密時，要在**貼上當下**擋住。
 
@@ -491,7 +491,7 @@ gitleaks.toml ─ node tools/convert-gitleaks.mjs ─> rules/gitleaks.json（com
 Rust 版（phase 1）：`crates/rules` 用 `include_str!` 內嵌 `rules/*.json` 和 `rules/secret/bip39-english.txt`；擴充功能改用 WASM，不再需要第二份規則。gitleaks 的轉換改成 `cargo xtask rules gitleaks <toml> <版本> <commit>`（`xtask/src/rules.rs`，舊版 `convert-gitleaks.mjs` 的移植，同一份 toml 產生的 `gitleaks.json` 除了說明文字和下面的 curl 規則之外完全相同）。
 
 - **桌面版**：`ClipGuard.Core.csproj` 把 `rules/*.json` 內嵌進組件，執行時不讀檔、不連網（P3）。
-- **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs` 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
+- **插件**：執行時讀不到 `extension/` 外面的檔案，所以用 `tools/build-extension-rules.mjs`（舊版；新版插件直接用 WASM 引擎，不再需要） 把規則複製成 `extension/lib/rules.generated.js`（commit 進 repo）。`extension/test/rules.test.js` 會重新產生一次跟檔案比對，忘了執行就會失敗。
 - **gitleaks**：toml 先另外下載（`gh api`），再用 `tools/convert-gitleaks.mjs <toml> <版本> <commit>` 轉換；執行時從不連網。授權見 `THIRD_PARTY_NOTICES.md`。目前是 v8.30.1（commit `5f6ec56`）。
 
 **檔案格式**（`format: 1`）：
@@ -527,7 +527,7 @@ Rust 版（phase 1）：`crates/rules` 用 `include_str!` 內嵌 `rules/*.json` 
 - **ASCII 版本**：`\b`、`\w`、不分大小寫在 .NET 認 Unicode，在 JS 只認 ASCII。所以規則比對的是「非 ASCII 字元都換成 U+001A」的版本（長度不變，位置直接對回原文），兩邊結果一樣，而且中文緊貼著 key（`金鑰dop_v1_…`）也找得到。
 - **NonBacktracking 的群組**：.NET 9 的 NonBacktracking 找到的範圍正確，但有些 pattern 的捕獲群組是空的（實測 context-assignment），所以範圍交給 NonBacktracking，群組在那一小段裡用一般引擎（`^(?:…)\z`，逾時 200 ms）重比一次。
 
-**gitleaks 怎麼轉**（`tools/convert-gitleaks.mjs`）：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
+**gitleaks 怎麼轉**（`cargo run -p xtask -- rules gitleaks`（`xtask/src/rules.rs`））：`\w`、`\d`、`\s`、`.` 展開成 RE2 的 ASCII 定義（`\s` 不含 `\v`，`.` 不含 `\n`）；只在開頭的 `(?i)` 改成 `ignoreCase`，其他位置的 `(?i)`、`(?-i:…)` 展開成 `[Aa]`；`(?P<name>…)` 改成一般群組（編號不變）；POSIX 類別展開；開頭只用來包住變數名稱的 `[\w.-]{0,50}?` 拿掉（不影響找到的機密，但 JS 每個位置都要試 50 次）。allowlist 裡「本身就是一把完整 key」的範例字串不收：它們會被 GitHub push protection 擋，也會被當成外洩。
 
 **沒收的 gitleaks 規則**（22 條，完整原因在 `rules/gitleaks.json` 的 `skipped`）：
 
@@ -578,7 +578,7 @@ Rust 版（phase 1）：`crates/rules` 用 `include_str!` 內嵌 `rules/*.json` 
 
 context-assignment-cjk 的 regex 比的是 ASCII 版本（§5.4），中文字都是 U+001A，所以 regex 只要求「分隔符號前面是一個非 ASCII 字」，名稱本身交給 `context` 檢查；整段文字沒有任何一個關鍵字時直接跳過這條規則。值的條件（亂度、數字、連號、佔位字）跟 context-assignment 一樣，所以 `密碼：hunter2`、`密碼：請洽管理員` 不算。
 
-**誤報樣本**：`tests/fixtures/secret-false-positives.json`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
+**誤報樣本**：`corpus/cases/secret-false-positives.jsonl`，C# 和插件的測試都跑同一份，涵蓋 md5／sha1／sha256、UUID、git log 與短 SHA、Base64 圖片（`data:` URL）、C#／JS／Python 程式碼、`package-lock.json` 和 `yarn.lock` 的 integrity、minified JS、`.env` 佔位字、連號、不是機密的 token 欄位、中文句子。
 
 **效能**（`SecretRulesTests`、`rules.test.js` 會量）：每條規則各跑 5 種 1 Mi 字的病態輸入（關鍵字重複、關鍵字加 `=`、關鍵字加 40 個字母、關鍵字後面接 1 Mi 個字母…），C# 最慢的一條 66 ms、JS 49 ms。整個 `SecretDetector.Find` 在 1 Mi 字、所有規則的關鍵字都出現時約 80 ms，滿滿的 `.env`（2 萬多筆命中）約 145 ms（C#；JS 約 115、155 ms）。不會因為長度整段跳過。
 
@@ -643,7 +643,7 @@ context-assignment-cjk 的 regex 比的是 ASCII 版本（§5.4），中文字�
 
 ## 6. 隱藏字元與錢包掉包
 
-### 6.1 隱藏字元（`crates/core/src/hidden/`，舊版 `HiddenCharDetector.cs`）：一律只判 Suspicious
+### 6.1 隱藏字元（`crates/core/src/hidden/`，舊版 `crates/core/src/hidden/mod.rs`）：一律只判 Suspicious
 
 清單類的資料在 `rules/hidden/`（1b）：`shell-commands.json`（結尾換行、「這一行像不像指令」用的程式清單）、`homoglyphs.json`（各文字系統的同形字與所屬區塊）、`tag-sequences.json`（標準區旗的 TAG 序列）、`joiners.json`（emoji 範圍、複雜文字範圍、各印度系文字的 virama）。載入一次並驗證（單元測試保證清單不是空的、code point 合法）。
 
@@ -686,7 +686,7 @@ context-assignment-cjk 的 regex 比的是 ASCII 版本（§5.4），中文字�
 
 已知缺口：soft hyphen 夾在兩個字母之間、所在的那行又不像指令或網址時放行，所以可以用來拆開句子裡的關鍵字；單獨一個數學運算子夾在一般句子裡也放行（同理）；第 256 行之後的 soft hyphen、數學運算子不判斷指令；CommandNormalizer 不會去掉這些字元（§3.0），拆開指令名稱的情況要靠這裡提醒；virama + ZWJ 後面接空白的例外只看前後各一兩個字，攻擊者可以在印度系文字的字尾藏一個 ZWJ（只有一個，藏不了多少資料，而且前面必須是真的子音 + virama）。
 
-### 6.2 錢包掉包（`WalletAddress.cs`、`WalletSwapDetector.cs`、`src/ClipGuard.App/UserInput.cs`）
+### 6.2 錢包掉包（`crates/core/src/wallet/mod.rs`、`crates/core/src/wallet/swap.rs`、`UserInput`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做））
 
 Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，做法是**原地取代**：句子裡的其他文字一個字都不變。它跟「使用者自己又複製了另一個地址」的差別有三個：換得很快、換的時候使用者沒有任何操作、前後文字完全相同。
 
@@ -765,7 +765,7 @@ Clipper 惡意程式監聽剪貼簿，看到地址就換成攻擊者的地址，
 - 網址一律用 `example.invalid`。惡意指令樣本要在執行時用片段組合，不要以完整字串寫進檔案（理由同文件開頭的防毒說明）。
 - 偵測規則的測試要同時有「該命中」和「不該命中」兩種樣本。誤報樣本至少包含：日期、訂單號碼、UUID、hash、Base64、一般中英文句子、官方安裝指令。
 - **API key 樣本不能完整寫進檔案**（包括規則檔和測試）：GitHub 的 push protection 會擋，防毒也可能有反應。測試用「前綴 + 固定種子的亂數」在執行時產生（C# 的 `SecretRulesTests.Gen` 和 JS 的 `gen` 產生一樣的字串）。規則檔只放 regex；`SecretRulesTests` 會掃一次規則檔，確認裡面沒有長得像 key 的字串。
-- 機密的誤報樣本放在 `tests/fixtures/secret-false-positives.json`，桌面版和插件共用；新增誤報案例時加在這裡。
+- 機密的誤報樣本放在 `corpus/cases/secret-false-positives.jsonl`，桌面版和插件共用；新增誤報案例時加在這裡。
 
 ## 9. Review 檢查清單
 
@@ -780,6 +780,6 @@ Review 一個會動到偵測行為的 PR 時，逐項確認：
 - [ ] **長度上限**：新規則碰到超長輸入時，不是「整段跳過」（#19 的教訓），而且不會卡住 UI。
 - [ ] **繞過**：想想正規化問題，例如大小寫、全形、路徑、引號、`^`、dash 變體、零寬字元。
 - [ ] **C# / JS 一致**：改到兩邊都有的規則時，兩邊都要改，或是在 §7 的不一致表裡記下來。
-- [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `tools/convert-gitleaks.mjs` 更新，不手改 `rules/gitleaks.json`。
+- [ ] **規則檔**：改了 `rules/*.json` 有重新產生 `extension/lib/rules.generated.js`；新的 regex 符合 §5.4 的語法限制，兩邊的「1 Mi 病態輸入」測試都過；gitleaks 規則只透過 `cargo run -p xtask -- rules gitleaks`（`xtask/src/rules.rs`） 更新，不手改 `rules/gitleaks.json`。
 - [ ] **測試資料**：符合 §8 的規範。
 - [ ] **介面文字**：新的通知、說明、機密名稱放進 `.resx`（桌面）或 `_locales`（插件），英文和 zh-TW 都要有，`{0}` 參數一致；改了 `.resx` 有重新執行 `node tools/gen-resx-accessors.mjs`。

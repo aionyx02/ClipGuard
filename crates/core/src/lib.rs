@@ -4,6 +4,9 @@
 //! dependencies, and it builds for `wasm32-unknown-unknown`. Every public entry
 //! point must be total: no panics and linear-ish time on any input.
 //!
+//! Start with [`Engine`]: `Engine::new(settings).analyze(text, &ctx)` returns a
+//! [`Report`] with the recommended [`Action`].
+//!
 //! Module map (legacy C# names in parentheses; see docs/plan/phase-1.md §1.2):
 //! - [`command`]: ClickFix / FileFix command detection, normalization, explanations
 //!   (CommandDetector, CommandNormalizer, DownloadExecution, CommandExplainer)
@@ -22,6 +25,7 @@
 
 pub mod command;
 pub mod context;
+pub mod engine;
 pub mod hidden;
 pub mod limits;
 pub mod msg;
@@ -32,6 +36,7 @@ pub mod text;
 pub mod wallet;
 
 pub use context::{Context, Platform, Source, SourceKind};
+pub use engine::{Action, AiSettings, Engine, Report, Settings};
 pub use msg::{Arg, Message};
 
 /// Threat level of a piece of clipboard text (legacy `ThreatLevel`).

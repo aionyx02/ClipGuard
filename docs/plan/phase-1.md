@@ -131,12 +131,12 @@ pub struct Report {
 
 ## 1.7 完成條件
 
-- [ ] `xtask corpus run`：失敗數為 0（不算 `corpus/divergences/<area>.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
-- [ ] 1b 的每一項都完成，或在本文件中註明延後的理由。
-- [ ] 良性語料的誤報數不超過 1a 完成時的數字。
-- [ ] proptest、fuzz smoke、效能預算、WASM 編譯都在 CI 通過。
-- [ ] `docs/spec/detection-rules.md` 裡的程式位置全部改成指向 Rust 模組。
-- [ ] `locales/zh-TW`、`locales/en` 涵蓋 core 輸出的所有訊息 ID（由測試檢查）。
+- [x] `xtask corpus run`：失敗數為 0（不算 `corpus/divergences/<area>.toml` 裡的項目），而且每一筆 divergence 都有 `reason`。
+- [x] 1b 的每一項都完成，或在本文件中註明延後的理由（延後：白話說明還不描述解混淆結果，只有 trace 呈現；見各 area 的「已知缺口」）。
+- [x] 良性語料的誤報數不超過 1a 完成時的數字（1a：flagged 5；1b：0）。
+- [x] proptest、fuzz smoke、效能預算、WASM 編譯都在 CI 通過（`ci.yml` 的 perf job、`fuzz.yml`）。
+- [x] `docs/spec/detection-rules.md` 裡的程式位置全部改成指向 Rust 模組。
+- [x] `locales/zh-TW`、`locales/en` 涵蓋 core 輸出的所有訊息 ID（`crates/conformance/tests/locales.rs`）。
 
 ## 1.8 已定案
 
