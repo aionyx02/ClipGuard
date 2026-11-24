@@ -85,12 +85,12 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
 
 ## 3.8 完成條件
 
-- [ ] `pnpm -r build` 產出：Chrome zip、Firefox xpi（未簽章，簽章在 Phase 6）、userscript、網頁與文件網站的靜態檔。
-- [ ] §3.7 的端對端測試在 CI（Linux headless）通過。
+- [x] `pnpm -r build` 產出：Chrome zip、Firefox xpi（未簽章，簽章在 Phase 6）、userscript、網頁與文件網站的靜態檔。
+- [x] §3.7 的端對端測試：本機 Chromium + Firefox × 三種 CSP 共 48 個擴充功能情境、6 個 userscript 情境通過；CI（`extension.yml`）見 PR。
 - [ ] 試玩網頁部署到 GitHub Pages（需要先在 repo 設定啟用 Pages）。
-- [ ] 文件網站第一批頁面上線，繁中與 English 都有。
-- [ ] 深淺色、語言切換在擴充功能、網頁、文件網站都能用。
-- [ ] CI：`js` job 跑 Biome、Vitest、Playwright。
+- [x] 文件網站第一批頁面完成（22 頁，繁中與 English），等 Pages 啟用後上線。
+- [x] 深淺色、語言切換在擴充功能、網頁、文件網站都能用。
+- [x] CI：`docs.yml`（文件與網頁）、`extension.yml`（擴充功能與 userscript）跑 Biome、Vitest、Playwright。
 
 ## 3.9 擴充功能與 userscript：實作紀錄與偏離（`phase3/extension`）
 
