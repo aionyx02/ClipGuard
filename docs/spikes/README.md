@@ -8,7 +8,7 @@ Phase 0 要在動工前驗證的技術風險。剩下的 spike 怎麼做見 [`HO
 |---|---|---|---|---|---|
 | S1 | WASM 大小與速度 | 任意（需要 rustup 的 wasm32 target） | A | ✅ 可行（gzip 250 KiB） | [`s1-wasm-size.md`](s1-wasm-size.md) |
 | S2 | CSP 環境下的 WASM（擴充功能、userscript） | Chrome、Firefox | C | ✅ 可行 | [`s2-wasm-csp.md`](s2-wasm-csp.md) |
-| S3 | Windows 剪貼簿監聽、鍵盤 hook、前景視窗 | **Windows 實機** | B | 待執行 | |
+| S3 | Windows 剪貼簿監聽、鍵盤 hook、前景視窗 | **Windows 實機** | B | ✅ 有條件可行（hook 逾時約 600 ms 會 fail-open） | [`s3-windows-monitor.md`](s3-windows-monitor.md) |
 | S4 | macOS 監聽與 CGEventTap 授權 | macOS | B | ✅ 可行 | [`s4-macos-monitor.md`](s4-macos-monitor.md) |
 | S5 | Linux X11 / Wayland | **Linux 實機**（GNOME + KDE 或 Sway） | B | ⚠️ 有條件可行（GNOME / KDE 待 VM 實測） | [`s5-linux-monitor.md`](s5-linux-monitor.md) |
 | S6 | Tauri v2 Android：`PROCESS_TEXT`、分享 intent | **Android 手機或模擬器** | B | ✅ 有條件可行 | [`s6-android.md`](s6-android.md) |
