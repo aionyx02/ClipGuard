@@ -9,12 +9,57 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  build-test:
-    runs-on: windows-latest        # WinForms only builds on Windows
+  rust:
+    name: rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-      - run: dotnet test --configuration Release
+      - run: rustup show active-toolchain || rustup toolchain install   # installs what rust-toolchain.toml pins
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --all-targets --locked
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: core and rules must build for wasm32
+        run: cargo build --locked --target wasm32-unknown-unknown -p paste-warden-core -p paste-warden-rules -p paste-warden-wasm
+
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run --locked -p xtask -- corpus lint
+      - run: cargo run --locked -p xtask -- corpus coverage
+
+  # Stable name for the branch ruleset's required check: passes only when every job above passes.
+  build-test:
+    if: always()
+    needs: [rust, wasm, corpus]
+    runs-on: ubuntu-latest
+    steps:
+      - name: all CI jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then echo "::error::a CI job did not succeed ($RESULTS)"; exit 1; fi
+          done

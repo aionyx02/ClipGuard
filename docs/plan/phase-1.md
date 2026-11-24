@@ -130,7 +130,14 @@ pub struct Report {
 - [ ] `docs/spec/detection-rules.md` 裡的程式位置全部改成指向 Rust 模組。
 - [ ] `locales/zh-TW`、`locales/en` 涵蓋 core 輸出的所有訊息 ID（由測試檢查）。
 
-## 1.8 已定案
+## 1.8 待決問題（來自 Phase 0 語料轉換）
+
+1. **UTF-16 還是 char**：舊版的長度上限、登記機密的長度與滑動視窗、通知字數都用 UTF-16 code unit 計算（`🔑` 算 2）。建議 Rust 內部用 char，語料中受影響的案例在 `divergences.toml` 標為 `unicode-count`；需要確認。
+2. **孤立的 UTF-16 代理字元**：從 UTF-16 轉進來時換成 U+FFFD（`corpus/ops/README.md`），這是新訂的規格。
+3. **重複的 op**：`paste.mask` 和 `secret.mask_text` 都描述舊版 `PasteGuard.MaskText`，1a 時合併成一個。
+4. **raw.githubusercontent.com 的官方安裝指令**（Homebrew、nvm、oh-my-zsh）依舊規格會判成 Malicious（良性語料標了 `spec-escalates`）。1b 要決定：維持現狀（使用者可以還原），還是改用「網址路徑白名單」（例如 `raw.githubusercontent.com/Homebrew/install/`）。
+
+## 1.9 已定案
 
 - `risk_score` 的計算公式公開在文件網站上。
 - 個資包沿用舊版已有的全部：`universal`、`tw`、`us`、`cn`、`hk`、`jp`、`kr`、`sg`（`rules/pii-*.json`）。預設依裝置地區啟用，台灣使用者預設是 `universal` + `tw`。

@@ -56,10 +56,13 @@
 
 | Job | 內容 |
 |---|---|
-| `rust` | ubuntu、windows、macos：fmt、clippy `-D warnings`、test；ubuntu 另外跑 wasm32 編譯 |
-| `js` | Biome（等 Phase 3 有程式碼之後才生效） |
+| `rust` | ubuntu、windows、macos：fmt、clippy `-D warnings`、test |
+| `wasm` | core、rules、wasm 三個 crate 要能編譯到 `wasm32-unknown-unknown` |
 | `corpus` | `xtask corpus lint` 和 `coverage` |
+| `build-test` | 彙總：上面全部成功才算通過。名稱和舊版相同，branch ruleset 的必要檢查不用改 |
 | `only-from-dev` | 沿用 |
+
+JS 的 Biome 檢查等 Phase 3 有前端程式碼時再加入 CI。
 
 ## 0.5 Spike
 

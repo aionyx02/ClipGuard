@@ -1,6 +1,6 @@
 # pastejack
 
-Pastejacking（docs/detection-rules.md §7）：比對「使用者選取的文字」和「網頁實際寫進剪貼簿的文字」。舊版只在瀏覽器插件（`extension/lib/pastejack.js`）。
+Pastejacking（docs/spec/detection-rules.md §7）：比對「使用者選取的文字」和「網頁實際寫進剪貼簿的文字」。舊版只在瀏覽器插件（`extension/lib/pastejack.js`）。
 
 ## `pastejack.compare`
 

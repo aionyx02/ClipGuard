@@ -53,6 +53,7 @@ PasteWarden 把剪貼簿當成信任邊界，雙向防守：
 - MCP server 和 CLI 只提供唯讀分析工具。**禁止提供讀取剪貼簿的工具**，否則被 prompt injection 的 agent 可以拿它偷走剪貼簿內容。工具輸出一律遮罩。MCP 只用 stdio，不開網路埠。
 - 紅隊專用的工具（`validate_syntax`、`run_benchmark`）只有在 `--profile redteam` 時才開放。
 - **真正的防護靠 hook**（強制執行）；MCP 只負責分析和解釋，因為模型可以選擇不呼叫它。
+- **Hook 會 fail-open**：Claude Code 的 hook 只要 crash、逾時或回傳非預期的 exit code 就會放行。所以 hook 程式必須自己接住所有錯誤（包括 panic）並回傳 deny，還要有測試。matcher 要排除 PasteWarden 自己的 MCP 工具。opencode 只認 V2 plugin 寫法（`ctx.tool.hook("execute.before")`），V1 寫法會靜默失效。細節見 `docs/spikes/s7-agent-integration.md`。
 - 紅隊產生的 payload **永遠不執行、不寫入系統剪貼簿**，只能送進不執行的語法檢查器（`pwsh` AST、`bash -n`）和偵測引擎。
 - 藍隊 agent 只能開 PR，不能合併。
 
