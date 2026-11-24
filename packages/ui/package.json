@@ -22,7 +22,8 @@
     "test:browser": "node scripts/a11y-browser.mjs"
   },
   "dependencies": {
-    "@fluent/bundle": "^0.19.1"
+    "@fluent/bundle": "^0.19.1",
+    "@paste-warden/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0",

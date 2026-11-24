@@ -1,4 +1,5 @@
 import { fixtureReports } from '@paste-warden/ui/fixtures';
+import type { TraceKind } from '@paste-warden/ui/report';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   closeOverlay,
@@ -135,7 +136,9 @@ describe('showClipboardBlocked', () => {
   it('never parses report text as HTML', () => {
     const evil = structuredClone(zh.clickfix);
     evil.command.reasons = [{ id: 'x', text: '<img src=x onerror=alert(1)>' }];
-    evil.command.trace = [{ kind: '<b>k</b>', text: '<i>t</i>', preview: '<script>1</script>' }];
+    // An engine never emits this kind; the cast simulates a hostile or corrupted report.
+    const kind = '<b>k</b>' as TraceKind;
+    evil.command.trace = [{ kind, text: '<i>t</i>', preview: '<script>1</script>' }];
     showClipboardBlocked(evil, { ...test, url: 'javascript:<svg onload=alert(1)>' });
     expect(shadow?.querySelector('img, script, .bdy b, i, [onload], [onerror]')).toBeNull();
     expect(q('.lv code')?.textContent).toBe('<b>k</b>');
