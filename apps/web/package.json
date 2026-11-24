@@ -1,0 +1,40 @@
+{
+  "name": "@paste-warden/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PasteWarden playground: paste text, see the verdict. Runs entirely in the browser (WASM).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
+    "preview": "vite preview --port 4317 --strictPort",
+    "lint": "biome check . && tsc --noEmit",
+    "test": "vitest run",
+    "test:browser": "playwright test --project=chromium --project=firefox",
+    "screenshots": "playwright test --project=screenshots"
+  },
+  "dependencies": {
+    "@paste-warden/core": "workspace:*",
+    "@paste-warden/ui": "workspace:*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "axe-core": "^4.14.1",
+    "jsdom": "^31.0.1",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

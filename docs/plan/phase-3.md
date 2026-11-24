@@ -43,7 +43,8 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
   - 語言：系統 / 繁中 / English；外觀：系統 / 淺色 / 深色。
   - 允許清單：哪些網站不攔截（例如自己公司的內部工具）。
 - **深淺色**：Tailwind `dark:` + `prefers-color-scheme`；注入網頁的警告層跟隨 OS，不跟隨網頁。
-- **語言**：UI 字串放在 `locales/{zh-TW,en}/ui.ftl`（`ui-` 前綴），由 `@paste-warden/core` 的 `messages()` 提供；引擎訊息已經在 Report 裡翻譯好。
+- **語言**：UI 字串放在 `locales/{zh-TW,en}/ui*.ftl`，依元件分檔、各用自己的前綴：`ui.ftl`（`ui-`，擴充功能與共用）、`ui-components.ftl`（`ui-comp-`，`@paste-warden/ui`）、`ui-overlay.ftl`（`ui-overlay-`）、`ui-web.ftl`（`ui-web-`，試玩網頁）。`@paste-warden/ui` 的 Fluent loader 在**建置時**用 Vite `import.meta.glob` 把全部 `ui*.ftl` 內嵌進 bundle，所以 UI 不必等引擎載入就有字串（試玩網頁的骨架畫面、警告層都靠這個）。`@paste-warden/core` 的 `messages(locale)` 回傳引擎建置時內嵌的所有 `ui-*` 字串，可透過 `LocaleProvider` 的 `messages` 覆寫建置時的版本（例如字串跟著規則版本更新的情境）；試玩網頁和引擎一起建置，不需要覆寫。引擎訊息（判定原因、步驟說明、機密標籤）已經在 Report 裡翻譯好。
+  - *與原規格的差異*：原本寫「由 `messages()` 提供」。實作改成建置時內嵌、`messages()` 只做覆寫，因為 UI 在 `await init()` 之前就要能顯示（骨架、錯誤訊息），而且同一份 `.ftl` 也由 Rust 的 `paste-warden-i18n` 內嵌並檢查兩種語言的 id 一致。
 
 ## 3.4 Userscript
 
@@ -59,6 +60,11 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
 - **下載頁**：各平台下載連結與安裝說明的入口（連到文件網站）。
 - 深淺色、繁中 / English 切換，網址記住語言（`?lang=en`）。
 - 部署：GitHub Actions → GitHub Pages（`/` 是網頁，`/docs/` 是文件網站）。自訂網域之後再設定。
+- 實作備註（`apps/web`）：
+  - 引擎在第一次渲染後才 lazy-load（`import('@paste-warden/core')` + `init()`），之前顯示同尺寸的骨架（不造成版面位移）；`init()` 在 WebAssembly 不可用或被擋時自動改用 wasm2js（`?engine=wasm2js` 可強制，用於測試）。
+  - 「全部在瀏覽器執行、不上傳」由瀏覽器強制：建置版加上 CSP meta（`default-src 'none'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval'`），沒有分析追蹤、外部字型或 cookie；文字不存 storage、不放網址；textarea 關掉拼字檢查（加強版拼字檢查會把文字送到伺服器）。Playwright 測試斷言載入只有同源請求、分析期間零請求、離線可用、CSP 會擋外部連線。
+  - 範例全部在執行時產生：ClickFix 片段組合（`calc`、`example.invalid`）、四層混淆（`^` 跳脫 → `-EncodedCommand` → 字串拼接 → unwrap）、依檢查碼算出的身分證字號與 Luhn 卡號、種子固定的假 GitHub token、從公開字串算出的 BIP-39 助記詞（檢查碼正確 vs 只換最後一個字而檢查碼錯誤）。
+  - 連到文件網站一律用相對路徑（`./docs/…`），所以部署在 `/` 或 `/<repo>/` 都能用。
 
 ## 3.6 文件網站（`apps/docs`）
 

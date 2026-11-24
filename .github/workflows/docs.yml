@@ -1,6 +1,8 @@
 name: docs
 
-# Builds the shared UI packages and the documentation site on every PR that touches them.
+# Builds the engine (@paste-warden/core), the shared UI packages, the playground (apps/web) and
+# the documentation site on every PR that touches them, and assembles the Pages site:
+# apps/web/dist at /, apps/docs/dist at /docs/.
 # Deploys to GitHub Pages only from pushes to dev/main (or a manual run), and only once Pages is
 # enabled: set the repository variable PAGES_ENABLED=true (Settings → Pages → Source: GitHub
 # Actions). Without a custom domain the site lives under /<repo>/, so also set
@@ -12,9 +14,13 @@ on:
     paths:
       - apps/docs/**
       - apps/web/**
+      - packages/core-js/**
       - packages/ui/**
       - packages/overlay/**
       - locales/**
+      - rules/**
+      - crates/**
+      - Cargo.lock
       - docs/**
       - pnpm-lock.yaml
       - .github/workflows/docs.yml
@@ -35,6 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CARGO_TERM_COLOR: always
   DOCS_BASE: ${{ vars.DOCS_BASE || '/docs/' }}
 
 jobs:
@@ -42,27 +49,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The playground embeds the engine: same toolchain as .github/workflows/js-core.yml.
+      - run: rustup show active-toolchain || rustup toolchain install   # rust-toolchain.toml adds wasm32
+      - uses: Swatinem/rust-cache@v2
+      - name: install wasm-bindgen-cli (same version as the crate in Cargo.lock)
+        run: |
+          v=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/,"",$3); print $3; exit}' Cargo.lock)
+          curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${v}/wasm-bindgen-${v}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/wasm-bindgen-${v}-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
       - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # @paste-warden/ui re-exports the Report types from core's dist/, and apps/web bundles it.
+      - name: build engine (wasm + wasm2js)
+        run: pnpm --filter @paste-warden/core build
       - name: lint
-        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run lint
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/web --filter @paste-warden/docs run lint
       - name: unit tests
-        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run test
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/web --filter @paste-warden/docs run test
       - name: build (overlay size budget is checked here)
-        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/docs run build
-      - name: browser checks (overlay keyboard/top layer, axe incl. contrast)
+        run: pnpm --filter @paste-warden/ui --filter @paste-warden/overlay --filter @paste-warden/web --filter @paste-warden/docs run build
+      - name: browser checks (overlay keyboard/top layer, axe incl. contrast; playground)
         run: |
           pnpm --filter @paste-warden/overlay exec playwright install --with-deps chromium firefox
           pnpm --filter @paste-warden/overlay run test:browser
           pnpm --filter @paste-warden/ui run test:browser
+          pnpm --filter @paste-warden/web run test:browser
       - name: assemble site (playground at /, docs at /docs/)
         run: |
           mkdir -p _site/docs
-          if [ -d apps/web/dist ]; then cp -r apps/web/dist/. _site/; fi
+          cp -r apps/web/dist/. _site/
           cp -r apps/docs/dist/. _site/docs/
       - uses: actions/upload-pages-artifact@v3
         with:
