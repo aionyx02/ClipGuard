@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f3f6f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#070c16" media="(prefers-color-scheme: dark)" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="PasteWarden playground: paste any text and see whether it is a ClickFix attack, hides characters, or leaks secrets. Runs entirely in your browser."
+    />
+    <title>PasteWarden playground</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script src="./boot.js"></script>
+  </head>
+  <body class="bg-canvas text-fg antialiased">
+    <div id="root"></div>
+    <noscript>
+      <p style="padding: 1rem">PasteWarden's playground needs JavaScript: the engine runs in your browser.</p>
+    </noscript>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
