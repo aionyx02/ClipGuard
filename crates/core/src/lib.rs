@@ -21,6 +21,7 @@
 #![forbid(unsafe_code)]
 
 pub mod command;
+pub mod context;
 pub mod hidden;
 pub mod limits;
 pub mod msg;
@@ -30,6 +31,7 @@ pub mod secret;
 pub mod text;
 pub mod wallet;
 
+pub use context::{Context, Platform, Source, SourceKind};
 pub use msg::{Arg, Message};
 
 /// Threat level of a piece of clipboard text (legacy `ThreatLevel`).
