@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PasteWarden e2e</title>
+  </head>
+  <body>
+    <h1>PasteWarden e2e ({{CSP}})</h1>
+    <p>
+      <button id="write-clickfix" type="button">writeText ClickFix</button>
+      <button id="write-item" type="button">write(ClipboardItem) ClickFix</button>
+      <button id="exec-copy" type="button">execCommand copy</button>
+      <button id="copy-event" type="button">copy event setData</button>
+      <button id="write-benign" type="button">writeText benign</button>
+      <button id="write-id" type="button">writeText ID</button>
+    </p>
+    <p><textarea id="paste-target" rows="3" cols="60"></textarea></p>
+    <p><input id="password" type="password" /></p>
+    <p><textarea id="readback" rows="3" cols="60"></textarea></p>
+    <iframe id="same" title="same-origin frame" src="/{{CSP}}/frame.html" width="400" height="80"></iframe>
+    <iframe id="cross" title="cross-origin frame" allow="clipboard-write" src="{{XORIGIN}}/{{CSP}}/frame.html" width="400" height="80"></iframe>
+    <pre id="log"></pre>
+    <script src="/{{CSP}}/page.js" nonce="{{NONCE}}"></script>
+  </body>
+</html>
