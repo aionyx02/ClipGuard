@@ -7,7 +7,7 @@
 
 `bitcoin` | `ethereum` | `tron` | `solana` | `xrp`
 
-## `wallet.parse` 的 1b 規則
+## wallet.parse（1b 補充） 的 1b 規則
 
 依序判斷，第一個成立的就是結果：
 
@@ -21,11 +21,11 @@
 
 Solana 與 XRP 的 `normalized` 是原文（區分大小寫）。
 
-## `wallet.find_all` 的 1b 規則
+## wallet.find_all（1b 補充） 的 1b 規則
 
 候選字串的切法不變。另外，判定為 **Solana** 的候選如果看得出是 Base64 的一段就不算：前一個字元是 `+`，或後一個字元是
 `+`、`/`、`=`（前一個字元是 `/` 不算，因為區塊瀏覽器的網址是 `/address/<地址>`）。
 
-## `wallet.swap`
+## wallet.swap（1b 補充）
 
 狀態機不變；只是 `wallet.find_all` 多認得 Solana、XRP，而 EIP-55 錯誤的 ETH 字串不再是地址。

@@ -106,8 +106,8 @@ pub struct Report {
 | macOS、Linux 指令 | `osascript -e`、`base64 -d \| sh`、`bash -c "$(curl …)"`、`xattr -d com.apple.quarantine` / `xattr -c`、`chmod +x` 搭配 `/tmp` 執行 |
 | Windows 補強 | msiexec 直接安裝遠端套件、`Invoke-Command`、`.Invoke()`、下載 DLL 後用 rundll32 載入 |
 | 情境加權 | 來源是瀏覽器時提高 `risk_score`；來源是終端機或 IDE 時降低 Suspicious 的提醒頻率。**情境不能把 Malicious 降級**（P1） |
-| 新的機密類型 | BIP-39 助記詞（12、15、18、21、24 個字，**要驗證 checksum**）；含帳號密碼的資料庫連線字串（`postgres://user:pass@`…） |
-| gitleaks | 重新加入舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user` |
+| ✅ 新的機密類型 | BIP-39 助記詞（12、15、18、21、24 個字，**要驗證 checksum**）；含帳號密碼的資料庫連線字串（`postgres://user:pass@`…） |
+| ✅ gitleaks | 重新加入舊版因為 JS 會變成 O(n²) 而沒收的 `curl-auth-header`、`curl-auth-user` |
 | `risk_score` | 0–100，由訊號推算出來，給 UI 和報表用。**判定結果仍然以離散的判定表為準**，維持可解釋性 |
 
 ### 1b 待辦（1a 移植時發現）

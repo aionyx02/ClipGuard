@@ -3,7 +3,7 @@
 1b 沒有新增 op 或 expect 欄位：`corpus/cases/hidden-1b-*.jsonl` 用的是既有的 `hidden.analyze`（`ops/hidden.md`）。
 這裡記錄 1b 改變的**判斷規則**（細節見 `docs/spec/detection-rules.md` §6.1），供寫案例時對照。
 
-## `hidden.analyze` 的 1b 規則變更
+## hidden.analyze（1b 補充） 的 1b 規則變更
 
 - **資料搬到 `rules/hidden/`**：shell 指令清單（`shell-commands.json`）、同形字（`homoglyphs.json`，每個文字系統一組，
   訊息的 `script` 參數取自資料）、標準區旗 TAG 序列（`tag-sequences.json`）、ZWNJ／ZWJ 的例外（`joiners.json`）。行為不變。
