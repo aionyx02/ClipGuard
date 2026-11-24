@@ -25,29 +25,9 @@
 4. **刪除** `src/`、`tests/`、`ClipGuard.sln`、`extension/`、`tools/`，以及舊的 CI workflow（`only-from-dev` 保留）。這些都還留在 git 歷史裡。
 5. `docs/detection-rules.md` 移到 `docs/spec/detection-rules.md`。`rules/` 留在原位，給新版使用。
 
-### 格式：`corpus/cases/<area>.jsonl`，每行一筆
+### 格式
 
-```jsonc
-{
-  "id": "cmd.clickfix.hidden-iex-001",   // 全域唯一，永遠不改
-  "area": "command",                      // command | secret | hidden | wallet | entry | paste | throttle | ...
-  "source": "legacy:CommandDetectorTests.cs#ClickFix樣本判為惡意[0]",  // 新增的案例寫 "new"
-  "input": "明天下午三點開會",              // 以下三種寫法擇一
-  "input_parts": ["pow", "ershell -w h", "idden ..."],  // 惡意樣本：用片段儲存，執行時才 join
-  "input_gen": [{"lit": "ghp_"}, {"gen": {"seed": 26, "charset": "alnum", "len": 36}}],  // 假金鑰
-  "context": {"source_app": "chrome", "platform": "windows", "packs": ["tw"]},
-  "expect": { ... },                      // 依 area 而定
-  "tags": ["clickfix", "obfuscation"],
-  "note": "選填"
-}
-```
-
-- `gen` 沿用舊測試的 LCG：`state = (state*1103515245 + 12345) & 0x7fffffff`，每次取 `charset[(state>>8) % len]`。Rust、JS、Python 各實作一次，三邊產生的字串必須完全相同。
-- `expect` 只寫**語意**：
-  - command：`level`、`signals[]`、`explains[]`（訊息 ID）
-  - secret：`[{kind, label, span_utf16, mask}]`
-  - 和時間有關的案例：用 `events: [{t_ms, ...}]` 描述事件序列
-- 舊測試只檢查部分欄位時（例如只檢查 `level`），`expect` 也只寫那幾個欄位，不要自己補。
+完整定義見 [`corpus/README.md`](../../corpus/README.md)（案例欄位、Text 型別、`rand` 演算法、安全規範）與 `corpus/ops/*.md`（每個 op 的參數與 `expect`）。
 
 ### 需要額外補的良性語料（量測誤報率用）
 

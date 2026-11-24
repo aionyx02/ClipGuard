@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # *.app 是給 macOS bundle 的；Windows 不分大小寫會誤擋 ClipGuard.App 專案
 !/src/ClipGuard.App/
+
+# Rust
+/target/

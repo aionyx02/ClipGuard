@@ -69,8 +69,8 @@ PasteWarden 把剪貼簿當成信任邊界，雙向防守：
 
 ## 測試資料
 
-- 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、執行時產生的假 key（`corpus/` 的 `gen` 欄位）。
-- 網址一律用 `example.invalid`。**惡意指令樣本用片段儲存（`input_parts`），執行時才組合**，否則會被 Defender 隔離。
+- 只能用假資料：自己算出能通過檢查碼的號碼、發卡機構公開的測試卡號、執行時產生的假 key（`corpus/` 的 Text `rand`）。
+- 網址一律用 `example.invalid`。**惡意指令樣本用片段儲存（Text 的 `parts`），執行時才組合**，否則會被 Defender 隔離。
 - API key 樣本不能完整寫進任何檔案，否則會被 GitHub push protection 擋下。
 - 每條規則都要有「該命中」和「不該命中」兩種樣本。
 
