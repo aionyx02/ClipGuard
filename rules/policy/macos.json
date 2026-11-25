@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "description": "macOS app identities used by the execution-entry guard (detection-rules.md §4) and the paste guard allowlist (§5.3), same layout as windows.json. macOS has no window classes: the platform layer passes the frontmost app's bundle id as both `class` and `process`, and the window title (or empty) as `title`. Bundle ids are compared case-insensitively. Measured on macOS 27.2 for com.apple.Terminal, com.mitchellh.ghostty, com.apple.Passwords and com.apple.keychainaccess; the others come from each app's published Info.plist and still need checking on a machine that has them. dialog_class is the out-of-process Open/Save panel service; with no titles listed it never yields a file dialog (unverified whether it ever becomes frontmost).",
+  "entry": {
+    "dialog_class": "com.apple.appkit.xpc.openAndSavePanelService",
+    "shell_process": "com.apple.finder",
+    "run_dialog_titles": [],
+    "file_dialog_titles": [],
+    "file_explorer_classes": ["com.apple.finder"],
+    "terminal_classes": [],
+    "terminal_processes": [
+      "com.apple.Terminal",
+      "com.googlecode.iterm2",
+      "com.mitchellh.ghostty",
+      "dev.warp.Warp-Stable",
+      "dev.warp.Warp-Preview",
+      "net.kovidgoyal.kitty",
+      "org.alacritty",
+      "com.github.wez.wezterm",
+      "co.zeit.hyper",
+      "org.tabby",
+      "com.raphaelamorim.rio"
+    ]
+  },
+  "paste": {
+    "allowed_apps": [
+      "com.1password.1password",
+      "com.agilebits.onepassword7",
+      "org.keepassxc.keepassxc",
+      "com.bitwarden.desktop",
+      "com.dashlane.dashlanephonefinal",
+      "in.sinew.Enpass-Desktop",
+      "com.keepersecurity.passwordmanager",
+      "com.nordsec.nordpass",
+      "me.proton.pass.electron",
+      "com.lastpass.LastPass",
+      "com.apple.Passwords",
+      "com.apple.keychainaccess",
+      "com.apple.SecurityAgent"
+    ],
+    "allowed_window_classes": []
+  }
+}

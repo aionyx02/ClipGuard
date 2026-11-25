@@ -55,6 +55,21 @@ windows = { version = "0.62", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 zeroize = "1"
+# macOS (phase-4.md §4.9.1, S4). objc2 framework crates enable all bindings by
+# default; crates/platform narrows nothing for now.
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
+objc2-core-foundation = "0.3"
+objc2-core-graphics = "0.3"
+objc2-application-services = "0.3"
+# Linux (phase-4.md §4.9.2, S5). Pure-Rust protocol clients: no libwayland /
+# libxcb at build or run time.
+x11rb = { version = "0.14", default-features = false, features = ["xfixes", "res"] }
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+rustix = { version = "1", features = ["pipe", "event", "fs"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
