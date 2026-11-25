@@ -13,7 +13,7 @@ roadmap 的完成條件是「產出 V1 → V3 的偵測率和誤報率圖」。�
 | LLM 介接與護欄 | `crates/llm` | Rust、`ureq`（rustls）、`jsonschema` | Tier 2 解說；CLAUDE.md 的五條護欄寫在這裡 |
 | CLI 的 Tier 2 | `crates/cli` | — | `scan --llm`、`llm check` |
 | 紅隊 | `redteam/`（Python） | `uv`、`pydantic`、`httpx` | 產生混淆變體 → 語法驗證 → 偵測 |
-| 藍隊 | `redteam/src/redteam/blue/` | Claude Code headless（`claude -p`） | 讀繞過樣本 → 改 `rules/`、`corpus/` → 開 PR |
+| 藍隊 | `redteam/src/redteam/blue/` | opencode headless（`opencode run`，免費模型） | 讀繞過樣本 → 改 `rules/`、`corpus/` → 開 PR |
 | 報表與稽核 | `redteam/src/redteam/report/`、`audit.py` | `matplotlib` | 四項指標、V1→V3 圖、稽核日誌 |
 
 另外加上 MCP 的 `redteam` profile（`validate_syntax`、`run_benchmark`，phase-2.md §2.5 預留的）。
@@ -21,7 +21,8 @@ roadmap 的完成條件是「產出 V1 → V3 的偵測率和誤報率圖」。�
 **已決定**（2026-11-25 確認）：
 
 - 紅隊的 LLM 以**本機 Ollama 為主**：模型 `qwen3.8:27b-mlx`，報表上記下 model digest、Ollama 版本、temperature、seed，讓數字可以重現。紅隊程式用 OpenAI 相容的 API 呼叫，所以也能換成 OpenRouter，但報表只用 Ollama 的結果。
-- 藍隊用 **Claude Code headless**，權限限制寫在程式裡，見 §5.5。
+- **預算 0 元**：所有線上模型都只用免費的。藍隊用 **opencode headless** 加上 opencode Zen 的免費模型（不用登入、不用 API key；Phase 2 實測 hook 時用過），權限限制寫在程式裡，見 §5.5。OpenRouter 的免費模型是備案（要免費帳號的 API key，沒儲值時每天約 50 次請求，不夠藍隊的 agent 迴圈用）。
+- 免費模型的服務條款通常允許供應商記錄輸入。送出去的只有公開 repo 的規則、語料和合成的 payload，沒有使用者資料。
 - 另外有一組**不用 LLM 的確定性變異器**（G0），當作基準線，CI 也跑它。這樣沒有 LLM 時，整個閉環仍然能跑。
 
 ## 5.2 閉環流程
@@ -93,7 +94,7 @@ redteam/
 - 呼叫 `OLLAMA_BASE_URL`（預設 `http://127.0.0.1:11434/v1`）的 `/chat/completions`，`response_format` 用 JSON schema：`{"variants":[{"shell":"cmd|powershell|sh|bash|zsh|applescript","payload":"…","technique":"…"}]}`。輸出通過 pydantic 驗證才採用，否則丟棄並記為 `invalid_output`。
 - prompt 包含：種子指令、它的 shell、**上一次嘗試時引擎給的判定原因 ID**（只給 ID 和分數，不給規則原文），以及「要保持語意不變、不能改變下載網址和執行行為」的要求。第 2 次以後的嘗試會看到自己前一個變體的判定結果（最多 `G1_MAX_ATTEMPTS` 次）。
 - 關掉 qwen3 的 thinking（`think: false`），加快速度。
-- **模型拒絕**（沒有可解析的輸出，或輸出是拒絕的句子）記為 `refused`，計入報表，不重試。試跑時如果拒絕率超過 50%，回到 §5.9 待決問題 1。
+- **模型拒絕**（沒有可解析的輸出，或輸出是拒絕的句子）記為 `refused`，計入報表，不重試。試跑時如果拒絕率超過 50%，依序改用 `G1_FALLBACK_MODELS` 的下一個（本機模型優先，最後才是 opencode Zen 的免費模型），報表寫明實際用的模型。
 - 紅隊的 prompt 和輸出只送到本機的 Ollama。改用 OpenRouter 時，payload 會送到第三方；payload 都是合成的、網址都是 `example.invalid`，沒有使用者資料，但要在文件寫明。
 
 ### 5.3.4 payload 的處理（不可妥協）
@@ -139,21 +140,31 @@ redteam/
 
 ## 5.5 藍隊（`blue/`）
 
-CLAUDE.md 規定：藍隊只能改規則和語料、不能改引擎、只能開 PR、不能合併。這些限制**由 orchestrator 的程式碼強制**，不靠 prompt。
+CLAUDE.md 規定：藍隊只能改規則和語料、不能改引擎、只能開 PR、不能合併。這些限制由兩層程式碼強制，不靠 prompt：執行中由 opencode plugin 擋（§5.5.1），結束後由 orchestrator 檢查（§5.5.2）。免費模型改規則的能力比付費模型差，所以第二層的檢查是主要防線，第一層只是讓模型早點知道自己做錯了。
 
 ### 5.5.1 執行環境
 
 - orchestrator 從 `dev` 建出 `git worktree`（分支 `redteam/round-<N>`），在裡面執行：
 
   ```sh
-  claude -p "<任務說明>" --output-format stream-json --verbose \
-    --max-turns BLUE_MAX_TURNS \
-    --allowedTools "Read,Grep,Glob,Edit,Write,Bash(cargo run -p xtask -- corpus *),Bash(cargo test -p paste-warden-rules *),Bash(cargo test -p paste-warden-core *)" \
-    --disallowedTools "WebFetch,WebSearch,Bash(git *),Bash(gh *),Bash(curl *)" \
-    --settings blue-settings.json
+  opencode run --standalone --auto --format json \
+    -m "$BLUE_MODEL" --agent pw-blue "<任務說明>"
   ```
 
-  `blue-settings.json` 的 `permissions.deny` 擋掉 `Edit`／`Write` 到 `crates/**`、`xtask/**`、`redteam/**`、`.github/**`、`.claude/**`，以及 `Read(redteam/eval/**)`、`Read(redteam/runs/**/heldout*)`。PasteWarden 自己的 agent hook 也裝著（縱深防禦）。外層有 `BLUE_TIMEOUT_MIN` 的時間上限。
+  `--standalone` 讓這次執行用自己的 server，不共用使用者背景執行中的 opencode；`--auto` 自動核准沒有被明確 deny 的權限，所以下面的 deny 一定要寫齊。
+- worktree 裡的 `.opencode/opencode.json`（orchestrator 產生，不進版控）：
+  - `permission`：`webfetch`、`websearch` 為 `deny`；`bash` 預設 `deny`，只允許 `cargo run -p xtask -- corpus *`、`cargo test -p paste-warden-rules *`、`cargo test -p paste-warden-core *`；`edit` 只允許 `rules/**`、`corpus/**`。
+  - `agent.pw-blue`：任務說明、可用的工具。
+  - 不設定任何 MCP server。
+- worktree 裡的 `.opencode/plugins/pw-blue-guard.ts`（V2 寫法 `ctx.tool.hook("execute.before")`，V1 寫法會靜默失效）。**這一層才是強制的**，上面的 `permission` 只是縱深防禦：
+  - `write`／`edit`／`patch` 的目標路徑不在 `rules/**`、`corpus/cases/**`、`corpus/benign/**`、`corpus/divergences/**` → 擋下。
+  - `read` 的目標在 `redteam/eval/**` 或 run store 的 heldout → 擋下。
+  - `shell` 不符合上面三個允許的指令前綴，或含 `;`、`&&`、`|`、`` ` ``、`$(` → 擋下。
+  - 工具呼叫次數超過 `BLUE_MAX_TOOL_CALLS` → 之後全部擋下，等於強制結束。
+  - plugin 自己出錯一律擋下（fail closed）；plugin 也照常呼叫 `paste-warden hook opencode`，所以 Phase 2 的惡意指令檢查同時生效。
+  - 每次擋下都寫一行到 run store 的 `blue-denials.jsonl`（工具名稱和原因代碼，不含內容），計入稽核日誌。
+- 外層有 `BLUE_TIMEOUT_MIN` 的時間上限，逾時就 kill 整個 process group。
+- `BLUE_MODEL` 預設用 `BLUE_MODELS` 的第一個；同一輪連續兩次 `invalid`（沒有產生任何有效修改）就換下一個。報表記下每一輪實際用的模型。
 - 藍隊的輸入是 orchestrator 寫在 worktree 裡的 `blue-input.jsonl`：分群後的繞過樣本（parts 格式）、每筆的 technique、引擎判定原因、所在的語料種子 ID。藍隊不需要自己打出 payload：新增語料一律用新的 xtask 子命令 `cargo run -p xtask -- corpus add-from-run <run-store> <variant-id> --expect malicious`，它把 run store 的 parts 原樣寫進 `corpus/cases/redteam-*.jsonl`。
 - 對每筆 G1 繞過，藍隊要先判斷是否和種子語意等價，寫進 `blue-output.json`（`equivalent | not_equivalent | unsure`＋理由）。`not_equivalent` 的不修補。
 
@@ -222,7 +233,7 @@ CLI：
 ```
 
 - 不含 payload 原文、prompt 原文或模型回應原文，只有雜湊（原文留在 run store，`.gitignore`）。
-- 藍隊的 `stream-json` 紀錄存在 run store；稽核日誌只記工具名稱、被 deny 的次數、修改了哪些檔案。
+- 藍隊的 `opencode run --format json` 紀錄存在 run store；稽核日誌只記模型、工具名稱、被 plugin 擋下的次數（`blue-denials.jsonl`）、修改了哪些檔案。
 - 報表附上 `audit-summary.jsonl`（每一輪的彙總），進版控。
 
 ## 5.9 常數
@@ -238,7 +249,9 @@ CLI：
 | `VALIDATOR_RLIMIT_AS_MB` | `512`（Linux）；macOS 用看門狗監看 RSS | S8 |
 | `PWSH_RESTART_EVERY` | `5_000` | S8 |
 | `MAX_BYPASSES_PER_ROUND` | `40`（分群後的代表樣本） | 自訂 |
-| `BLUE_MAX_TURNS`／`BLUE_MAX_ATTEMPTS`／`BLUE_TIMEOUT_MIN` | `80`／`2`／`45` | 自訂 |
+| `BLUE_MAX_TOOL_CALLS`／`BLUE_MAX_ATTEMPTS`／`BLUE_TIMEOUT_MIN` | `150`／`2`／`45` | 自訂 |
+| `BLUE_MODELS` | `opencode/deepseek-v4.1-flash-free`、`opencode/mimo-v2.6-flash-free`、`opencode/nemotron-3.5-super-vl-free`（2026-11-25 `opencode models` 列出的免費模型；第一個在 Phase 2 實測過） | 自訂 |
+| `G1_FALLBACK_MODELS` | 本機 `qwen3.8:27b-mlx` → 之後試跑時挑一個本機模型 → `opencode/deepseek-v4.1-flash-free` | 自訂 |
 | `HUMAN_AUDIT_SAMPLE` | `30` | 自訂 |
 | `LLM_TIMEOUT_MS`／`LLM_MAX_OUTPUT_TOKENS`／`LLM_MAX_EXPLANATION_CHARS` | `20_000`／`512`／`600` | 自訂 |
 | `MCP_BENCH_MAX_ITEMS` | `1_000` | 自訂 |
@@ -248,13 +261,14 @@ CLI：
 - `G0_MAX_DEPTH = 3`：疊越多層越不像真實攻擊，也越容易超過語料的效能預算。3 層已經涵蓋 S8 的混合型（cmd → powershell → base64）。
 - `G1_VARIANTS_PER_CALL = 3`：一次要 3 個比要 1 個省掉重複的 prompt 成本。27B 模型在這台 M5 Max 估計每次呼叫 10–20 秒，183 個 train 種子 × 3 次嘗試約 1.5–3 小時，一個晚上跑得完。實際速度在試跑後補進本文件。
 - `STORE_PART_CHARS = 6`：比任何偵測關鍵字（`powershell`、`mshta`、`Invoke-Expression`）都短，單一片段不會被防毒軟體認成完整的指令。
-- `MAX_BYPASSES_PER_ROUND = 40`、`BLUE_MAX_TURNS = 80`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。
+- `MAX_BYPASSES_PER_ROUND = 40`、`BLUE_MAX_TOOL_CALLS = 150`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。opencode 沒有 `--max-turns`，所以由 plugin 計數。
+- `BLUE_MODELS`：免費模型會下架或改名，每一輪開始前先用 `opencode models` 確認，不在清單上就跳過。
 - `LLM_TIMEOUT_MS = 20_000`：本機 27B 模型產生 512 tokens 需要的時間，加上餘裕。
 
 ## 5.10 CI
 
 - `redteam` job（ubuntu）：`uv sync`、`ruff check`、`black --check`、`pytest`（變異器、parts 格式、靜態掃描、orchestrator 的路徑檢查與 diff 規則、報表模型）。
-- `redteam-smoke`：只用 G0、10 個種子、validator 在容器裡跑，引擎用目前的 commit，確認整條管線能跑完。不呼叫 LLM、不呼叫 Claude。
+- `redteam-smoke`：只用 G0、10 個種子、validator 在容器裡跑，引擎用目前的 commit，確認整條管線能跑完。不呼叫任何 LLM。
 - `redteam-paths`：§5.5.3 的分支路徑檢查。
 - `no-http-in-core`：`cargo tree -p paste-warden-core -e normal` 和 `-p paste-warden-wasm` 不能出現 `ureq`、`reqwest`、`hyper`。
 - `crates/llm` 的測試用本機的 mock HTTP server：五條護欄各一組；**AI 關閉時的網路測試**：開一個 TCP listener，把設定的端點指向它但 `enabled = false`，跑 `scan --llm`，斷言 listener 收到 0 個連線。
@@ -281,6 +295,8 @@ CLI：
 | `phase5/validate` | `redteam/src/redteam/validate/**`、`redteam/tests/validate/**`、sandbox profile、CI 容器的 Dockerfile | 其他 `redteam/` 子目錄 |
 | `phase5/red-eval` | `seeds.py`、`store.py`、`mutate/**`、`engine.py`、`report/**`、`audit.py`、對應的 tests、xtask 的 `corpus add-from-run` | `validate/`、`crates/llm` |
 
+藍隊的 opencode plugin（`blue/pw-blue-guard.ts`）和它的測試由主 session 寫，因為它和 orchestrator 的檢查要一起設計。
+
 三個 agent 合併後，主 session 做 `gen_llm/`、`blue/`、`cli.py` 的 `loop`，以及跨元件的接線和試跑。
 
 ## 5.13 完成條件
@@ -294,10 +310,13 @@ CLI：
 - [ ] `redteam/reports/` 產出四項指標與 V1→V3 圖，文件網站的開發者區段可以看到。
 - [ ] CI 全綠（含 `redteam`、`redteam-smoke`、`redteam-paths`）。
 
-## 5.14 待決問題
+## 5.14 已決定（2026-11-25）
 
-1. **G1 拒絕率太高怎麼辦**：qwen3.8 可能拒絕產生惡意指令的變體。試跑時拒絕率超過 50% 的話，要換成別的本機模型，還是改用 OpenRouter？
-2. **藍隊用哪個 Claude 模型、預算多少**：每一輪 `BLUE_MAX_TURNS = 80`，兩輪加上重試大約 4–6 次 headless 執行。要指定模型，還是用帳號預設的模型？
-3. **人工抽查和合併由誰負責**：每輪 30 筆 G1 繞過的等價抽查，以及藍隊 PR 的 review。
-4. **heldout 要不要進版控**：目前的設計是進版控（parts 格式），方便重現報表。另一個做法是只存種子和參數、每次重新產生，但 G1 就算固定 seed 也不保證能完全重現。
-5. **V3 之後要不要繼續跑**：時間允許的話，第 3 輪的結果可以只放在報表裡（V4 不合併），當作「攻擊者還能找到什麼」的展示。
+- 預算 0 元。藍隊改用 opencode headless＋免費模型（§5.5.1），不用 Claude Code；紅隊的 G1 用本機 Ollama，拒絕率過高時才改用免費的線上模型。
+- 人工抽查與藍隊 PR 的 review 由使用者負責（每輪約 30 筆抽查＋一個 PR）。
+- heldout 和 benign-extra 進版控（parts 格式）。
+
+## 5.15 待決問題
+
+1. **免費模型改不動規則怎麼辦**：如果兩輪都沒有產生能通過 §5.5.2 的修改，V2、V3 就沒有差別。備案是讓主 session（開發用的 Claude Code，不另外花錢）照同樣的流程和檢查手動跑一輪，報表標明「藍隊由開發者的 agent 執行」。要不要接受這個備案？
+2. **V3 之後要不要繼續跑**：時間允許的話，第 3 輪的結果可以只放在報表裡（V4 不合併），當作「攻擊者還能找到什麼」的展示。
