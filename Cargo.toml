@@ -72,6 +72,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-single-instance = "2"
 keyring = "4"
 getrandom = "0.4"
+sys-locale = "0.3"
 paste-warden-platform = { path = "crates/platform" }
 # macOS (phase-4.md §4.9.1, S4). objc2 framework crates enable all bindings by
 # default; crates/platform narrows nothing for now.

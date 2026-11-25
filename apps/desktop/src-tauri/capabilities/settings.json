@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "settings",
+  "description": "Settings window: status, preferences, paste guard, registered secrets, restore, quit.",
+  "windows": ["settings"],
+  "permissions": [
+    "core:event:default",
+    "core:window:default",
+    "core:window:allow-hide",
+    "core:app:allow-version",
+    "allow-get-protection-status",
+    "allow-get-settings",
+    "allow-set-locale",
+    "allow-set-theme",
+    "allow-set-paste-guard",
+    "allow-allowlist-add",
+    "allow-allowlist-remove",
+    "allow-register-secret",
+    "allow-list-secrets",
+    "allow-remove-secret",
+    "allow-restore",
+    "allow-quit",
+    "allow-open-accessibility-settings",
+    "allow-debug-drop-hook",
+    "allow-debug-restore-hook"
+  ]
+}
