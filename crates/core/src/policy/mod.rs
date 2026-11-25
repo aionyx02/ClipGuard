@@ -9,9 +9,12 @@
 //!   `RegisteredSecretStore`, `SecretRegistration`)
 //! - [`windows`]: Windows window classes / process names (`rules/policy/windows.json`)
 //! - [`macos`]: macOS bundle ids in the same layout (`rules/policy/macos.json`)
+//! - [`linux`]: Linux `WM_CLASS` / `app_id` / comm names in the same layout
+//!   (`rules/policy/linux.json`)
 
 pub mod entry;
 pub mod guard;
+pub mod linux;
 pub mod macos;
 pub mod paste;
 pub mod registered;
