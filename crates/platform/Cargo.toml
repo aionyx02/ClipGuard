@@ -16,13 +16,8 @@ sha2.workspace = true
 zeroize.workspace = true
 # store.rs: settings / registered-secret persistence, OS keyring for the HMAC key
 keyring.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 # CSPRNG for the HMAC key (already in Cargo.lock through other crates)
 getrandom.workspace = true
-
-[dev-dependencies]
-tempfile.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows.workspace = true
