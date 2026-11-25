@@ -265,8 +265,13 @@ Steps:
    ones.
 2. Change rule data under rules/ (read docs/spec/detection-rules.md §3 and
    §5.4 first: Rust `regex` syntax only, no lookaround or backreferences).
-   You cannot change engine code; some variants may be unfixable with data
-   alone, so skip those and say why.
+   To add a new detection pattern, add an entry to
+   rules/command/signals.json (§3.7): "execution" entries add an execution
+   signal, "scam" entries a scam signal; `reason` must be an existing
+   reason id listed in §3.7. Patterns are matched on the normalized text and
+   on every deobfuscation layer. Keep patterns narrow so benign commands
+   still pass. You cannot change engine code; some variants may be
+   unfixable with data alone, so skip those and say why.
 3. For every fixed variant add the corpus case with exactly:
    cargo run -p xtask -- corpus add-from-run {HANDOFF}/store <variant_id> \\
      --expect malicious --file redteam-r{round_}

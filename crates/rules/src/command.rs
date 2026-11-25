@@ -10,6 +10,7 @@
 //!   such as raw.githubusercontent.com (§3.2, phase-1.md §1.8)
 //! - `bait-keywords.json`: multilingual bait-comment keywords (§3.1, #27)
 //! - `extensions.json`: executable / script file extensions
+//! - `signals.json`: data-driven execution / scam signals (§3.7, Phase 5)
 //!
 //! The files are embedded at build time with `include_str!`.
 
@@ -22,6 +23,115 @@ const OFFICIAL_HOSTS_JSON: &str = include_str!("../../../rules/command/official-
 const OFFICIAL_PATHS_JSON: &str = include_str!("../../../rules/command/official-paths.json");
 const BAIT_KEYWORDS_JSON: &str = include_str!("../../../rules/command/bait-keywords.json");
 const EXTENSIONS_JSON: &str = include_str!("../../../rules/command/extensions.json");
+const SIGNALS_JSON: &str = include_str!("../../../rules/command/signals.json");
+
+/// Most data signals in `signals.json` (detection-rules.md §3.7).
+pub const MAX_DATA_SIGNALS: usize = 200;
+/// Longest data-signal pattern, in chars.
+pub const MAX_DATA_SIGNAL_PATTERN_LEN: usize = 512;
+/// Compiled-size limit of one data-signal pattern.
+pub const MAX_DATA_SIGNAL_REGEX_BYTES: usize = 256 * 1024;
+
+/// One data-driven signal (§3.7). `reason` must be an existing reason id; the
+/// engine drops entries whose reason it does not know.
+#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DataSignal {
+    pub id: String,
+    pub pattern: String,
+    pub reason: String,
+}
+
+impl DataSignal {
+    /// The pattern as the engine compiles it.
+    pub fn full_pattern(&self) -> String {
+        format!("(?im){}", self.pattern)
+    }
+
+    /// Compiles with the §3.7 limits; `None` if it does not compile.
+    pub fn compile(&self) -> Option<regex::Regex> {
+        regex::RegexBuilder::new(&self.full_pattern())
+            .size_limit(MAX_DATA_SIGNAL_REGEX_BYTES)
+            .dfa_size_limit(MAX_DATA_SIGNAL_REGEX_BYTES)
+            .build()
+            .ok()
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SignalsFile {
+    #[serde(default)]
+    execution: Vec<DataSignal>,
+    #[serde(default)]
+    scam: Vec<DataSignal>,
+}
+
+/// Keeps only well-formed signals (§3.7): one bad entry is dropped and
+/// reported, it never empties the other command rules.
+fn checked_signals(
+    file: SignalsFile,
+    problems: &mut Vec<String>,
+) -> (Vec<DataSignal>, Vec<DataSignal>) {
+    let mut seen: Vec<String> = Vec::new();
+    let mut total = 0usize;
+    let mut keep = |list: Vec<DataSignal>, kind: &str, problems: &mut Vec<String>| {
+        let mut out = Vec::new();
+        for sig in list {
+            let id_ok = !sig.id.is_empty()
+                && sig.id.len() <= 64
+                && sig
+                    .id
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+            let reason_ok = sig.reason.starts_with("cmd-reason-")
+                && sig
+                    .reason
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+            let problem = if !id_ok {
+                Some(format!("signals.{kind}: invalid id {:?}", sig.id))
+            } else if seen.contains(&sig.id) {
+                Some(format!("signals.{kind}: duplicate id {:?}", sig.id))
+            } else if !reason_ok {
+                Some(format!(
+                    "signals.{kind}: {:?} has an invalid reason {:?}",
+                    sig.id, sig.reason
+                ))
+            } else if sig.pattern.trim().is_empty() {
+                Some(format!("signals.{kind}: {:?} has an empty pattern", sig.id))
+            } else if sig.pattern.chars().count() > MAX_DATA_SIGNAL_PATTERN_LEN {
+                Some(format!(
+                    "signals.{kind}: {:?} pattern is longer than {MAX_DATA_SIGNAL_PATTERN_LEN} chars",
+                    sig.id
+                ))
+            } else if sig.compile().is_none() {
+                Some(format!(
+                    "signals.{kind}: {:?} pattern does not compile within the limits",
+                    sig.id
+                ))
+            } else if total >= MAX_DATA_SIGNALS {
+                Some(format!(
+                    "signals: more than {MAX_DATA_SIGNALS} entries; {:?} dropped",
+                    sig.id
+                ))
+            } else {
+                None
+            };
+            match problem {
+                Some(p) => problems.push(p),
+                None => {
+                    seen.push(sig.id.clone());
+                    total += 1;
+                    out.push(sig);
+                }
+            }
+        }
+        out
+    };
+    let execution = keep(file.execution, "execution", problems);
+    let scam = keep(file.scam, "scam", problems);
+    (execution, scam)
+}
 
 /// A fixed environment variable (`%SystemRoot%` → `C:\Windows`).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -109,6 +219,12 @@ pub struct CommandRules {
     pub official_paths: Vec<OfficialPath>,
     pub bait: Vec<BaitLanguage>,
     pub extensions: Extensions,
+    /// Data-driven execution signals (§3.7).
+    pub signals_execution: Vec<DataSignal>,
+    /// Data-driven scam signals (§3.7).
+    pub signals_scam: Vec<DataSignal>,
+    /// Signal entries dropped at load time, reported by [`CommandRules::validate`].
+    pub signal_problems: Vec<String>,
 }
 
 impl CommandRules {
@@ -124,6 +240,12 @@ impl CommandRules {
             .map_err(|e| format!("rules/command/bait-keywords.json: {e}"))?;
         let extensions: Extensions = serde_json::from_str(EXTENSIONS_JSON)
             .map_err(|e| format!("rules/command/extensions.json: {e}"))?;
+        let mut signal_problems = Vec::new();
+        let signals: SignalsFile = serde_json::from_str(SIGNALS_JSON).unwrap_or_else(|e| {
+            signal_problems.push(format!("rules/command/signals.json: {e}"));
+            SignalsFile::default()
+        });
+        let (signals_execution, signals_scam) = checked_signals(signals, &mut signal_problems);
         let rules = CommandRules {
             known_programs: programs.known_programs,
             known_env: programs.known_env,
@@ -131,8 +253,13 @@ impl CommandRules {
             official_paths: paths.prefixes,
             bait: bait.languages,
             extensions,
+            signals_execution,
+            signals_scam,
+            signal_problems,
         };
-        let problems = rules.validate();
+        // A broken signals.json only loses its own entries (§3.7); the other
+        // files must be valid for the rules to load at all.
+        let problems = rules.validate_base();
         if problems.is_empty() {
             Ok(rules)
         } else {
@@ -155,9 +282,17 @@ impl CommandRules {
             .flat_map(|l| l.patterns.iter().map(String::as_str))
     }
 
+    /// Everything [`Self::validate_base`] reports, plus the data-signal entries
+    /// that were dropped at load time. The embedded rules must have none.
+    pub fn validate(&self) -> Vec<String> {
+        let mut problems = self.validate_base();
+        problems.extend(self.signal_problems.iter().cloned());
+        problems
+    }
+
     /// Checks the data: names are plain words, hosts are lowercase ASCII domain
     /// names, regex fragments compile, nothing is empty or duplicated.
-    pub fn validate(&self) -> Vec<String> {
+    fn validate_base(&self) -> Vec<String> {
         let mut problems = Vec::new();
         let word = |s: &str| {
             !s.is_empty()
@@ -243,6 +378,40 @@ fn check_list(name: &str, list: &[String], ok: impl Fn(&str) -> bool, problems: 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bad_signal_entries_are_dropped_not_fatal() {
+        let sig = |id: &str, pattern: &str, reason: &str| DataSignal {
+            id: id.into(),
+            pattern: pattern.into(),
+            reason: reason.into(),
+        };
+        let file = SignalsFile {
+            execution: vec![
+                sig("good-1", r"\bfoo\b", "cmd-reason-powershell"),
+                sig("Bad Id", "x", "cmd-reason-powershell"),
+                sig("good-1", "y", "cmd-reason-powershell"),
+                sig("no-reason", "z", "allow"),
+                sig("empty", "  ", "cmd-reason-cmd"),
+                sig("broken", "(", "cmd-reason-cmd"),
+                sig("lookaround", "(?=a)", "cmd-reason-cmd"),
+                sig(
+                    "too-long",
+                    &"a".repeat(MAX_DATA_SIGNAL_PATTERN_LEN + 1),
+                    "cmd-reason-cmd",
+                ),
+                sig("huge", r"\w{1000}{1000}", "cmd-reason-cmd"),
+            ],
+            scam: (0..=MAX_DATA_SIGNALS)
+                .map(|i| sig(&format!("s-{i}"), "q", "cmd-reason-encoded"))
+                .collect(),
+        };
+        let mut problems = Vec::new();
+        let (exec, scam) = checked_signals(file, &mut problems);
+        assert_eq!(exec.len(), 1);
+        assert_eq!(scam.len(), MAX_DATA_SIGNALS - 1);
+        assert_eq!(problems.len(), 8 + 2, "{problems:?}");
+    }
 
     #[test]
     fn embedded_rules_load_and_validate() {

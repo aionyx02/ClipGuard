@@ -1,0 +1,6 @@
+{
+  "format": 1,
+  "_comment": "Data-driven command signals (docs/spec/detection-rules.md §3.7). Each entry adds an execution or scam signal, matched like the built-in ones on the normalized text and on every deobfuscation layer. Patterns: Rust regex, matched with (?im); at most 512 chars, 200 entries. `reason` must be an existing reason id (execution ones for `execution`, scam ones for `scam`). Entries can only make verdicts stricter. Every entry needs must-match and must-not-match corpus cases.",
+  "execution": [],
+  "scam": []
+}
