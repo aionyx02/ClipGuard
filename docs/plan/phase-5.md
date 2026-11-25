@@ -144,7 +144,7 @@ CLAUDE.md 規定：藍隊只能改規則和語料、不能改引擎、只能開 
 
 ### 5.5.1 執行環境
 
-- orchestrator 從 `dev` 建出 `git worktree`（分支 `redteam/round-<N>`），在裡面執行：
+- orchestrator 從 `dev` 建出 `git worktree`（分支 `redteam/round-<N>`），用 sparse checkout 把整個 `redteam/` 排除在外（`git sparse-checkout set --no-cone '/*' '!/redteam/'`）。heldout、run store、orchestrator 的程式碼在這個 worktree 裡**根本不存在**，所以就算 grep 整個目錄也讀不到；排除不算刪除，`git diff` 不受影響。交接檔放在 worktree 的 `.pw-blue/`（寫進 `.git/info/exclude`）：`blue-input.jsonl`、只含這一輪繞過樣本的 run store `.pw-blue/store/`，以及藍隊要寫的 `blue-output.json`。然後在裡面執行：
 
   ```sh
   opencode run --standalone --auto --format json \
@@ -156,13 +156,15 @@ CLAUDE.md 規定：藍隊只能改規則和語料、不能改引擎、只能開 
   - `permission`：`webfetch`、`websearch` 為 `deny`；`bash` 預設 `deny`，只允許 `cargo run -p xtask -- corpus *`、`cargo test -p paste-warden-rules *`、`cargo test -p paste-warden-core *`；`edit` 只允許 `rules/**`、`corpus/**`。
   - `agent.pw-blue`：任務說明、可用的工具。
   - 不設定任何 MCP server。
-- worktree 裡的 `.opencode/plugins/pw-blue-guard.ts`（V2 寫法 `ctx.tool.hook("execute.before")`，V1 寫法會靜默失效）。**這一層才是強制的**，上面的 `permission` 只是縱深防禦：
-  - `write`／`edit`／`patch` 的目標路徑不在 `rules/**`、`corpus/cases/**`、`corpus/benign/**`、`corpus/divergences/**` → 擋下。
-  - `read` 的目標在 `redteam/eval/**` 或 run store 的 heldout → 擋下。
+- worktree 裡的 `.opencode/plugins/pw-blue-guard.ts` 加上判斷邏輯 `pw-blue-policy.mjs`（V2 寫法 `ctx.tool.hook("execute.before")`，V1 寫法會靜默失效）。**這一層才是強制的**，上面的 `permission` 只是縱深防禦。預設拒絕：不認得的工具和參數形狀一律擋下。
+  - `write`／`edit`／`patch` 的目標路徑不在 `rules/**`、`corpus/cases/**`、`corpus/benign/**`、`corpus/divergences/**`（唯一例外是 `.pw-blue/blue-output.json`）→ 擋下。路徑先正規化，`rules/../crates/…` 和 worktree 外的絕對路徑都算越界；`patch` 從內文的檔案標頭取路徑。
+  - `read`／`grep`／`glob` 的目標在 `redteam/`、`.git/`、`.opencode/` 或 worktree 外 → 擋下（第二層保險，正常情況 `redteam/` 不存在）。
+  - `corpus add-from-run` 的來源只能是 `.pw-blue/store`，不能指向其他 run store 或 `redteam/eval`。
   - `shell` 不符合上面三個允許的指令前綴，或含 `;`、`&&`、`|`、`` ` ``、`$(` → 擋下。
   - 工具呼叫次數超過 `BLUE_MAX_TOOL_CALLS` → 之後全部擋下，等於強制結束。
   - plugin 自己出錯一律擋下（fail closed）；plugin 也照常呼叫 `paste-warden hook opencode`，所以 Phase 2 的惡意指令檢查同時生效。
   - 每次擋下都寫一行到 run store 的 `blue-denials.jsonl`（工具名稱和原因代碼，不含內容），計入稽核日誌。
+  - **實測（2026-11-25，opencode 2.2.0，`opencode/deepseek-v4.1-flash-free`）**：在暫存 repo 要求模型寫 `crates/core/new.rs`、寫 `rules/b.json`、執行 `git status`。結果：第一個和第三個被擋（`write-denied-path`、`shell-not-allowlisted`），`rules/b.json` 寫入成功，`crates/` 沒有新檔。相對路徑 import `.mjs` 可以用。判斷邏輯的單元測試在 `redteam/tests/blue/policy.test.mjs`。
 - 外層有 `BLUE_TIMEOUT_MIN` 的時間上限，逾時就 kill 整個 process group。
 - `BLUE_MODEL` 預設用 `BLUE_MODELS` 的第一個；同一輪連續兩次 `invalid`（沒有產生任何有效修改）就換下一個。報表記下每一輪實際用的模型。
 - 藍隊的輸入是 orchestrator 寫在 worktree 裡的 `blue-input.jsonl`：分群後的繞過樣本（parts 格式）、每筆的 technique、引擎判定原因、所在的語料種子 ID。藍隊不需要自己打出 payload：新增語料一律用新的 xtask 子命令 `cargo run -p xtask -- corpus add-from-run <run-store> <variant-id> --expect malicious`，它把 run store 的 parts 原樣寫進 `corpus/cases/redteam-*.jsonl`。
