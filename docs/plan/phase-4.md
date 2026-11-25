@@ -222,6 +222,14 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 | CI | hook 相關測試標成 `#[ignore]`，只在本機和手動清單驗證；CI 只跑純邏輯測試和建置 | Windows runner 能不能裝低階 hook 未確認 |
 | 簽章 | 4a 不處理，留給 Phase 6；下載頁教使用者用圖形介面按「仍要執行」 | S3 待決問題 3 |
 | CLI 的 Report JSON | Phase 4 前已改成直接用 `crates/report`（phase-2.md 實作備註的要求）；`crates/cli/src/report_json.rs` 和 parity 測試刪除。JsonSchema 放在 `crates/report` 的 `schema` feature，只有 CLI 開啟 | 一份實作就不需要 parity 測試；WASM 不必帶 schemars |
+| 共用介面（2026-11-25 補） | `crates/platform` 新增三個平台無關的模組：`gate.rs`（`PasteGate`，由 macOS 的 `TapGate` 搬出來，`analyzed_seq` 和 `decision` 打包成一個 `AtomicU64`，另加 `fg_root`、`pending_target`）、`status.rs`（§4.8.1）、`host.rs`（`Host` trait 和 `HostEvent`，三個平台各有 `start_host`）。worker 只透過 `Host` 操作 OS | 讓 4a、4b 和桌面 App 可以平行開發，worker 只寫一份 |
+| hook 探測常數 | `HOOK_PROBE_*` 和探測排程器放在平台無關的 `probe.rs`，`windows/paste_hook.rs` 再 re-export；系統管理員視窗通知的去重（每組 `(hwnd, seq)` 一次）也在這裡 | 排程器是純邏輯，macOS 的 worker 也要用 |
+| 前景偵測（macOS、Linux） | host 每 100 ms（`FOREGROUND_POLL_MS`）比對前景紀錄，變了才送 `HostEvent::Foreground` | observer 和 tracker 沒有回呼介面；100 ms 的延遲遠小於使用者切視窗再貼上的時間 |
+| macOS 的遮罩貼上 | `paste_into` 一律送 Cmd+V，不重現原本被吞掉的組合鍵 | 「貼上並符合樣式」的差別對純文字沒有意義 |
+| 登記機密的儲存 | keyring v4 的 `v1` feature（Windows Credential Manager、macOS Keychain、Linux 用 zbus 的 Secret Service；規格原本寫的 `sync-secret-service` 是 v3 的名稱）。金鑰用 `getrandom` 產生。keyring 沒有金鑰但 `secrets.json` 還有資料時回 `KeyMissing`，不自動重建（§5.1），使用者可以用 `forget_secrets` 清掉舊資料後重新登記。寫檔一律先寫暫存檔再 rename，Unix 上資料夾 0700、檔案 0600 | §5.1 禁止自動重建金鑰，但使用者要有出路 |
+| 確認框的 Enter | 焦點在任何按鈕上按 Enter 都是取消，「貼原文」只能用滑鼠或 Space | 避免連按 Enter 誤貼原文 |
+| Native Messaging 的範圍 | manifest 也寫給 Brave（只寫偵測得到設定資料夾的瀏覽器）；Windows 的 manifest 放在 `%LOCALAPPDATA%\PasteWarden\NativeMessagingHosts\`。一個連線只處理一個請求，最多同時 8 個連線。`match_registered` 協定已實作，但擴充功能沒有桌面端的 HMAC 金鑰，目前不會送這個 op（見 §4.10 第 7 項） | 啟動時重跑安裝，之後才裝的瀏覽器也會被設定 |
+| Android | 2026-11-25 決定照 §4.9.5 先不做，發表版的平台表標成「尚未提供」 | 時間留給 Windows、macOS、Linux |
 
 ## 4.6 測試
 
@@ -420,3 +428,6 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 4. **Android 登記機密**：要用 Android Keystore 保存 HMAC 金鑰，而且只能在 `PROCESS_TEXT`／`SEND` 時比對。範圍不大，但 4b 先不做。
 5. **Linux 讀取逾時時要不要分析已讀到的部分**：目前逾時就整筆放棄（`Unreadable`），所以故意慢慢送資料的 source 可以躲過分析。建議改成分析已讀到的前段並標成 `truncated`，因為這樣只會多擋、不會少擋。
 6. **COSMIC 沒開 data-control 但有 `DISPLAY` 時**：表格寫 `watch = Unavailable(CosmicDisabled)`，實作其實還會用 XWayland 盡力監聽。建議改成 `Degraded(CosmicDisabled)`，和實際行為一致。
+7. **`match_registered` 的金鑰**：擴充功能要算出和桌面版相同的 HMAC 才能比對，但 T16 禁止傳送 HMAC 金鑰。可能的做法是讓擴充功能把候選字串的長度和雜湊前綴送過去，由桌面版比對；或乾脆讓擴充功能自己登記機密。4a 先不做，協定保留這個 op。
+8. **Chromium 擴充功能 ID 的私鑰**：manifest 的 `key` 是一次性產生的，私鑰沒有保存。載入未封裝的擴充功能或用 zip 安裝都不需要它；如果之後要自己打包 CRX 並維持同一個 ID，要重新產生 key 並更新 `ALLOWED_CHROMIUM_EXTENSION_IDS`。
+9. **Linux 的最後輸入時間**：沒有不需要權限的 API（X11 要 XScreenSaver extension，Wayland 要 `ext-idle-notify`），目前 `idle_ms` 回傳「不知道」，錢包掉包只套用快速替換的時間窗。
