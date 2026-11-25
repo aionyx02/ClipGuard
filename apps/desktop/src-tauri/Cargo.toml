@@ -33,5 +33,12 @@ zeroize.workspace = true
 # Not in the workspace yet: the OS UI language for "system" (notifications, tray).
 sys-locale.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+# MainThreadMarker for the foreground observer (registered in `setup`).
+objc2.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
 [lints]
 workspace = true

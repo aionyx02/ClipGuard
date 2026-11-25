@@ -85,3 +85,23 @@ ui-desktop-error-nothing-to-restore = 沒有可以還原的內容。
 ui-desktop-error-restore-failed = 無法還原內容。
 ui-desktop-error-open-settings-failed = 無法開啟系統設定。
 ui-desktop-error-unsupported = 這個系統不支援這項功能。
+
+## 啟動時刪除舊版（C#）資料（Windows，phase-4.md §4.5）
+ui-desktop-toast-legacy-removed-title = 請重新登記機密
+ui-desktop-toast-legacy-removed-body = 舊版 ClipGuard 的資料已經刪除：它的金鑰無法搬到這個版本。請到設定裡重新登記機密。
+
+## 儲存錯誤（crates/platform/src/store.rs StoreError::message_id）
+# $file：檔名（settings.json、paste-guard.json、secrets.json；資料夾本身是空字串）
+store-error-no-data-dir = 找不到可以存放 PasteWarden 設定的資料夾，重新啟動後設定不會保留。
+store-error-io = 無法讀寫 PasteWarden 的資料（{ $file }）。
+store-error-too-large = PasteWarden 的資料檔太大，已略過（{ $file }）。
+# $field：值不正確的設定，可能是空字串
+store-error-corrupt = PasteWarden 的資料檔損毀（{ $file }），已改用預設值。
+store-error-key-unavailable = 系統鑰匙圈無法使用，所以無法登記機密。
+store-error-key-access-denied = 系統鑰匙圈拒絕讀取已登記機密的金鑰。
+store-error-key-corrupt = 系統鑰匙圈裡已登記機密的金鑰損毀。
+store-error-key-missing = 系統鑰匙圈裡已登記機密的金鑰不見了，已登記的機密無法再辨識。請到設定裡清除已登記的機密，再重新登記。
+store-error-key-platform = 無法使用系統鑰匙圈。
+store-error-random = 系統無法產生隨機金鑰，請再試一次。
+store-error-too-many-secrets = 最多只能登記 { $max } 筆機密。
+store-error-registration = 無法登記這筆機密。

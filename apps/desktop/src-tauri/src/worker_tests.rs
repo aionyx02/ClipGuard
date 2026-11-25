@@ -10,7 +10,6 @@ use paste_warden_platform::gate::PasteGate;
 use paste_warden_platform::host::HostError;
 
 use super::*;
-use crate::bridge::LocalProbe;
 use crate::persist::MemoryPersistence;
 
 // ---------------------------------------------------------------------------
@@ -106,8 +105,8 @@ impl Host for FakeHost {
         self.st().pastes.push(target);
         Ok(())
     }
-    fn idle_ms(&self) -> u64 {
-        0
+    fn idle_ms(&self) -> Option<u64> {
+        Some(0)
     }
     fn set_intercept(&self, enabled: bool) -> Result<(), HostError> {
         self.st().intercept.push(enabled);
@@ -200,7 +199,6 @@ fn rig_with(f: impl FnOnce(&mut MemoryPersistence)) -> Rig {
         Box::new(ui.clone()),
         Box::new(p),
         None,
-        Box::new(LocalProbe::new(0)),
         cfg,
         0,
     );
@@ -476,10 +474,11 @@ fn status_overlays_probe_elevated_and_settings() {
         ..Default::default()
     }));
     assert!(r.w.compute_status().intercept.is_active());
+    // Probe at 30 s, missed at 31 s (reinstall); again at 61 s, missed at 62 s.
     r.at(30_000);
     r.at(31_000);
-    r.at(60_000);
     r.at(61_000);
+    r.at(62_000);
     assert_eq!(r.host.st().reinstalls, 2);
     assert_eq!(
         r.ui.r().statuses.last().unwrap().intercept,
@@ -490,13 +489,13 @@ fn status_overlays_probe_elevated_and_settings() {
         paste_warden_platform::status::TrayState::Degraded
     );
     // The next answered probe clears it.
-    r.at(90_000);
+    r.at(92_000);
     r.ev(HostEvent::ProbeAnswered);
     assert!(r.ui.r().statuses.last().unwrap().intercept.is_active());
 
     // Host-reported problems pass through.
     r.host.st().status.watch = Capability::Unavailable(Reason::NoDataControl);
-    r.at(91_000);
+    r.at(93_000);
     assert_eq!(
         r.ui.r().statuses.last().unwrap().watch,
         Capability::Unavailable(Reason::NoDataControl)
@@ -633,4 +632,131 @@ fn notification_throttle_holds_a_burst() {
     }
     // Whatever the verdicts, at most one notice shows before the interval.
     assert!(r.ui.r().notices.len() <= 1);
+}
+
+#[test]
+fn platform_limit_wins_over_settings() {
+    let mut r = rig();
+    r.host.st().status.intercept = Capability::Unavailable(Reason::WaylandNoIntercept);
+    r.at(1_000);
+    let s = r.w.compute_status();
+    assert_eq!(
+        s.intercept,
+        Capability::Unavailable(Reason::WaylandNoIntercept)
+    );
+    assert_eq!(
+        s.tray_state(),
+        paste_warden_platform::status::TrayState::Degraded
+    );
+    // Turned on in settings: still the platform limit.
+    r.register(FAKE_SECRET).unwrap();
+    assert_eq!(
+        r.w.compute_status().intercept,
+        Capability::Unavailable(Reason::WaylandNoIntercept)
+    );
+}
+
+#[test]
+fn status_changed_rereads_the_host() {
+    let mut r = rig();
+    r.register(FAKE_SECRET).unwrap();
+    let ev = r.host.copy(FAKE_SECRET);
+    r.ev(ev);
+    // Past the notification throttle's interval for the secret notice.
+    r.at(10_000);
+    let before = r.ui.r().statuses.len();
+    r.host.st().status.intercept = Capability::Degraded(Reason::SecureInput);
+    r.ev(HostEvent::StatusChanged);
+    assert_eq!(r.ui.r().statuses.len(), before + 1);
+    assert_eq!(
+        r.ui.r().statuses.last().unwrap().intercept,
+        Capability::Degraded(Reason::SecureInput)
+    );
+    // Secure Input with a secret on the clipboard: told once.
+    r.ev(HostEvent::StatusChanged);
+    let n =
+        r.ui.titles()
+            .iter()
+            .filter(|t| *t == "ui-desktop-toast-secure-input-title")
+            .count();
+    assert_eq!(n, 1);
+}
+
+#[test]
+fn key_missing_is_reported_and_forget_recovers() {
+    let mut r = rig_with(|p| p.registered_error = Some(PersistError::KeyMissing));
+    assert_eq!(
+        r.ui.titles(),
+        vec!["ui-desktop-toast-settings-problem-title"]
+    );
+    let e = r.cmd(UiCommand::ListSecrets).unwrap_err();
+    assert_eq!(e.message_id, "store-error-key-missing");
+    assert_eq!(
+        r.register(FAKE_SECRET).unwrap_err().message_id,
+        "store-error-key-missing"
+    );
+
+    assert!(r.cmd(UiCommand::ForgetSecrets).is_ok());
+    assert!(r.cmd(UiCommand::ListSecrets).unwrap().is_empty());
+    r.register(FAKE_SECRET).unwrap();
+    assert_eq!(r.cmd(UiCommand::ListSecrets).unwrap().len(), 1);
+    // Forgetting also works with a healthy store.
+    assert!(r.cmd(UiCommand::ForgetSecrets).is_ok());
+    assert!(r.cmd(UiCommand::ListSecrets).unwrap().is_empty());
+}
+
+#[test]
+fn legacy_cleanup_notice_shows_once_at_start() {
+    let host = FakeHost::new();
+    let ui = FakeUi::default();
+    let mut p = MemoryPersistence::new([7u8; 32]);
+    p.settings.last_version = Some("test".into());
+    let mut boot = Boot::load(&mut p, "test");
+    boot.legacy_cleaned = true;
+    let cfg = WorkerConfig {
+        rules: windows_rules(),
+        platform: Platform::Windows,
+        own_ids: vec![],
+        system_locale: "en",
+    };
+    let _w = Worker::new(boot, host, Box::new(ui.clone()), Box::new(p), None, cfg, 0);
+    assert_eq!(ui.titles(), vec!["ui-desktop-toast-legacy-removed-title"]);
+}
+
+#[test]
+fn source_falls_back_to_the_foreground_before_the_change() {
+    let mut r = rig();
+    let fg = |w: i64, p: &str| {
+        HostEvent::Foreground(ForegroundInfo {
+            window: w,
+            root: w,
+            process: Some(p.into()),
+            ..Default::default()
+        })
+    };
+    r.at(1_000);
+    r.ev(fg(1, "chrome"));
+    r.at(10_000);
+    let t = ClipText {
+        sequence: 1,
+        text: Zeroizing::new("x".into()),
+        truncated: false,
+        source_url: None,
+        owner_process: None,
+        self_write: false,
+    };
+    let app = |r: &Rig, t: &ClipText| r.w.context(t, r.now).source.unwrap().app_id;
+    assert_eq!(app(&r, &t).as_deref(), Some("chrome"));
+    // Switched away just before the event: the copy happened in chrome.
+    r.ev(fg(2, "terminal"));
+    r.now += FOREGROUND_SETTLE_MS - 1;
+    assert_eq!(app(&r, &t).as_deref(), Some("chrome"));
+    r.now += 1;
+    assert_eq!(app(&r, &t).as_deref(), Some("terminal"));
+    // The clipboard's own owner wins.
+    let owned = ClipText {
+        owner_process: Some("keepass".into()),
+        ..t
+    };
+    assert_eq!(app(&r, &owned).as_deref(), Some("keepass"));
 }
