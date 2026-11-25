@@ -19,6 +19,7 @@ path = "src/main.rs"
 [dependencies]
 paste-warden-core.workspace = true
 paste-warden-i18n.workspace = true
+paste-warden-report = { workspace = true, features = ["schema"] }
 anyhow.workspace = true
 clap.workspace = true
 rmcp.workspace = true
@@ -29,7 +30,6 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 tokio.workspace = true
 
 [dev-dependencies]
-paste-warden-report.workspace = true
 assert_cmd.workspace = true
 paste-warden-corpus.workspace = true
 predicates.workspace = true

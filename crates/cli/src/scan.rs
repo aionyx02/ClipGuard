@@ -9,7 +9,7 @@ use paste_warden_i18n::Localizer;
 use serde::{Deserialize, Serialize};
 
 use crate::l10n::t;
-use crate::report_json::ReportJson;
+use paste_warden_report::ReportJson;
 
 /// `scan` exit codes.
 pub const EXIT_ALLOW: u8 = 0;
@@ -188,11 +188,11 @@ pub struct BenchLine {
 #[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct BenchResult {
     pub id: serde_json::Value,
-    pub action: crate::report_json::ActionJson,
-    pub level: crate::report_json::LevelJson,
+    pub action: paste_warden_report::ActionJson,
+    pub level: paste_warden_report::LevelJson,
     pub risk_score: u8,
     pub secrets: usize,
-    pub hidden: crate::report_json::LevelJson,
+    pub hidden: paste_warden_report::LevelJson,
 }
 
 /// Totals printed as the last `bench` line (`{"summary": …}`).

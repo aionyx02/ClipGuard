@@ -13,9 +13,9 @@ use paste_warden_i18n::Localizer;
 
 use crate::hook::install::{self, Agent, InstallEnv, InstallOptions, Outcome, Scope};
 use crate::l10n::{parse_locale, process_locale, t};
-use crate::report_json::ReportJson;
 use crate::scan::{self, Colors, EXIT_ERROR};
 use crate::{hook, mcp};
+use paste_warden_report::ReportJson;
 
 #[derive(Debug, Parser)]
 #[command(
