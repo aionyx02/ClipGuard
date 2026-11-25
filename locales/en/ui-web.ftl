@@ -1,7 +1,10 @@
 # Playground website (apps/web). Ids use the `ui-web-` prefix; must match zh-TW/ui-web.ftl.
 
-ui-web-title = PasteWarden playground: check what you paste
-ui-web-skip = Skip to the playground
+ui-web-title = PasteWarden: check what you paste
+ui-web-skip = Skip to content
+ui-web-title-play = Playground · PasteWarden
+ui-web-back-home = Home
+ui-web-play-lead = Paste any text or pick an example. The verdict appears as you type, and nothing leaves this tab.
 
 ## Header and navigation
 ui-web-tagline = Clipboard guard
@@ -87,3 +90,80 @@ ui-web-footer-engine = Engine { $version } · { $backend }
 ui-web-backend-wasm = WebAssembly
 ui-web-backend-wasm2js = JavaScript fallback
 ui-web-external = (opens GitHub)
+
+## Home-page demo: simulated attacks drawn on the page (not a video file). Product UI text
+## is reused from ui-overlay / ui-extension; reasons mirror the engine's own messages.
+ui-web-demo-label = Demo
+ui-web-demo-scenarios = Demo scenarios
+ui-web-demo-play = Play the demo
+ui-web-demo-pause = Pause the demo
+ui-web-demo-chapters = Chapters
+ui-web-demo-xray-write = X-ray: what the page writes to the clipboard
+ui-web-demo-xray-clipboard = X-ray: your clipboard
+ui-web-demo-xray-hidden = X-ray: the invisible characters, decoded
+ui-web-demo-run-title = Run
+ui-web-demo-run-hint = Type the name of a program, folder or document to open.
+ui-web-demo-run-open = Open:
+ui-web-demo-run-ok = OK
+ui-web-demo-run-cancel = Cancel
+
+ui-web-demo-tab-clickfix = Fake CAPTCHA
+ui-web-demo-tab-secrets = Pasting secrets
+ui-web-demo-tab-pastejack = Swapped copy
+ui-web-demo-tab-hidden = Hidden text
+
+ui-web-demo-clickfix-ch-bait = Fake CAPTCHA
+ui-web-demo-clickfix-ch-catch = Blocked
+ui-web-demo-clickfix-ch-safe = Nothing runs
+ui-web-demo-clickfix-cap-bait = A website asks you to prove you are human.
+ui-web-demo-clickfix-cap-copy = Ticking the box makes the page write a command to your clipboard.
+ui-web-demo-clickfix-cap-catch = PasteWarden blocks it as it is written. Your clipboard now holds a harmless notice.
+ui-web-demo-clickfix-cap-safe = Even if you follow the steps, Win+R and Ctrl+V paste only that notice. Nothing runs.
+ui-web-demo-clickfix-page-title = One more step
+ui-web-demo-clickfix-page-sub = Confirm you are human to continue.
+ui-web-demo-clickfix-captcha = I'm not a robot
+ui-web-demo-clickfix-steps = Verification steps
+ui-web-demo-clickfix-step-1 = Open the Run box
+ui-web-demo-clickfix-step-2 = Paste the verification code
+ui-web-demo-clickfix-step-3 = Confirm
+ui-web-demo-clickfix-reason-1 = Calls PowerShell
+ui-web-demo-clickfix-reason-2 = Downloads and runs code directly
+ui-web-demo-clickfix-reason-3 = Bait comment (pretends to be a human verification)
+
+ui-web-demo-secrets-ch-copy = Copy
+ui-web-demo-secrets-ch-ask = Asked first
+ui-web-demo-secrets-ch-masked = Masked
+ui-web-demo-secrets-cap-copy = You copied a message with an access token to ask an AI chat for help.
+ui-web-demo-secrets-cap-paste = You paste it into the chat with Ctrl+V…
+ui-web-demo-secrets-cap-ask = PasteWarden stops the paste and asks first. Enter pastes the masked version.
+ui-web-demo-secrets-cap-masked = Only the masked token goes into the chat. The real one never leaves your computer.
+ui-web-demo-secrets-ai-hello = Hi! What can I help you with?
+ui-web-demo-secrets-placeholder = Message the assistant…
+
+ui-web-demo-pastejack-ch-select = Copy
+ui-web-demo-pastejack-ch-swap = Swapped
+ui-web-demo-pastejack-ch-catch = Blocked
+ui-web-demo-pastejack-cap-select = On a tutorial site, you select an install command and press Ctrl+C.
+ui-web-demo-pastejack-cap-swap = The page quietly writes something else: an extra line that downloads and runs a script, ending in a line break.
+ui-web-demo-pastejack-cap-catch = PasteWarden blocks the write before it reaches your clipboard.
+ui-web-demo-pastejack-cap-safe = Pasted into a terminal, the line break would have run it right away. Now there is nothing to run.
+ui-web-demo-pastejack-page-title = Install example-lib
+ui-web-demo-pastejack-page-sub = Run this in your terminal:
+ui-web-demo-pastejack-selected = You selected
+ui-web-demo-pastejack-written = The page wrote
+ui-web-demo-pastejack-reason-1 = Downloads something and hands it straight to a shell
+ui-web-demo-pastejack-reason-2 = Downloads and runs code directly
+ui-web-demo-pastejack-reason-3 = The command ends with a line break, so pasting it into a terminal runs it immediately
+
+ui-web-demo-hidden-ch-copy = Copy
+ui-web-demo-hidden-ch-warn = Warned
+ui-web-demo-hidden-ch-reveal = Revealed
+ui-web-demo-hidden-cap-copy = A prompt-sharing site has a handy summary prompt. You click Copy.
+ui-web-demo-hidden-cap-warn = PasteWarden warns: the text carries invisible Unicode TAG characters.
+ui-web-demo-hidden-cap-reveal = You can't see them, but an AI can read them: they tell it to send your chat elsewhere. Check before you paste it to an AI.
+ui-web-demo-hidden-page-title = Prompt: summarize any article
+ui-web-demo-hidden-page-sub = Shared by the community · 2.4k copies
+ui-web-demo-hidden-prompt = Summarize the article below in three bullet points. Keep a neutral tone.
+ui-web-demo-hidden-copy = Copy prompt
+ui-web-demo-hidden-copied = Copied
+ui-web-demo-hidden-reason = { $count } Unicode TAG character(s) (invisible; may hide instructions for AI)

@@ -18,7 +18,7 @@ for (const s of SHOTS) {
   test(s.name, async ({ page }) => {
     await page.emulateMedia({ colorScheme: s.scheme });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(`./?lang=${s.lang}`);
+    await page.goto(`./?lang=${s.lang}#/play`);
     await waitForEngine(page);
     await pickExample(page, s.example);
     await page.evaluate(() => document.getElementById('playground')?.scrollIntoView());
@@ -29,7 +29,7 @@ for (const s of SHOTS) {
 test('mobile-dark-zh-TW-clickfix', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('./?lang=zh-TW');
+  await page.goto('./?lang=zh-TW#/play');
   await waitForEngine(page);
   await pickExample(page, 'clickfix');
   await page.getByTestId('results').scrollIntoViewIfNeeded();
@@ -40,7 +40,7 @@ test('desktop-light-en-download', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('./?lang=en#download');
-  await waitForEngine(page);
+  await page.getByTestId('cta-play').waitFor();
   await page.evaluate(() => document.getElementById('privacy')?.scrollIntoView());
   await page.screenshot({
     path: out('desktop-light-en-privacy-download'),
@@ -48,3 +48,13 @@ test('desktop-light-en-download', async ({ page }) => {
     quality: 82,
   });
 });
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`desktop-${scheme}-home`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`./?lang=${scheme === 'light' ? 'en' : 'zh-TW'}`);
+    await page.getByTestId('cta-play').waitFor();
+    await page.screenshot({ path: out(`desktop-${scheme}-home`), type: 'jpeg', quality: 82 });
+  });
+}

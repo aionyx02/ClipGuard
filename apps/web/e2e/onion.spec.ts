@@ -5,7 +5,7 @@ test.describe('onion view', () => {
   test.use({ reducedMotion: 'no-preference' });
 
   test('peels the obfuscated example layer by layer', async ({ page }) => {
-    await page.goto('./?lang=en');
+    await page.goto('./?lang=en#/play');
     await waitForEngine(page);
     await pickExample(page, 'obfuscated');
 
@@ -27,7 +27,7 @@ test.describe('onion view', () => {
   });
 
   test('manual controls: replay, next, reveal all', async ({ page }) => {
-    await page.goto('./?lang=en');
+    await page.goto('./?lang=en#/play');
     await waitForEngine(page);
     await pickExample(page, 'obfuscated');
     const layers = page.locator('[data-layer]');
@@ -43,7 +43,7 @@ test.describe('onion view', () => {
   });
 
   test('a new text restarts the reveal', async ({ page }) => {
-    await page.goto('./?lang=en');
+    await page.goto('./?lang=en#/play');
     await waitForEngine(page);
     await pickExample(page, 'obfuscated');
     await expect(page.locator('[data-layer]')).toHaveCount(4, { timeout: 10_000 });
@@ -56,7 +56,7 @@ test.describe('onion view, reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
   test('shows every layer at once', async ({ page }) => {
-    await page.goto('./?lang=en');
+    await page.goto('./?lang=en#/play');
     await waitForEngine(page);
     await pickExample(page, 'obfuscated');
     await expect(page.locator('[data-layer]')).toHaveCount(4);

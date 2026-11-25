@@ -55,13 +55,16 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
 
 ## 3.5 試玩網頁（`apps/web`）
 
+- **首頁與試玩分開**（2026-11 修改）：首頁（`/`）只放主標、「試玩」按鈕、示範動畫、隱私與下載；試玩在 `#/play`（hash 路由，GitHub Pages 不必設定改寫，上一頁可用）。原因：首頁先讓人看懂 PasteWarden 在擋什麼，想動手的人再進試玩；首頁也因此不必下載引擎。
+- **示範動畫**（首頁）：四個模擬情境依序播放、可切換：假驗證碼（寫入當下攔截、剪貼簿換成提示文字）、貼出機密（貼上前確認、Enter 貼遮罩版）、複製被掉包（寫入當下攔截）、隱藏字元（Unicode TAG，只警告）。用頁面上的動畫而不是影片檔，因為 CSP 沒有 `media-src`，而且動畫能跟隨深淺色和語言。只能畫出產品真的有的行為：警告層與提示的文字直接沿用 `ui-overlay-*`、`ui-ext-*`，判定理由和引擎訊息一致；虛線的「透視」卡是旁白，不是產品介面。有播放／暫停，系統要求減少動態時不自動播放，改顯示結尾畫面。
+- **外觀**（2026-11 修改）：仿 Park UI（Radix Colors 的 slate 灰階、單色強調色、Park 的圓角與陰影層級），但 Park UI 需要 Panda CSS，前端仍維持 Tailwind（roadmap 決策），所以把設計 token 移植到 `apps/web/src/park/`。Inter 字型打包在網站裡、同源提供，不違反「沒有外部字型」。
 - **試玩**：貼上任何文字 → 即時顯示判定、風險分數、白話說明、**洋蔥視圖**（每一層解混淆的動畫展開）、偵測到的機密與遮罩預覽。全部在瀏覽器端用 WASM 執行，不送出任何資料（頁面上明說）。
 - **範例按鈕**：無害的 ClickFix 樣本（`calc`、`example.invalid`）、混淆範例、個資範例（假資料）。
 - **下載頁**：各平台下載連結與安裝說明的入口（連到文件網站）。
 - 深淺色、繁中 / English 切換，網址記住語言（`?lang=en`）。
 - 部署：GitHub Actions → GitHub Pages（`/` 是網頁，`/docs/` 是文件網站）。自訂網域之後再設定。
 - 實作備註（`apps/web`）：
-  - 引擎在第一次渲染後才 lazy-load（`import('@paste-warden/core')` + `init()`），之前顯示同尺寸的骨架（不造成版面位移）；`init()` 在 WebAssembly 不可用或被擋時自動改用 wasm2js（`?engine=wasm2js` 可強制，用於測試）。
+  - 引擎只在進入試玩（`#/play`）後才 lazy-load（`import('@paste-warden/core')` + `init()`），之前顯示同尺寸的骨架（不造成版面位移）；`init()` 在 WebAssembly 不可用或被擋時自動改用 wasm2js（`?engine=wasm2js` 可強制，用於測試）。
   - 「全部在瀏覽器執行、不上傳」由瀏覽器強制：建置版加上 CSP meta（`default-src 'none'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval'`），沒有分析追蹤、外部字型或 cookie；文字不存 storage、不放網址；textarea 關掉拼字檢查（加強版拼字檢查會把文字送到伺服器）。Playwright 測試斷言載入只有同源請求、分析期間零請求、離線可用、CSP 會擋外部連線。
   - 範例全部在執行時產生：ClickFix 片段組合（`calc`、`example.invalid`）、四層混淆（`^` 跳脫 → `-EncodedCommand` → 字串拼接 → unwrap）、依檢查碼算出的身分證字號與 Luhn 卡號、種子固定的假 GitHub token、從公開字串算出的 BIP-39 助記詞（檢查碼正確 vs 只換最後一個字而檢查碼錯誤）。
   - 連到文件網站一律用相對路徑（`./docs/…`），所以部署在 `/` 或 `/<repo>/` 都能用。
@@ -71,6 +74,7 @@ MAIN world（hook）──同步 CustomEvent──▶ isolated content script（
 - Starlight，繁中為主、English 次之；側欄分「使用者」和「開發者」。
 - 第一批頁面：介紹、各平台安裝（Chrome / Edge 載入未封裝、Firefox xpi、userscript、桌面版待 Phase 4）、功能說明、隱私承諾、威脅模型（引用 `docs/THREAT_MODEL.md`）、偵測規格（引用 `docs/spec/`）、agent hook 與 MCP（引用 Phase 2 文件）。
 - macOS 安裝說明**不能**教使用者貼 `xattr` 指令（roadmap §8）。
+- 外觀和試玩網頁一致（slate 灰階、單色強調色、Inter），只改 Starlight 的 CSS 變數與少量樣式，版面維持 Starlight 預設。
 
 ## 3.7 測試
 
