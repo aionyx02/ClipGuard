@@ -115,6 +115,17 @@ redteam/
 - 混合型 payload 照 S8 §1 遞迴驗證（`-EncodedCommand`、`-c`、`bash -c`、`eval`），最多 5 層。
 - cmd tokenizer 先做 S8 §3 的第 1–3 項（前處理、運算子、區塊），`if`／`for` 只檢查基本形狀；用 500 筆語料測試校準。
 
+實作備註（2026-11-25，都經過實測）：
+- osacompile 不改寫成 `tell application id "invalid.pastewarden"`：這樣每個 `tell` 都編譯失敗（-1728）；改成名稱形式又會跳「Where is…?」對話框卡到 timeout。實作改寫成 `tell me`，`using terms from <app>` 改成 `if true then … end if`。代價是 App 專用的語法（例如 `keystroke … using`）會被誤判成 `invalid`。
+- pwsh 在 Linux 不設 `RLIMIT_AS`（.NET GC 啟動就要預留 256 MiB，512 MB 下起不來）和 `RLIMIT_FSIZE`（會擋掉 .NET W^X 需要的 memfd）；改用 RSS 看門狗、`GCHeapHardLimit` 和容器的 `--memory 512m`。
+- pwsh 的拒絕清單多了 `Import-DscResource`（DSC 可能在 parse 時載入模組）。拒絕的比對容許反引號、`<# #>` 註解、NBSP、零寬字元和換行。
+- macOS 上 `sh` 改用 `bash --posix -n`（`/bin/sh` 會再 exec bash，被 sandbox 擋下）；bash 3.2 只在含 `$(` 或反引號時另外用 `zsh --emulate sh -f -n` 交叉比對。
+- zsh 在 parse 時讀檔（例如 `$(<不存在的檔案)`）算 `validator_crash`（`zsh.parse-time-io`），不算語法錯誤。
+- 新增 `MAX_PAYLOAD_BYTES = 256 KiB`，超過回 `validator_crash`（`payload-too-large`）。
+- 找不到 sandbox 或 sandbox 自測失敗 → `validator_crash`（`no-sandbox`），絕不在 sandbox 外執行。CI 的 `redteam` job（ubuntu，沒有 sandbox）會跳過需要 sandbox 的測試；完整的 validator 測試在 `redteam-validate.yml` 的鎖緊容器裡跑（228 passed、15 skipped，skip 的都是 macOS 專用）。
+- **已知缺口**：bwrap 和容器做不到「允許 fork、禁止 exec」，只有 macOS 的 sandbox-exec 做得到。S8 實測 `-n` 模式下 fork 出的子行程不會 exec，風險有限。
+- 每筆延遲（中位數）：pwsh 常駐 0.10 ms（macOS）／0.13 ms（Linux）；bash 16.7 ms／0.76 ms；zsh 11.9 ms／1.11 ms；cmd tokenizer 0.04 ms。macOS 較慢主要是每筆都要啟動 sandbox-exec。
+
 **已知限制**：語法正確不等於語意相同。G0 依照構造保證語意不變；G1 的變體由藍隊在修補前判斷是否等價（§5.5），報表把 G1 的繞過分成「藍隊確認等價」和「未確認」兩欄。另外每一輪人工抽查 `HUMAN_AUDIT_SAMPLE` 筆 G1 繞過，結果寫進報表。
 
 ## 5.4 偵測與評分
