@@ -184,6 +184,7 @@ def _attack_g1(a, seeds, run, audit, build):
             audit=audit,
             run_id=run.run_id,
             fallback_models=G1_FALLBACK_MODELS,
+            attempts=a.g1_attempts,
         )
     run.add_variants(result.variants)
     run.add_syntax(result.syntax.items())
@@ -402,6 +403,8 @@ def build_parser() -> argparse.ArgumentParser:
     at.add_argument('--run-seed', type=int, default=20261125)
     at.add_argument('--g1', action='store_true', help='also run G1 (Ollama)')
     at.add_argument('--g1-model', default='qwen3.8:27b-mlx')
+    # Heldout must not adapt to V1 (§5.2): use --g1-attempts 1 there.
+    at.add_argument('--g1-attempts', type=int, default=3)
 
     fr = sub.add_parser('freeze', help='heldout run -> redteam/eval/')
     fr.add_argument('--run-id', required=True)
