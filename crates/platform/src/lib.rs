@@ -4,6 +4,7 @@
 //! - [`clipboard`]: platform-independent event types and pure helpers
 //!   (de-duplication, self-write cache, source URL parsing)
 //! - `windows`: the Win32 side (Windows only)
+//! - `macos`: the AppKit / CoreGraphics side (macOS only, phase-4.md §4.9.1)
 //!
 //! Detection logic stays in `paste-warden-core` (P7); this crate only reads
 //! and writes OS state and turns it into events.
@@ -12,3 +13,6 @@ pub mod clipboard;
 
 #[cfg(windows)]
 pub mod windows;
+
+#[cfg(target_os = "macos")]
+pub mod macos;

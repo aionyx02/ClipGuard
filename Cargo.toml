@@ -55,6 +55,14 @@ windows = { version = "0.62", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 zeroize = "1"
+# macOS (phase-4.md §4.9.1, S4). objc2 framework crates enable all bindings by
+# default; crates/platform narrows nothing for now.
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
+objc2-core-foundation = "0.3"
+objc2-core-graphics = "0.3"
+objc2-application-services = "0.3"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
