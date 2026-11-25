@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PasteWarden",
+  "identifier": "org.pastewarden.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "settings",
+        "title": "PasteWarden",
+        "url": "index.html",
+        "width": 880,
+        "height": 640,
+        "minWidth": 560,
+        "minHeight": 480,
+        "center": true,
+        "visible": false,
+        "create": false
+      },
+      {
+        "label": "onboarding",
+        "title": "PasteWarden",
+        "url": "onboarding.html",
+        "width": 640,
+        "height": 560,
+        "resizable": false,
+        "maximizable": false,
+        "center": true,
+        "visible": false,
+        "create": false
+      },
+      {
+        "label": "confirm",
+        "title": "PasteWarden",
+        "url": "confirm.html",
+        "width": 460,
+        "height": 340,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "center": true,
+        "visible": false,
+        "focus": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' http://localhost:1420; style-src 'self' 'unsafe-inline' http://localhost:1420; img-src 'self' data: http://localhost:1420; font-src 'self' http://localhost:1420; connect-src ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "freezePrototype": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis", "dmg", "appimage", "deb"],
+    "category": "Utility",
+    "shortDescription": "Clipboard guard",
+    "longDescription": "PasteWarden treats the clipboard as a trust boundary: it blocks fake verification commands, hidden characters and swapped wallet addresses on the way in, and asks before IDs, API keys and registered secrets are pasted out.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "11.0"
+    },
+    "linux": {
+      "deb": {
+        "section": "utils"
+      }
+    }
+  }
+}
