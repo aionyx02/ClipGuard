@@ -73,3 +73,16 @@ ui-ext-allowlist-add = Add
 ui-ext-allowlist-remove = Remove { $host }
 ui-ext-allowlist-empty = No sites yet.
 ui-ext-allowlist-invalid = Enter a hostname such as intranet.example.com.
+
+## Options page: desktop app link (Native Messaging, optional)
+ui-ext-options-desktop = Desktop app
+ui-ext-options-desktop-desc = If you also use the PasteWarden desktop app, the extension can tell it what it blocked: only the rule, the site's hostname and what happened, never what you copied. The extension works fully without it.
+ui-ext-desktop-connect = Connect to the desktop app
+ui-ext-desktop-disconnect = Disconnect
+ui-ext-desktop-check = Check again
+ui-ext-desktop-denied = The browser didn't grant the permission, so nothing changed.
+ui-ext-desktop-state-off = Not connected.
+ui-ext-desktop-state-absent = Desktop app not found. The extension keeps protecting you on its own and checks again later.
+ui-ext-desktop-state-not-running = The desktop app is installed but not running.
+ui-ext-desktop-state-incompatible = The desktop app and this extension use different versions. Update both; until then the extension works on its own.
+ui-ext-desktop-state-running = Connected to the desktop app.

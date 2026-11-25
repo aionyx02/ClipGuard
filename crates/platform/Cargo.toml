@@ -10,6 +10,8 @@ publish.workspace = true
 
 [dependencies]
 paste-warden-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 sha2.workspace = true
 zeroize.workspace = true
 # store.rs: settings / registered-secret persistence, OS keyring for the HMAC key
@@ -38,7 +40,16 @@ x11rb.workspace = true
 wayland-client.workspace = true
 wayland-protocols.workspace = true
 wayland-protocols-wlr.workspace = true
-rustix.workspace = true
+# nmh IPC: SO_PEERCRED and getuid (phase-4.md §4.9.2).
+rustix = { workspace = true, features = ["net", "process"] }
+
+[dev-dependencies]
+proptest.workspace = true
+tempfile.workspace = true
+
+[[bin]]
+name = "paste-warden-nmh"
+path = "src/bin/paste-warden-nmh.rs"
 
 [lints]
 workspace = true

@@ -1,11 +1,16 @@
 // runtime / tabs messages between the content script, background, popup and offscreen document.
 // Extension-internal only (no externally_connectable): web pages can't send these.
 import type { Locale, Report } from '@paste-warden/core/types';
+import type { NativeRecord, VerdictInfo } from './native';
 import type { BlockRecord } from './settings';
 
-/** content → background */
+/** content / options → background */
 export type ToBackground =
-  | { type: 'record'; record: BlockRecord }
+  | { type: 'record'; record: BlockRecord; verdict?: VerdictInfo }
+  /** Desktop link state (probes first if one is due). Replies with a `NativeRecord`. */
+  | { type: 'native-status' }
+  /** Probe the desktop app now. Replies with a `NativeRecord`. */
+  | { type: 'native-probe' }
   | { type: 'present-blocked'; report: Report; url: string; locale: Locale; original: string }
   | { type: 'present-warning'; locale: Locale; kind: 'warning' | 'pastejack'; reasons: string[] }
   | { type: 'clipboard-write'; text: string };
@@ -22,6 +27,8 @@ export interface ToOffscreen {
   type: 'offscreen-write';
   text: string;
 }
+
+export type NativeStatusReply = NativeRecord;
 
 /** Reply to `status`. */
 export interface TabStatus {

@@ -73,3 +73,16 @@ ui-ext-allowlist-add = 新增
 ui-ext-allowlist-remove = 移除 { $host }
 ui-ext-allowlist-empty = 目前沒有網站。
 ui-ext-allowlist-invalid = 請輸入主機名稱，例如 intranet.example.com。
+
+## 設定頁：連接桌面版（Native Messaging，選用）
+ui-ext-options-desktop = 桌面版
+ui-ext-options-desktop-desc = 如果你也安裝了剪貼簿守門員桌面版，擴充功能可以把攔截紀錄告訴它：只有規則、網站主機名稱和處理方式，不會有你複製的內容。不連接桌面版，擴充功能也能完整運作。
+ui-ext-desktop-connect = 連接桌面版
+ui-ext-desktop-disconnect = 中斷連接
+ui-ext-desktop-check = 重新檢查
+ui-ext-desktop-denied = 瀏覽器沒有給予權限，設定沒有變更。
+ui-ext-desktop-state-off = 尚未連接。
+ui-ext-desktop-state-absent = 找不到桌面版。擴充功能會繼續獨立保護你，稍後再自動檢查。
+ui-ext-desktop-state-not-running = 已安裝桌面版，但目前沒有執行。
+ui-ext-desktop-state-incompatible = 桌面版和擴充功能的版本不相容，請兩者都更新；在那之前擴充功能會獨立運作。
+ui-ext-desktop-state-running = 已連接桌面版。
