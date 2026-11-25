@@ -327,7 +327,14 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 - 啟動時如果版本和上次不同，而且 `AXIsProcessTrusted` 是 false，顯示專門的訊息 `ui-desktop-status-no-accessibility-after-update`：「更新後 macOS 需要重新授權」，附授權按鈕。系統設定裡舊的項目可能還顯示為開啟，訊息要教使用者先移除舊項目再重新加入。
 - Release notes 和文件網站的 macOS 安裝頁寫明這一點。和 roadmap §8 相同，只教圖形介面操作，不教任何終端機指令。
 
-入口警告的 App 清單（Terminal、iTerm2、Ghostty、Warp 等的 bundle ID）放進 `rules/policy/macos.json`，格式和 `windows.json` 一樣；core 的 `entry::classify_with` 已經支援傳入規則。
+**剪貼簿隱私提示（4b 實作時發現）**：AppKit 的 `NSPasteboard.accessBehavior` 註解寫明，程式讀取一般 pasteboard 的**內容**時，系統預設會跳出提示；讀 `changeCount` 和 `types` 不會。S4 在 macOS 27.2 沒遇到，可能是因為從終端機執行，所以正式的 App bundle 很可能每次讀文字都會跳提示，這就是 S4 待決問題 3。處理方式：
+- 讀取前先查 `accessBehavior`。`alwaysDeny` 時 `watch = Unavailable(PasteboardAccessDenied)`；`ask` 時 `watch = Degraded(PasteboardAccessAsk)`，並在第一次執行的導覽請使用者在系統設定把 PasteWarden 設成「永遠允許」。
+- 被拒絕時 monitor 送出 `Empty{Unreadable}`，不重試，以免一直跳提示。
+- 用乾淨的使用者帳號和正式的 App bundle 實測，結果寫回 S4。
+
+**和 Windows 不同的時間窗**：macOS 的 tap callback 裡不能呼叫 `changeCount`，只能比對 `pw-clip` 上一次發布的序號，所以「複製後很快按 Cmd+V」的已知限制在 macOS 上約有 `POLL_INTERVAL_MS`（250 ms）的時間窗，detection-rules.md §5.3 要補上這個數字。`TapGate` 把 `analyzed_seq` 和 `decision` 打包成同一個 `AtomicU64`，避免 callback 讀到新序號配舊判定；4a 的 `PasteGate` 建議用同樣的做法。
+
+入口警告的 App 清單（Terminal、iTerm2、Ghostty、Warp 等的 bundle ID）放進 `rules/policy/macos.json`，格式和 `windows.json` 一樣（`class` 和 `process` 都填 bundle ID）。core 目前只有 `windows_rules()` 會載入規則檔，`paste::is_allowed` 也寫死用 Windows 的規則，所以 core 要新增 `policy::macos::macos_rules()` 和能傳入規則的 `is_allowed_with`，這是 4b 唯一需要改 core 的地方。macOS 的開啟、存檔對話框在另一個行程裡，也沒有視窗 class，所以入口警告只認得出終端機和 Finder，認不出檔案對話框（Windows 的 FileFix 情境在 macOS 上沒有對應的偵測）。
 
 ### 4.9.2 Linux（`crates/platform/src/linux/`）
 
@@ -375,6 +382,8 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 | `SecureInput` | macOS | `intercept` Degraded | 有 App 開啟了安全輸入，暫時攔不到貼上 |
 | `NoAccessibility` | macOS | `intercept` Unavailable | 沒有「輔助使用」權限，只通知、不攔截（附授權按鈕） |
 | `NoAccessibilityAfterUpdate` | macOS | `intercept` Unavailable | 更新後 macOS 需要重新授權（ad-hoc 簽章，見 §4.9.1） |
+| `PasteboardAccessAsk` | macOS | `watch` Degraded | 每次讀剪貼簿系統都會詢問，請在系統設定改成「永遠允許」 |
+| `PasteboardAccessDenied` | macOS | `watch` Unavailable | 系統設定拒絕 PasteWarden 讀剪貼簿 |
 | `NoDataControl` | Linux GNOME | `watch` Unavailable | 這個桌面環境不允許背景監聽，請用「檢查剪貼簿」或瀏覽器擴充功能 |
 | `XWaylandUnverified` | Linux | `watch` Degraded | 只能透過 XWayland 監聽，原生 Wayland App 的複製可能收不到 |
 | `CosmicDisabled` | Linux COSMIC | `watch` Unavailable | 要設定 `COSMIC_DATA_CONTROL_ENABLED=1` |
