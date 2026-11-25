@@ -348,3 +348,91 @@ def test_stats_dict_has_no_text():
     assert mark not in repr(res.stats.as_dict())
     assert mark not in repr(res.variants)
     assert res.stats.mean_latency_ms >= 0
+
+
+def _truncated(content):
+    return httpx.Response(
+        200,
+        json={
+            'choices': [
+                {
+                    'message': {'role': 'assistant', 'content': content},
+                    'finish_reason': 'length',
+                }
+            ],
+        },
+    )
+
+
+def test_truncated_answer_is_invalid_not_refused():
+    def reply(body, n):
+        if n == 0:
+            return _truncated('')
+        if n == 1:
+            return _truncated('{"variants": [{"shell": "sh", "pay')
+        return _numbered(body, n)
+
+    fake = FakeOllama(reply)
+    res = generate_g1(
+        make_seeds()[1:],
+        run_seed=1,
+        round=1,
+        client=fake.client(),
+        scorer=FakeScorer(),
+    )
+    assert res.stats.calls == 3  # retried, unlike a refusal
+    assert res.stats.refused == 0
+    assert res.stats.invalid_output == 2
+    assert res.stats.dropped['truncated'] == 2
+
+
+def test_transport_errors_do_not_count_toward_pilot():
+    def reply(body, n):
+        if body['model'] == 'primary:1b':
+            if n < 2:
+                return httpx.Response(503)
+            return 'I cannot help with that.'
+        return vj(('sh', f'echo b{n}', 'quote'))
+
+    seeds = [
+        s.model_copy(update={'case_id': f'case.{i}'})
+        for i in range(8)
+        for s in make_seeds()[1:]
+    ]
+    fake = FakeOllama(reply)
+    res = generate_g1(
+        seeds,
+        run_seed=1,
+        round=1,
+        client=fake.client(),
+        scorer=FakeScorer(),
+        attempts=1,
+        fallback_models=('backup:1b',),
+        pilot_calls=4,
+    )
+    models = [r['model'] for r in fake.requests]
+    # 2 errors + 4 refusals on the primary, then the backup.
+    assert models == ['primary:1b'] * 6 + ['backup:1b'] * 2
+    (switch,) = res.switches
+    assert switch.refusal_rate == 1.0
+    assert res.stats.errors == {'http-503': 2}
+
+
+def test_error_call_is_audited_with_prompt_hash(tmp_path: Path):
+    fake = FakeOllama(lambda b, n: httpx.Response(503))
+    audit = AuditLog(tmp_path / 'run-2' / 'audit.jsonl')
+    generate_g1(
+        make_seeds()[1:],
+        run_seed=1,
+        round=1,
+        client=fake.client(),
+        scorer=FakeScorer(),
+        attempts=1,
+        audit=audit,
+    )
+    (event,) = audit.events()
+    assert event.result['status'] == 'error'
+    assert event.result['error'] == 'http-503'
+    assert event.prompt_sha256 and event.response_sha256 is None
+    known = [m['content'] for r in fake.requests for m in r['messages']]
+    assert find_leaks(audit.path, known) == []

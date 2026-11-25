@@ -39,6 +39,7 @@ from .client import (
     ChatClient,
     ChatResult,
     G1ClientError,
+    prompt_hash,
     request_seed,
 )
 from .prompts import Feedback, build_messages
@@ -259,6 +260,9 @@ class _ModelPool:
         self.refused = 0
 
     def record(self, refused: bool) -> ModelSwitch | None:
+        """Count one answered call (transport errors are not answers and
+        are not recorded: a flaky server must not dilute the refusal
+        rate)."""
         self.calls += 1
         self.refused += int(refused)
         if self.calls != self.pilot_calls or not self.queue:
@@ -398,6 +402,7 @@ def generate_g1(
                         'temperature': active.temperature,
                         'seed': seed_int,
                     },
+                    prompt_sha256=prompt_hash(messages),
                     result={
                         'seed_id': seed.case_id,
                         'attempt': attempt,
@@ -409,6 +414,11 @@ def generate_g1(
                 status: CallStatus = 'error'
             else:
                 parsed = parse_output(call.content, seed.payload, seen)
+                if call.finish_reason == 'length' and parsed.status != 'ok':
+                    # Cut off by the token cap: broken, not a refusal.
+                    parsed = Parsed(
+                        'invalid_output', dropped=Counter(truncated=1)
+                    )
                 status = parsed.status
                 stats.latency_ms.append(call.latency_ms)
                 stats.tokens_in += call.tokens_in
@@ -438,7 +448,9 @@ def generate_g1(
                 stats.invalid_output += 1
                 per_model['invalid_output'] += 1
 
-            switch = pool.record(status == 'refused')
+            switch = (
+                pool.record(status == 'refused') if status != 'error' else None
+            )
             if switch is not None:
                 result.switches.append(switch)
                 log.add(

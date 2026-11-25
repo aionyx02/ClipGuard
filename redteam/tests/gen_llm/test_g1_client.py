@@ -1,4 +1,5 @@
 import json
+import time
 
 import httpx
 import pytest
@@ -7,6 +8,7 @@ from g1_fakes import DIGEST, VERSION, FakeOllama, J, variants_json
 from redteam.gen_llm import (
     G1_TEMPERATURE,
     G1_VARIANTS_PER_CALL,
+    ChatClient,
     G1ClientError,
     build_messages,
     output_schema,
@@ -124,3 +126,29 @@ def test_with_model_keeps_settings():
     other.complete(build_messages('x', Shell.SH), seed=1)
     assert fake.requests[0]['model'] == 'backup:1b'
     assert fake.requests[0]['temperature'] == 0.3
+
+
+class _Trickle(httpx.SyncByteStream):
+    """A server that keeps sending a byte now and then (so no single read
+    ever times out)."""
+
+    def __iter__(self):
+        for _ in range(50):
+            time.sleep(0.02)
+            yield b' '
+
+
+def test_wall_clock_deadline_bounds_a_trickling_server():
+    def handler(request):
+        if request.url.path.startswith('/api/'):
+            return httpx.Response(404)
+        return httpx.Response(200, stream=_Trickle())
+
+    client = ChatClient(
+        'm', transport=httpx.MockTransport(handler), timeout_s=0.1
+    )
+    t0 = time.monotonic()
+    with pytest.raises(G1ClientError) as e:
+        client.complete(build_messages('x', Shell.SH), seed=1)
+    assert e.value.kind == 'timeout'
+    assert time.monotonic() - t0 < 0.5

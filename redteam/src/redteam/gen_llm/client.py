@@ -34,7 +34,9 @@ G1_TEMPERATURE = 0.9
 # characters, so 2k tokens leaves room for heavier obfuscation.
 G1_MAX_OUTPUT_TOKENS = 2048
 # Local 27B model: ~10-30 s per call; generous so a slow call is not lost.
+# A wall-clock deadline for the whole call, not only per socket read.
 G1_TIMEOUT_S = 180.0
+G1_CONNECT_TIMEOUT_S = 10.0
 # Anything bigger is not a well-formed answer to our schema.
 G1_MAX_RESPONSE_BYTES = 256 * 1024
 # Ollama's OpenAI-compatible way to switch reasoning off (see module doc).
@@ -142,7 +144,9 @@ class ChatClient:
         self.max_response_bytes = max_response_bytes
         self.variants_per_call = variants_per_call
         self._http = http or httpx.Client(
-            transport=transport, timeout=timeout_s, follow_redirects=False
+            transport=transport,
+            timeout=httpx.Timeout(timeout_s, connect=G1_CONNECT_TIMEOUT_S),
+            follow_redirects=False,
         )
         self._info: ServerInfo | None = None
 
@@ -236,6 +240,10 @@ class ChatClient:
         }
 
     def _post(self, body: dict[str, Any]) -> bytes:
+        """POST and read the body under a size cap and a wall-clock
+        deadline (httpx timeouts alone are per read, so a trickling server
+        could hold a call open forever)."""
+        deadline = time.monotonic() + self.timeout_s
         headers = {'content-type': 'application/json'}
         if self.api_key:
             headers['authorization'] = f'Bearer {self.api_key}'
@@ -246,13 +254,17 @@ class ChatClient:
                 f'{self.base_url}/chat/completions',
                 content=data,
                 headers=headers,
-                timeout=self.timeout_s,
+                timeout=httpx.Timeout(
+                    self.timeout_s, connect=G1_CONNECT_TIMEOUT_S
+                ),
             ) as r:
                 if r.status_code != 200:
                     raise G1ClientError(f'http-{r.status_code}')
                 chunks: list[bytes] = []
                 size = 0
                 for chunk in r.iter_bytes():
+                    if time.monotonic() > deadline:
+                        raise G1ClientError('timeout')
                     size += len(chunk)
                     if size > self.max_response_bytes:
                         raise G1ClientError('response-too-large')
