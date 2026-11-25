@@ -85,3 +85,23 @@ ui-desktop-error-nothing-to-restore = There is nothing to restore.
 ui-desktop-error-restore-failed = Couldn't restore the content.
 ui-desktop-error-open-settings-failed = Couldn't open System Settings.
 ui-desktop-error-unsupported = Not available on this system.
+
+## Legacy (C#) data removed at start (Windows, phase-4.md §4.5)
+ui-desktop-toast-legacy-removed-title = Please register your secrets again
+ui-desktop-toast-legacy-removed-body = The old ClipGuard data was removed: its key can't be moved to this version. Register your secrets again in Settings.
+
+## Store errors (crates/platform/src/store.rs StoreError::message_id)
+# $file: the file name (settings.json, paste-guard.json, secrets.json; empty for the data folder)
+store-error-no-data-dir = Couldn't find a folder to keep PasteWarden's settings in. Settings will not be kept after a restart.
+store-error-io = Couldn't read or write PasteWarden's data ({ $file }).
+store-error-too-large = A PasteWarden data file is too large and was ignored ({ $file }).
+# $field: the setting that had an invalid value, or empty
+store-error-corrupt = A PasteWarden data file was damaged ({ $file }); defaults are used.
+store-error-key-unavailable = The system keychain isn't available, so secrets can't be registered.
+store-error-key-access-denied = The system keychain refused access to the key for registered secrets.
+store-error-key-corrupt = The key for registered secrets in the system keychain is damaged.
+store-error-key-missing = The key for your registered secrets is gone from the system keychain, so they can't be recognized any more. Forget the registered secrets in Settings and register them again.
+store-error-key-platform = Couldn't use the system keychain.
+store-error-random = The system couldn't create a random key. Please try again.
+store-error-too-many-secrets = You can register at most { $max } secrets.
+store-error-registration = This secret can't be registered.

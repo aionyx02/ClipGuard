@@ -64,10 +64,13 @@ pub enum Reason {
     NoDisplay,
     NoSecretService,
     AndroidNoBackground,
+    /// The platform host could not start (or stopped); the app runs without
+    /// OS integration.
+    HostFailed,
 }
 
 impl Reason {
-    pub const ALL: [Reason; 17] = [
+    pub const ALL: [Reason; 18] = [
         Reason::HookLost,
         Reason::ElevatedForeground,
         Reason::DisabledInSettings,
@@ -85,6 +88,7 @@ impl Reason {
         Reason::NoDisplay,
         Reason::NoSecretService,
         Reason::AndroidNoBackground,
+        Reason::HostFailed,
     ];
 
     /// Kebab-case id, e.g. `"hook-lost"`.
@@ -107,7 +111,19 @@ impl Reason {
             Reason::NoDisplay => "no-display",
             Reason::NoSecretService => "no-secret-service",
             Reason::AndroidNoBackground => "android-no-background",
+            Reason::HostFailed => "host-failed",
         }
+    }
+
+    /// The platform can never do this (Wayland / X11 interception, Android
+    /// background monitoring): a known limit, not breakage. It is shown even
+    /// when the area is turned off in settings, and never makes the tray
+    /// icon "failed".
+    pub fn is_platform_limit(self) -> bool {
+        matches!(
+            self,
+            Reason::WaylandNoIntercept | Reason::X11NoIntercept | Reason::AndroidNoBackground
+        )
     }
 
     /// Fluent message id: `ui-desktop-status-<id>`.
@@ -150,10 +166,15 @@ impl ProtectionStatus {
     }
 
     /// Tray state. An area turned off in settings
-    /// ([`Reason::DisabledInSettings`]) never makes the icon look broken.
+    /// ([`Reason::DisabledInSettings`]) never makes the icon look broken, and
+    /// a platform limit ([`Reason::is_platform_limit`]) makes it degraded at
+    /// most.
     pub fn tray_state(&self) -> TrayState {
         let by_choice = |c: Capability| c.reason() == Some(Reason::DisabledInSettings);
-        let failed = |c: Capability| matches!(c, Capability::Unavailable(_)) && !by_choice(c);
+        let failed = |c: Capability| match c {
+            Capability::Unavailable(r) => r != Reason::DisabledInSettings && !r.is_platform_limit(),
+            _ => false,
+        };
         if failed(self.watch) || failed(self.intercept) {
             return TrayState::Failed;
         }
@@ -217,5 +238,36 @@ mod tests {
         s.intercept = Capability::Active;
         s.foreground = Capability::Unavailable(Reason::NoForeignToplevel);
         assert_eq!(s.tray_state(), TrayState::Degraded);
+        s.watch = Capability::Unavailable(Reason::HostFailed);
+        assert_eq!(s.tray_state(), TrayState::Failed);
+    }
+
+    #[test]
+    fn platform_limits_are_degraded_not_failed() {
+        for r in [
+            Reason::WaylandNoIntercept,
+            Reason::X11NoIntercept,
+            Reason::AndroidNoBackground,
+        ] {
+            assert!(r.is_platform_limit());
+            let s = ProtectionStatus {
+                intercept: Capability::Unavailable(r),
+                ..Default::default()
+            };
+            assert_eq!(s.tray_state(), TrayState::Degraded, "{r:?}");
+            assert_eq!(s.tooltip_reasons(), vec![r]);
+            let s = ProtectionStatus {
+                watch: Capability::Unavailable(r),
+                ..Default::default()
+            };
+            assert_eq!(s.tray_state(), TrayState::Degraded, "{r:?}");
+        }
+        let limits: Vec<_> = Reason::ALL
+            .into_iter()
+            .filter(|r| r.is_platform_limit())
+            .collect();
+        assert_eq!(limits.len(), 3);
+        assert!(!Reason::HostFailed.is_platform_limit());
+        assert!(!Reason::DisabledInSettings.is_platform_limit());
     }
 }

@@ -75,7 +75,10 @@ fn each_window_gets_only_its_commands() {
                 assert!(!has("allow-register-secret") && !has("allow-quit"));
             }
             "onboarding" => assert!(!has("allow-paste-choice") && !has("allow-register-secret")),
-            _ => assert!(!has("allow-paste-choice")),
+            _ => {
+                assert!(!has("allow-paste-choice"));
+                assert!(has("allow-forget-secrets"));
+            }
         }
     }
 }
@@ -155,6 +158,20 @@ fn native_ids_are_translated() {
         "ui-desktop-error-restore-failed",
         "ui-desktop-error-open-settings-failed",
         "ui-desktop-error-unsupported",
+        "ui-desktop-toast-legacy-removed-title",
+        "ui-desktop-toast-legacy-removed-body",
+        "store-error-no-data-dir",
+        "store-error-io",
+        "store-error-too-large",
+        "store-error-corrupt",
+        "store-error-key-unavailable",
+        "store-error-key-access-denied",
+        "store-error-key-corrupt",
+        "store-error-key-missing",
+        "store-error-key-platform",
+        "store-error-random",
+        "store-error-too-many-secrets",
+        "store-error-registration",
     ];
     for locale in ["en", "zh-TW"] {
         let (loc, errors) = Localizer::try_new(locale);
@@ -163,4 +180,30 @@ fn native_ids_are_translated() {
             assert!(loc.has(id), "{locale} is missing {id}");
         }
     }
+}
+
+/// Every status reason the worker can emit has a message in both locales
+/// (the frontend renders `ui-desktop-status-<id>`).
+#[test]
+fn every_reason_is_translated() {
+    for locale in ["en", "zh-TW"] {
+        let (loc, _) = Localizer::try_new(locale);
+        for r in paste_warden_platform::status::Reason::ALL {
+            assert!(loc.has(&r.message_id()), "{locale} is missing {r:?}");
+        }
+    }
+}
+
+/// `paste-warden-nmh` ships next to the app executable (phase-4.md §4.3);
+/// `app::nmh_host_path` looks for it there.
+#[test]
+fn release_config_bundles_the_nmh_host() {
+    let v: Value = serde_json::from_str(include_str!("../tauri.release.conf.json")).unwrap();
+    assert_eq!(
+        v["bundle"]["externalBin"],
+        serde_json::json!(["binaries/paste-warden-nmh"])
+    );
+    assert!(crate::app::NMH_BINARY.starts_with("paste-warden-nmh"));
+    let before = v["build"]["beforeBuildCommand"].as_str().unwrap();
+    assert!(before.contains("build-nmh"), "{before}");
 }

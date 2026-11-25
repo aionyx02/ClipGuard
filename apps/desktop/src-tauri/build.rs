@@ -14,6 +14,7 @@ const COMMANDS: &[&str] = &[
     "register_secret",
     "list_secrets",
     "remove_secret",
+    "forget_secrets",
     "get_pending_paste",
     "paste_choice",
     "restore",

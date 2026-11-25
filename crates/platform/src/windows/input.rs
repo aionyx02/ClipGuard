@@ -18,19 +18,20 @@ pub fn elapsed_ticks(now: u32, last_input: u32) -> u64 {
     u64::from(now.wrapping_sub(last_input))
 }
 
-/// Milliseconds since the last keyboard or mouse input in this session, or 0
-/// when Windows cannot tell (treated as "the user is active").
-pub fn idle_ms() -> u64 {
+/// Milliseconds since the last keyboard or mouse input in this session, or
+/// `None` when Windows cannot tell (core then treats the input time as
+/// unknown).
+pub fn idle_ms() -> Option<u64> {
     let mut info = LASTINPUTINFO {
         cbSize: size_of::<LASTINPUTINFO>() as u32,
         dwTime: 0,
     };
     // SAFETY: `info` is initialized with its size, as the API requires.
     if !unsafe { GetLastInputInfo(&mut info) }.as_bool() {
-        return 0;
+        return None;
     }
     // SAFETY: plain getter, declared with its documented signature.
-    elapsed_ticks(unsafe { GetTickCount() }, info.dwTime)
+    Some(elapsed_ticks(unsafe { GetTickCount() }, info.dwTime))
 }
 
 #[cfg(test)]

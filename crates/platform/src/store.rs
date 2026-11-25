@@ -814,13 +814,16 @@ impl<K: KeyBackend> Store<K> {
     }
 
     pub fn save_secrets(&self, store: &RegisteredSecretStore) -> Result<(), StoreError> {
-        if store.entries().len() > MAX_REGISTERED_SECRETS {
+        self.save_entries(store.entries())
+    }
+
+    /// Saves `entries` as `secrets.json` (the desktop worker keeps its own
+    /// [`RegisteredSecretStore`] and saves before committing a change).
+    pub fn save_entries(&self, entries: &[RegisteredSecret]) -> Result<(), StoreError> {
+        if entries.len() > MAX_REGISTERED_SECRETS {
             return Err(StoreError::TooManySecrets);
         }
-        self.write_atomic(
-            StoreFile::Secrets,
-            secrets_to_json(store.entries()).as_bytes(),
-        )
+        self.write_atomic(StoreFile::Secrets, secrets_to_json(entries).as_bytes())
     }
 
     /// Validates the dialog input (core's `validate_registration`), adds the

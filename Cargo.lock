@@ -3315,6 +3315,7 @@ dependencies = [
 name = "paste-warden-desktop"
 version = "0.1.0"
 dependencies = [
+ "objc2",
  "paste-warden-core",
  "paste-warden-i18n",
  "paste-warden-platform",
@@ -3326,6 +3327,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-notification",
  "tauri-plugin-single-instance",
+ "tempfile",
  "zeroize",
 ]
 

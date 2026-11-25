@@ -10,7 +10,6 @@
 //! Privacy (P3): clipboard text lives in [`Zeroizing`] buffers for the duration
 //! of one call; only masked text and message ids leave the worker.
 
-use std::collections::HashSet;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
@@ -37,10 +36,11 @@ use paste_warden_platform::gate::Decision;
 use paste_warden_platform::host::{
     ForegroundInfo, HookCheck, Host, HostEvent, HostOptions, HostSnapshot, SwallowReason, WindowId,
 };
+use paste_warden_platform::probe::{ElevatedToastGate, PauseConditions, ProbeScheduler, ProbeStep};
 use paste_warden_platform::status::{Capability, ProtectionStatus, Reason};
 use zeroize::Zeroizing;
 
-use crate::bridge::{HookProbe, NmhBridge, NmhState, ProbeStep};
+use crate::bridge::{NmhBridge, NmhState};
 use crate::model::{
     AppSettings, CmdResult, CommandError, ConfirmPayload, Line, LocalePref, Notice, RegisteredId,
     SecretInfo, SettingsPayload, StatusPayload, ThemePref, UiSink,
@@ -60,8 +60,11 @@ pub const CONFIRM_PREVIEW_MAX_CHARS: usize = 400;
 pub const NOTIFY_MAX_SECRETS: usize = 3;
 /// Command / hidden-char reasons listed in one notification.
 pub const NOTIFY_MAX_REASONS: usize = 2;
-/// `(window, sequence)` pairs remembered for the elevated-window notice.
-pub const MAX_ELEVATED_NOTIFIED: usize = 256;
+/// A foreground change this soon before a clipboard event counts as after
+/// the copy: the source falls back to the window in front before it
+/// (§4.3 source order; custom, above `CLIPBOARD_READ_DELAY_MS` = 25 plus the
+/// macOS / Linux 100 ms foreground poll).
+pub const FOREGROUND_SETTLE_MS: u64 = 150;
 
 pub type Reply<T> = SyncSender<T>;
 
@@ -115,6 +118,9 @@ pub enum UiCommand {
     },
     ListSecrets(Reply<CmdResult<Vec<SecretInfo>>>),
     RemoveSecret(String, Reply<CmdResult<()>>),
+    /// Deletes every registered secret: the way out when the keyring lost
+    /// the key (`store-error-key-missing`) or `secrets.json` is corrupt.
+    ForgetSecrets(Reply<CmdResult<()>>),
     PasteChoice(PasteChoice, Reply<CmdResult<()>>),
     Restore(Reply<CmdResult<()>>),
     /// Removes the hook, then stops the worker (legacy: unhook before exit).
@@ -150,6 +156,9 @@ pub struct Boot {
     pub version_changed: bool,
     /// Problems to tell the user once the UI is up.
     pub problems: Vec<PersistError>,
+    /// Legacy (C#) data was deleted at start (Windows, §4.5): ask the user
+    /// once to register their secrets again.
+    pub legacy_cleaned: bool,
 }
 
 impl Boot {
@@ -163,7 +172,7 @@ impl Boot {
         if let Err(e) = &registered
             && *e != PersistError::NoSecretService
         {
-            problems.push(*e);
+            problems.push(e.clone());
         }
         if version_changed {
             settings.last_version = Some(app_version.to_owned());
@@ -177,6 +186,7 @@ impl Boot {
             registered,
             version_changed,
             problems,
+            legacy_cleaned: false,
         }
     }
 
@@ -222,7 +232,7 @@ pub struct Worker {
     ui: Box<dyn UiSink>,
     persist: Box<dyn Persistence>,
     nmh: Option<Box<dyn NmhBridge>>,
-    probe: Box<dyn HookProbe>,
+    probe: ProbeScheduler,
     cfg: WorkerConfig,
 
     settings: AppSettings,
@@ -239,8 +249,11 @@ pub struct Worker {
     pending: PendingPaste,
     clip: ClipState,
     fg: ForegroundInfo,
+    /// The foreground before `fg`, and when `fg` came to the front.
+    fg_prev: ForegroundInfo,
+    fg_since: u64,
     session_locked: bool,
-    elevated_notified: HashSet<(WindowId, u32)>,
+    elevated_gate: ElevatedToastGate,
 
     stale: Option<(WindowId, u64)>,
     confirm: Option<Confirm>,
@@ -258,7 +271,6 @@ impl Worker {
         ui: Box<dyn UiSink>,
         persist: Box<dyn Persistence>,
         nmh: Option<Box<dyn NmhBridge>>,
-        probe: Box<dyn HookProbe>,
         cfg: WorkerConfig,
         now_ms: u64,
     ) -> Worker {
@@ -269,7 +281,7 @@ impl Worker {
             ui,
             persist,
             nmh,
-            probe,
+            probe: ProbeScheduler::new(now_ms),
             cfg,
             settings: boot.settings,
             paste: boot.paste,
@@ -284,8 +296,10 @@ impl Worker {
             pending: PendingPaste::new(),
             clip: ClipState::default(),
             fg: ForegroundInfo::default(),
+            fg_prev: ForegroundInfo::default(),
+            fg_since: 0,
             session_locked: false,
-            elevated_notified: HashSet::new(),
+            elevated_gate: ElevatedToastGate::new(),
             stale: None,
             confirm: None,
             masked_restore: None,
@@ -299,7 +313,17 @@ impl Worker {
         w.ui.restore_available(false);
         w.publish_nmh();
         for p in boot.problems {
-            w.notify(problem_notice(p), now_ms);
+            w.notify(problem_notice(&p), now_ms);
+        }
+        if boot.legacy_cleaned {
+            w.notify(
+                notice(
+                    NotificationLevel::Warning,
+                    "ui-desktop-toast-legacy-removed-title",
+                    &["ui-desktop-toast-legacy-removed-body"],
+                ),
+                now_ms,
+            );
         }
         w
     }
@@ -347,6 +371,9 @@ impl Worker {
         }
         if let Some(m) = &self.masked_restore {
             consider(m.due);
+        }
+        if self.intercept_installed {
+            consider(self.probe.next_wake());
         }
         at.max(now)
     }
@@ -418,10 +445,17 @@ impl Worker {
             HostEvent::Clip(c) => self.on_clip(c, now),
             HostEvent::Foreground(f) => self.on_foreground(f, now),
             HostEvent::PasteSwallowed { target, reason } => self.on_swallowed(target, reason, now),
-            HostEvent::ProbeAnswered => self.probe.on_answered(now),
+            HostEvent::ProbeAnswered => {
+                // `true` = this cleared a HookLost; `refresh_status` shows it.
+                let _ = self.probe.on_answer();
+            }
             HostEvent::HookDisabled => {
-                self.probe.on_lost(now);
                 let _ = self.host.reinstall_hook();
+            }
+            HostEvent::StatusChanged => {
+                // `handle` re-reads the status afterwards; Secure Input may
+                // have just turned on with a secret on the clipboard.
+                self.maybe_notify_elevated(now);
             }
             HostEvent::SessionLocked(locked) => self.session_locked = locked,
             HostEvent::EnterSwallowed { .. } => {
@@ -433,10 +467,27 @@ impl Worker {
         }
     }
 
-    fn context(&self, t: &ClipText) -> Context {
+    /// The window in front when the clipboard changed: a foreground change
+    /// in the last [`FOREGROUND_SETTLE_MS`] most likely came after the copy.
+    fn foreground_at_change(&self, now: u64) -> &ForegroundInfo {
+        if now.saturating_sub(self.fg_since) < FOREGROUND_SETTLE_MS {
+            &self.fg_prev
+        } else {
+            &self.fg
+        }
+    }
+
+    /// Source order (§4.3): the clipboard's source URL, its owner, then the
+    /// foreground before the change.
+    fn context(&self, t: &ClipText, now: u64) -> Context {
+        let app_id = t
+            .owner_process
+            .clone()
+            .or_else(|| self.foreground_at_change(now).process.clone())
+            .filter(|p| !p.is_empty());
         Context {
             source: Some(Source {
-                app_id: t.owner_process.clone(),
+                app_id,
                 url: t.source_url.clone(),
                 ..Default::default()
             }),
@@ -475,7 +526,7 @@ impl Worker {
         {
             m.superseded = true;
         }
-        let ctx = self.context(&t);
+        let ctx = self.context(&t, now);
         let mut report: Option<Report> = None;
         let engine = &self.engine;
         let host = &self.host;
@@ -531,7 +582,7 @@ impl Worker {
         if t.self_write {
             return;
         }
-        let swap = self.swap.observe(&t.text, now, Some(self.host.idle_ms()));
+        let swap = self.swap.observe(&t.text, now, self.host.idle_ms());
         let mut notified = false;
         match (action, &swap) {
             (ClipboardAction::WarnSuspicious, None) => {
@@ -584,9 +635,6 @@ impl Worker {
 
     /// Publishes the analyzed clipboard to the gate.
     fn set_clip(&mut self, seq: u32, kinds: Vec<SecretKind>) {
-        if seq != self.clip.seq {
-            self.elevated_notified.clear();
-        }
         let decision = self.decision_for(&kinds);
         self.clip = ClipState {
             seq,
@@ -660,7 +708,12 @@ impl Worker {
         let entry = entry::classify_with(&self.cfg.rules.entry, class, title, process);
         let warning = entry::decide_for(entry, self.guard.level(), self.guard.quarantine_active());
         let window = f.window;
-        self.fg = f;
+        if f.window != self.fg.window || f.process != self.fg.process {
+            self.fg_prev = std::mem::replace(&mut self.fg, f);
+            self.fg_since = now;
+        } else {
+            self.fg = f;
+        }
         if let Some(w) = warning
             && self
                 .entry_gate
@@ -691,16 +744,12 @@ impl Worker {
         }
         let secure_input =
             self.host.status().intercept == Capability::Degraded(Reason::SecureInput);
-        if !(self.fg.elevated || secure_input) {
-            return;
-        }
-        if self.elevated_notified.len() >= MAX_ELEVATED_NOTIFIED {
-            self.elevated_notified.clear();
-        }
-        if !self
-            .elevated_notified
-            .insert((self.fg.window, self.clip.seq))
-        {
+        if !self.elevated_gate.should_notify(
+            self.fg.window,
+            self.fg.elevated || secure_input,
+            self.clip.seq,
+            true,
+        ) {
             return;
         }
         let kind = self
@@ -903,13 +952,17 @@ impl Worker {
     }
 
     /// Host status overlaid with settings, the probe result and the elevated
-    /// foreground (§4.8.1).
+    /// foreground (§4.8.1). A platform limit (Wayland / X11: no
+    /// interception) wins over "turned off in settings".
     pub fn compute_status(&self) -> ProtectionStatus {
         let mut s = self.host.status();
-        if !self.intercept_enabled() {
+        let platform_limit = s.intercept.reason().is_some_and(Reason::is_platform_limit);
+        if platform_limit {
+            // Known limit: keep the host's reason whatever the settings say.
+        } else if !self.intercept_enabled() {
             s.intercept = Capability::Unavailable(Reason::DisabledInSettings);
         } else if s.intercept.is_active() {
-            if self.probe.hook_lost() {
+            if self.probe.is_lost() {
                 s.intercept = Capability::Degraded(Reason::HookLost);
             } else if self.fg.elevated {
                 s.intercept = Capability::Degraded(Reason::ElevatedForeground);
@@ -926,28 +979,42 @@ impl Worker {
         }
     }
 
-    fn sync_intercept(&mut self) {
+    fn sync_intercept(&mut self, now: u64) {
         let want = self.intercept_enabled();
         if want != self.intercept_installed {
             self.intercept_installed = want;
             let _ = self.host.set_intercept(want);
+            // Installed (or removed) on purpose: a fresh probe history.
+            self.probe.reset(now);
         }
     }
 
+    /// §4.4 hook health check through `paste_warden_platform::probe`.
     fn run_probe(&mut self, now: u64) {
-        let paused = !self.intercept_installed
-            || self.fg.elevated
-            || self.session_locked
-            || self.host.secure_desktop_active();
-        match self.probe.poll(now, paused) {
-            ProbeStep::Idle => {}
-            ProbeStep::Check => match self.host.check_hook() {
-                HookCheck::ProbeSent => self.probe.on_probe_sent(now),
-                HookCheck::Healthy => self.probe.on_answered(now),
-                HookCheck::Lost => self.probe.on_lost(now),
-                HookCheck::NotApplicable => {}
+        if !self.intercept_installed {
+            self.probe.cancel();
+            return;
+        }
+        let pause = PauseConditions {
+            elevated_foreground: self.fg.elevated,
+            session_locked: self.session_locked,
+            secure_desktop: self.host.secure_desktop_active(),
+        };
+        match self.probe.tick(now, pause) {
+            ProbeStep::Wait | ProbeStep::Skipped => {}
+            ProbeStep::Send => match self.host.check_hook() {
+                // The answer arrives as `HostEvent::ProbeAnswered`.
+                HookCheck::ProbeSent => {}
+                HookCheck::Healthy => {
+                    let _ = self.probe.on_answer();
+                }
+                // macOS: the tap is missing or disabled. Left in flight, it
+                // fails at the deadline and the hook is reinstalled.
+                HookCheck::Lost => {}
+                HookCheck::NotApplicable => self.probe.cancel(),
             },
-            ProbeStep::Reinstall => {
+            ProbeStep::Failed { failures, lost } => {
+                crate::diag!("hook probe failed ({failures}, lost={lost}), reinstalling");
                 let _ = self.host.reinstall_hook();
             }
         }
@@ -999,8 +1066,7 @@ impl Worker {
     }
 
     fn publish_nmh(&mut self) {
-        let count = self.registered.as_ref().map_or(0, |s| s.entries().len());
-        let state = NmhState::new(&self.paste, count);
+        let state = NmhState::new(&self.paste, self.registered.as_ref().ok());
         if let Some(n) = &mut self.nmh {
             n.publish(&state);
         }
@@ -1009,25 +1075,25 @@ impl Worker {
     fn save_settings(&mut self, next: AppSettings) -> CmdResult<()> {
         self.persist
             .save_settings(&next)
-            .map_err(|e| CommandError::new(e.message_id()))?;
+            .map_err(|e| e.to_command_error())?;
         self.settings = next;
         let p = self.settings_payload();
         self.ui.settings_changed(&p);
         Ok(())
     }
 
-    fn save_paste(&mut self, next: PasteGuardSettings) -> CmdResult<()> {
+    fn save_paste(&mut self, next: PasteGuardSettings, now: u64) -> CmdResult<()> {
         let next = next.sanitized();
         self.persist
             .save_paste_guard(&next)
-            .map_err(|e| CommandError::new(e.message_id()))?;
+            .map_err(|e| e.to_command_error())?;
         self.paste = next;
-        self.after_policy_change();
+        self.after_policy_change(now);
         Ok(())
     }
 
-    fn after_policy_change(&mut self) {
-        self.sync_intercept();
+    fn after_policy_change(&mut self, now: u64) {
+        self.sync_intercept(now);
         self.republish();
         // The allowlist changed: recompute `fg_allowed` for the foreground.
         let f = self.fg.clone();
@@ -1077,7 +1143,7 @@ impl Worker {
                 let mut next = self.paste.clone();
                 next.intercept_registered = registered;
                 next.intercept_detected = detected;
-                let _ = reply.send(self.save_paste(next));
+                let _ = reply.send(self.save_paste(next, now));
             }
             UiCommand::TogglePasteGuard { registered } => {
                 let mut next = self.paste.clone();
@@ -1086,7 +1152,7 @@ impl Worker {
                 } else {
                     next.intercept_detected = !next.intercept_detected;
                 }
-                if self.save_paste(next).is_err() {
+                if self.save_paste(next, now).is_err() {
                     self.notify(
                         notice(
                             NotificationLevel::Warning,
@@ -1101,7 +1167,7 @@ impl Worker {
                 }
             }
             UiCommand::AllowlistAdd(name, r) => {
-                let res = self.allowlist_add(&name);
+                let res = self.allowlist_add(&name, now);
                 let _ = r.send(res);
             }
             UiCommand::AllowlistRemove(name, r) => {
@@ -1113,7 +1179,7 @@ impl Worker {
                 let res = if next.allowed_apps.len() == before {
                     Err(CommandError::new("ui-desktop-error-allowlist-missing").field("name"))
                 } else {
-                    self.save_paste(next)
+                    self.save_paste(next, now)
                 };
                 let _ = r.send(res);
             }
@@ -1124,7 +1190,7 @@ impl Worker {
                 now_wall_ms,
                 reply,
             } => {
-                let res = self.register(&secret, &confirm, &label, now_wall_ms);
+                let res = self.register(&secret, &confirm, &label, now_wall_ms, now);
                 drop((secret, confirm));
                 let _ = reply.send(res);
             }
@@ -1140,12 +1206,16 @@ impl Worker {
                             created_at_ms: e.created_at_ms,
                         })
                         .collect()),
-                    Err(e) => Err(CommandError::new(e.message_id())),
+                    Err(e) => Err(e.to_command_error()),
                 };
                 let _ = r.send(res);
             }
             UiCommand::RemoveSecret(id, r) => {
-                let res = self.remove_secret(&id);
+                let res = self.remove_secret(&id, now);
+                let _ = r.send(res);
+            }
+            UiCommand::ForgetSecrets(r) => {
+                let res = self.forget_secrets(now);
                 let _ = r.send(res);
             }
             UiCommand::PasteChoice(choice, r) => {
@@ -1174,7 +1244,7 @@ impl Worker {
         true
     }
 
-    fn allowlist_add(&mut self, name: &str) -> CmdResult<()> {
+    fn allowlist_add(&mut self, name: &str, now: u64) -> CmdResult<()> {
         let n = paste::normalize_app_name(name);
         let len = n.chars().count();
         let err = |id| Err(CommandError::new(id).field("name"));
@@ -1197,7 +1267,7 @@ impl Worker {
         }
         let mut next = self.paste.clone();
         next.allowed_apps.push(n);
-        self.save_paste(next)
+        self.save_paste(next, now)
     }
 
     fn register(
@@ -1206,6 +1276,7 @@ impl Worker {
         confirm: &str,
         label: &str,
         now_wall_ms: u64,
+        now: u64,
     ) -> CmdResult<RegisteredId> {
         if let Err(e) = registered::validate_registration(secret, confirm) {
             let field = match e.field {
@@ -1220,10 +1291,7 @@ impl Worker {
                 Some("label"),
             ));
         }
-        let store = self
-            .registered
-            .as_mut()
-            .map_err(|e| CommandError::new(e.message_id()))?;
+        let store = self.registered.as_mut().map_err(|e| e.to_command_error())?;
         if store.entries().len() >= MAX_REGISTERED_SECRETS {
             return Err(CommandError::from_message(
                 &Message::new("ui-desktop-error-secrets-full").arg("max", MAX_REGISTERED_SECRETS),
@@ -1236,20 +1304,31 @@ impl Worker {
         };
         if let Err(e) = self.persist.save_registered(store.entries()) {
             store.remove(id);
-            return Err(CommandError::new(e.message_id()));
+            return Err(e.to_command_error());
         }
-        self.after_policy_change();
+        self.after_policy_change(now);
         Ok(RegisteredId { id: id.to_string() })
     }
 
-    fn remove_secret(&mut self, id: &str) -> CmdResult<()> {
+    /// Deletes every registered secret and reloads the (now empty) store,
+    /// creating a new key if the old one is gone.
+    fn forget_secrets(&mut self, now: u64) -> CmdResult<()> {
+        self.persist
+            .forget_registered()
+            .map_err(|e| e.to_command_error())?;
+        self.registered = self.persist.load_registered();
+        self.after_policy_change(now);
+        match &self.registered {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_command_error()),
+        }
+    }
+
+    fn remove_secret(&mut self, id: &str, now: u64) -> CmdResult<()> {
         let id: u64 = id
             .parse()
             .map_err(|_| CommandError::new("ui-desktop-error-secret-missing").field("id"))?;
-        let store = self
-            .registered
-            .as_mut()
-            .map_err(|e| CommandError::new(e.message_id()))?;
+        let store = self.registered.as_mut().map_err(|e| e.to_command_error())?;
         if !store.entries().iter().any(|e| e.id == id) {
             return Err(CommandError::new("ui-desktop-error-secret-missing").field("id"));
         }
@@ -1262,9 +1341,9 @@ impl Worker {
             .collect();
         self.persist
             .save_registered(&remaining)
-            .map_err(|e| CommandError::new(e.message_id()))?;
+            .map_err(|e| e.to_command_error())?;
         store.remove(id);
-        self.after_policy_change();
+        self.after_policy_change(now);
         Ok(())
     }
 
@@ -1313,12 +1392,12 @@ fn not_pasted(body: &'static str) -> Notice {
     )
 }
 
-fn problem_notice(p: PersistError) -> Notice {
-    notice(
-        NotificationLevel::Warning,
-        "ui-desktop-toast-settings-problem-title",
-        &[p.message_id()],
-    )
+fn problem_notice(p: &PersistError) -> Notice {
+    Notice {
+        level: NotificationLevel::Warning,
+        title: Line::Msg(Message::new("ui-desktop-toast-settings-problem-title")),
+        body: vec![Line::Msg(p.message())],
+    }
 }
 
 /// Fluent id of a secret kind (`ui-desktop-kind-*`).

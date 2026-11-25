@@ -282,11 +282,11 @@ mod imp {
             Err(HostError::Unsupported)
         }
 
-        /// Not implemented on Linux (would need XScreenSaver / ext-idle-notify).
-        /// 0 reads as "input just now", which in core's swap detector is the
-        /// same as "unknown": only the fast-replacement window applies.
-        fn idle_ms(&self) -> u64 {
-            0
+        /// Not implemented on Linux (would need XScreenSaver / ext-idle-notify):
+        /// unknown, so core's swap detector only applies the fast-replacement
+        /// window to address-only content.
+        fn idle_ms(&self) -> Option<u64> {
+            None
         }
 
         fn set_intercept(&self, enabled: bool) -> Result<(), HostError> {

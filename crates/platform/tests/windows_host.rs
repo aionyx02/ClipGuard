@@ -56,7 +56,7 @@ fn host_reports_start_probe_and_settings() {
     assert_eq!(status.foreground, Capability::Active);
     assert_eq!(status.intercept, Capability::Active);
     assert!(!host.secure_desktop_active());
-    assert!(host.idle_ms() < 60_000);
+    assert!(host.idle_ms().is_some_and(|ms| ms < 60_000));
 
     assert_eq!(host.check_hook(), HookCheck::ProbeSent);
     assert!(wait_for(&rx, |e| matches!(e, HostEvent::ProbeAnswered)));

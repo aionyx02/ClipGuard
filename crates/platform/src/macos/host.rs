@@ -6,8 +6,10 @@
 //! - `pw-clip` ([`ClipboardMonitor`]): polls the pasteboard, publishes the
 //!   sequence into the [`PasteGate`], sends [`HostEvent::Clip`].
 //! - `pw-hook` ([`PasteTap`]): the event tap, only while interception is on.
-//! - `pw-host`: forwards [`TapEvent`]s as [`HostEvent`]s and reports
-//!   foreground changes every [`FOREGROUND_POLL_MS`].
+//! - `pw-host`: forwards [`TapEvent`]s as [`HostEvent`]s, reports
+//!   foreground changes every [`FOREGROUND_POLL_MS`] and sends
+//!   [`HostEvent::StatusChanged`] when Secure Input, Accessibility or the
+//!   pasteboard access changes (checked every [`STATUS_POLL_MS`]).
 //! - main (the desktop app's): must call [`register_foreground_observer`]
 //!   once and keep the returned observer alive. Without it the foreground
 //!   history only knows the app that was in front at that moment, and
@@ -46,6 +48,10 @@ use crate::status::{Capability, ProtectionStatus, Reason};
 /// has no callback into the host; 100 ms is below what a user notices
 /// between switching apps and pasting).
 pub const FOREGROUND_POLL_MS: u64 = 100;
+/// How often `pw-host` checks Secure Input, Accessibility and the pasteboard
+/// access for [`HostEvent::StatusChanged`] (custom: the worker re-reads the
+/// status every second anyway; this makes a change show at once).
+pub const STATUS_POLL_MS: u64 = 250;
 /// Longest wait in [`Host::paste_into`] for the target app to come to the
 /// front before giving up without pasting (custom).
 pub const PASTE_ACTIVATE_TIMEOUT_MS: u64 = 1_000;
@@ -120,6 +126,9 @@ pub fn start_host_with(
             gate: Arc::clone(&gate),
             quit: Arc::clone(&quit),
             last: None,
+            clip: clip.clone(),
+            status_key: None,
+            status_at: None,
         };
         std::thread::Builder::new()
             .name("pw-host".into())
@@ -271,6 +280,33 @@ struct Forwarder {
     quit: Arc<AtomicBool>,
     /// `(pid, bundle id)` of the last reported foreground.
     last: Option<(i32, Option<String>)>,
+    clip: ClipboardHandle,
+    /// The last [`StatusKey`] seen, and when it was read.
+    status_key: Option<StatusKey>,
+    status_at: Option<Instant>,
+}
+
+/// What can change [`Host::status`] without the worker doing anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StatusKey {
+    pub trusted: bool,
+    pub secure_input: bool,
+    pub access: Option<PasteboardAccess>,
+}
+
+/// Whether a status change is worth a [`HostEvent::StatusChanged`]: never
+/// for the first reading (the worker reads the status at start), and an
+/// unknown pasteboard access (monitor busy) keeps the previous one.
+pub fn status_key_changed(prev: Option<StatusKey>, mut next: StatusKey) -> (StatusKey, bool) {
+    match prev {
+        None => (next, false),
+        Some(p) => {
+            if next.access.is_none() {
+                next.access = p.access;
+            }
+            (next, p != next)
+        }
+    }
 }
 
 impl Forwarder {
@@ -302,6 +338,27 @@ impl Forwarder {
                     emit(&self.sink, HostEvent::Foreground(foreground_info(&app)));
                 }
             }
+            self.poll_status();
+        }
+    }
+
+    fn poll_status(&mut self) {
+        let due = self
+            .status_at
+            .is_none_or(|t| t.elapsed() >= Duration::from_millis(STATUS_POLL_MS));
+        if !due {
+            return;
+        }
+        self.status_at = Some(Instant::now());
+        let next = StatusKey {
+            trusted: accessibility_trusted(),
+            secure_input: secure_input_enabled(),
+            access: self.clip.access(),
+        };
+        let (key, changed) = status_key_changed(self.status_key, next);
+        self.status_key = Some(key);
+        if changed {
+            emit(&self.sink, HostEvent::StatusChanged);
         }
     }
 }
@@ -443,8 +500,8 @@ impl Host for MacHost {
         }
     }
 
-    fn idle_ms(&self) -> u64 {
-        input::idle_ms()
+    fn idle_ms(&self) -> Option<u64> {
+        Some(input::idle_ms())
     }
 
     fn set_intercept(&self, enabled: bool) -> Result<(), HostError> {
@@ -516,6 +573,34 @@ mod tests {
             tap_enabled: true,
             secure_input: false,
         }
+    }
+
+    #[test]
+    fn status_changes_are_reported_once() {
+        let k = StatusKey {
+            trusted: true,
+            secure_input: false,
+            access: Some(PasteboardAccess::AlwaysAllow),
+        };
+        assert_eq!(status_key_changed(None, k), (k, false), "first reading");
+        assert_eq!(status_key_changed(Some(k), k), (k, false));
+        let secure = StatusKey {
+            secure_input: true,
+            ..k
+        };
+        assert_eq!(status_key_changed(Some(k), secure), (secure, true));
+        let busy = StatusKey { access: None, ..k };
+        assert_eq!(status_key_changed(Some(k), busy), (k, false), "busy");
+        let denied = StatusKey {
+            access: Some(PasteboardAccess::AlwaysDeny),
+            ..k
+        };
+        assert_eq!(status_key_changed(Some(k), denied), (denied, true));
+        let revoked = StatusKey {
+            trusted: false,
+            ..k
+        };
+        assert!(status_key_changed(Some(k), revoked).1);
     }
 
     #[test]

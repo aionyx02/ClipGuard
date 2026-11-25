@@ -18,6 +18,7 @@
     "allow-register-secret",
     "allow-list-secrets",
     "allow-remove-secret",
+    "allow-forget-secrets",
     "allow-restore",
     "allow-quit",
     "allow-open-accessibility-settings",

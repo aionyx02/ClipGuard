@@ -158,6 +158,14 @@ pub async fn remove_secret(tx: State<'_, WorkerTx>, id: String) -> CmdResult<()>
     ask(&tx, |r| UiCommand::RemoveSecret(id, r)).await?
 }
 
+/// Addition to §4.3: deletes every registered secret. The way out when the
+/// keyring lost the HMAC key (`store-error-key-missing`) or `secrets.json`
+/// is damaged; the user then registers again.
+#[tauri::command]
+pub async fn forget_secrets(tx: State<'_, WorkerTx>) -> CmdResult<()> {
+    ask(&tx, UiCommand::ForgetSecrets).await?
+}
+
 /// Addition to §4.3: the confirm window asks on mount (it may load after
 /// the `paste-confirm` event was emitted).
 #[tauri::command]
@@ -225,6 +233,7 @@ pub fn handler<R: Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + 
         register_secret,
         list_secrets,
         remove_secret,
+        forget_secrets,
         get_pending_paste,
         paste_choice,
         restore,
@@ -249,6 +258,7 @@ pub fn handler<R: Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + 
         register_secret,
         list_secrets,
         remove_secret,
+        forget_secrets,
         get_pending_paste,
         paste_choice,
         restore,

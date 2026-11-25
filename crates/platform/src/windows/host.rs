@@ -169,7 +169,7 @@ impl Host for WindowsHost {
         } else if slot.hook.is_some() {
             Capability::Active
         } else {
-            // No dedicated reason for "could not install" yet (reported).
+            // Installing failed; `pw-work` keeps retrying via the probe.
             Capability::Unavailable(Reason::HookLost)
         };
         let foreground_ok = self
@@ -182,7 +182,8 @@ impl Host for WindowsHost {
             foreground: if foreground_ok {
                 Capability::Active
             } else {
-                Capability::Unavailable(Reason::HookLost)
+                // `SetWinEventHook` failed at start: no foreground events.
+                Capability::Unavailable(Reason::HostFailed)
             },
             intercept,
         }
@@ -217,7 +218,7 @@ impl Host for WindowsHost {
         send::paste_into(target)
     }
 
-    fn idle_ms(&self) -> u64 {
+    fn idle_ms(&self) -> Option<u64> {
         input::idle_ms()
     }
 
