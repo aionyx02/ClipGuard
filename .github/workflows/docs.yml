@@ -5,8 +5,9 @@ name: docs
 # apps/web/dist at /, apps/docs/dist at /docs/.
 # Deploys to GitHub Pages only from pushes to dev/main (or a manual run), and only once Pages is
 # enabled: set the repository variable PAGES_ENABLED=true (Settings → Pages → Source: GitHub
-# Actions). Without a custom domain the site lives under /<repo>/, so also set
-# DOCS_BASE=/paste-warden/docs/ until a custom domain exists.
+# Actions). Without a custom domain the site lives under /<repo>/, so the docs base defaults to
+# /<repo>/docs/ (the playground uses relative URLs and needs nothing). Once a custom domain serves
+# the site at its root, set the repository variable DOCS_BASE=/docs/.
 
 on:
   pull_request:
@@ -42,7 +43,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  DOCS_BASE: ${{ vars.DOCS_BASE || '/docs/' }}
+  DOCS_BASE: ${{ vars.DOCS_BASE || format('/{0}/docs/', github.event.repository.name) }}
 
 jobs:
   build:
