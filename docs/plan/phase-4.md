@@ -361,6 +361,14 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 
 **貼上攔截**：Wayland 沒有標準做法（S5），`intercept = Unavailable(WaylandNoIntercept)`，設定頁說明原因。X11 的 `XGrabKey` 會和使用者的其他快捷鍵工具衝突，也攔不到 Ctrl+Shift+V、中鍵和右鍵（S5），4b 不做。PRIMARY selection 見 §4.10 待決問題 2。
 
+實作備註（2026-11-25，Alpine edge 容器實測：sway 1.12 headless 的 ext 與 wlr data-control、foreign-toplevel；Xvfb＋openbox 關掉 BIG-REQUESTS 測 INCR）：
+- 全模組沒有 `unsafe`：`wayland-client` 0.31、`x11rb` 0.14、`rustix` 1。
+- **自我寫入只比對雜湊**：Wayland 和 X11 都要等通知才知道寫入後的序號，猜序號可能把夾在中間的別人的複製當成自己的。`write_text` 會等自己讀回那筆變動後才回傳序號。
+- 寫入用第二條 Wayland 連線（monitor 讀 pipe 時，同一個執行緒處理不了自己 source 的 `send`）；pipe 只有讀取端設 `O_NONBLOCK`（這個旗標會透過 fd 傳給來源 client）。
+- X11 寫入超過一個 request 的大小時不走 INCR，直接拒絕（有 BIG-REQUESTS 時上限約 16 MB）。
+- 新增 `Reason`：`X11NoIntercept`（4b 不做 XGrabKey）、`NoDisplay`（沒有 `WAYLAND_DISPLAY` 也沒有 `DISPLAY`）。
+- 沒有實測：XWayland 後備、GNOME、KDE、COSMIC、真的 KeePassXC、只有 wlr 的 compositor（只有 `select()` 的單元測試）。
+
 ### 4.9.3 Android（`crates/platform/src/android/`＋`apps/desktop/src-tauri/gen/android/`）
 
 照 S6 的建議做法。Android 不能背景讀剪貼簿（S6 發現 5），所以只做使用者主動觸發的檢查。
@@ -410,3 +418,5 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 2. **Linux PRIMARY selection**：KeePassXC 會把密碼同時放進 PRIMARY（S5 坑 7），中鍵就能貼出去。PRIMARY 每次選取文字都會變，全部送進引擎太貴。4b 先不監聽 PRIMARY，設定頁列為已知限制。
 3. **GNOME Shell extension**：S5 建議的路線之一，要另外發布到 extensions.gnome.org，4b 不做。
 4. **Android 登記機密**：要用 Android Keystore 保存 HMAC 金鑰，而且只能在 `PROCESS_TEXT`／`SEND` 時比對。範圍不大，但 4b 先不做。
+5. **Linux 讀取逾時時要不要分析已讀到的部分**：目前逾時就整筆放棄（`Unreadable`），所以故意慢慢送資料的 source 可以躲過分析。建議改成分析已讀到的前段並標成 `truncated`，因為這樣只會多擋、不會少擋。
+6. **COSMIC 沒開 data-control 但有 `DISPLAY` 時**：表格寫 `watch = Unavailable(CosmicDisabled)`，實作其實還會用 XWayland 盡力監聽。建議改成 `Degraded(CosmicDisabled)`，和實際行為一致。
