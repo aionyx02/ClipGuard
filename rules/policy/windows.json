@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "description": "Windows window classes and process names used by the execution-entry guard (detection-rules.md §4) and the paste guard allowlist (§5.3). Measured on Windows 11 (zh-TW and en). Process names are compared without a trailing .exe.",
+  "description": "Windows window classes and process names used by the execution-entry guard (detection-rules.md §4) and the paste guard allowlist (§5.3). `foreground` is read by the platform layer: UWP apps come to the front as their frame host window, and the real app is a child window of another process (S3 finding 6). Measured on Windows 11 (zh-TW and en). Process names are compared without a trailing .exe.",
   "entry": {
     "dialog_class": "#32770",
     "shell_process": "explorer",
@@ -24,6 +24,10 @@
       "mintty"
     ],
     "terminal_processes": ["WindowsTerminal", "wezterm-gui", "alacritty", "mintty", "powershell_ise"]
+  },
+  "foreground": {
+    "uwp_host_process": "ApplicationFrameHost",
+    "uwp_frame_class": "ApplicationFrameWindow"
   },
   "paste": {
     "allowed_apps": [

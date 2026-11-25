@@ -1,6 +1,10 @@
 //! The `pw-clip` thread (docs/plan/phase-4.md §4.2): a message-only window
 //! with `AddClipboardFormatListener`. It is the only thread that opens the
 //! clipboard; other threads send it commands through [`ClipboardHandle`].
+//!
+//! With [`MonitorOptions`] the same thread also runs the foreground
+//! `SetWinEventHook` ([`super::foreground`]) and receives session lock
+//! notifications ([`super::session`]), as §4.2 assigns them to `pw-clip`.
 
 use std::cell::RefCell;
 use std::sync::Once;
@@ -16,12 +20,14 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW, HWND_MESSAGE,
     KillTimer, MSG, PostMessageW, RegisterClassExW, SetTimer, WINDOW_EX_STYLE, WINDOW_STYLE,
-    WM_APP, WM_CLIPBOARDUPDATE, WM_TIMER, WNDCLASSEXW,
+    WM_APP, WM_CLIPBOARDUPDATE, WM_TIMER, WM_WTSSESSION_CHANGE, WNDCLASSEXW,
 };
 use windows::core::{PCWSTR, w};
 use zeroize::Zeroizing;
 
 use super::clipboard::{self as raw, ClipError, Formats, Snapshot};
+use super::foreground::{ForegroundSink, ForegroundWatch};
+use super::session;
 use crate::clipboard::{ClipEvent, Deduper, RUN_INITIAL_CHECK, SelfWriteCache, content_hash};
 
 /// Longest wait for the monitor thread to run a command.
@@ -42,6 +48,18 @@ const WM_PW_QUIT: u32 = WM_APP + 2;
 
 /// Receives every clipboard change (on the monitor thread; keep it short).
 pub type ClipSink = Box<dyn FnMut(ClipEvent) + Send>;
+/// Receives session lock (true) / unlock (false) on the monitor thread.
+pub type SessionSink = Box<dyn FnMut(bool) + Send>;
+
+/// What else `pw-clip` watches besides the clipboard.
+#[derive(Default)]
+pub struct MonitorOptions {
+    /// Foreground changes (`SetWinEventHook(EVENT_SYSTEM_FOREGROUND)`); the
+    /// current foreground is reported right after start.
+    pub foreground: Option<ForegroundSink>,
+    /// `WTS_SESSION_LOCK` / `WTS_SESSION_UNLOCK`.
+    pub session: Option<SessionSink>,
+}
 
 enum Command {
     WriteText(Zeroizing<String>, SyncSender<Result<u32, ClipError>>),
@@ -56,6 +74,7 @@ struct State {
     dedupe: Deduper,
     self_writes: SelfWriteCache,
     sink: ClipSink,
+    session: Option<SessionSink>,
     start: Instant,
 }
 
@@ -125,6 +144,16 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
     if msg == WM_CLIPBOARDUPDATE {
         // SAFETY: our window; re-arming an existing timer restarts it.
         unsafe { SetTimer(Some(hwnd), READ_TIMER_ID, CLIPBOARD_READ_DELAY_MS, None) };
+        return LRESULT(0);
+    }
+    if msg == WM_WTSSESSION_CHANGE {
+        if let Some(locked) = session::lock_change(wp) {
+            with_state(|s| {
+                if let Some(sink) = s.session.as_mut() {
+                    sink(locked);
+                }
+            });
+        }
         return LRESULT(0);
     }
     if msg == WM_TIMER && wp.0 == READ_TIMER_ID {
@@ -213,6 +242,7 @@ impl ClipboardHandle {
 pub struct ClipboardMonitor {
     handle: ClipboardHandle,
     thread: Option<JoinHandle<()>>,
+    foreground_active: bool,
 }
 
 /// Why the monitor could not start.
@@ -227,24 +257,38 @@ impl ClipboardMonitor {
     /// Starts `pw-clip`. `sink` receives every change, starting with the
     /// current clipboard when [`RUN_INITIAL_CHECK`] is set.
     pub fn start(sink: ClipSink) -> Result<ClipboardMonitor, StartError> {
+        Self::start_with(sink, MonitorOptions::default())
+    }
+
+    /// [`Self::start`] plus the foreground and session watchers of `opts`.
+    pub fn start_with(
+        sink: ClipSink,
+        opts: MonitorOptions,
+    ) -> Result<ClipboardMonitor, StartError> {
         let (ready_tx, ready_rx) = mpsc::sync_channel(1);
         let (cmd_tx, cmd_rx) = mpsc::channel::<Command>();
         let thread = std::thread::Builder::new()
             .name("pw-clip".into())
-            .spawn(move || thread_main(sink, cmd_rx, ready_tx))
+            .spawn(move || thread_main(sink, opts, cmd_rx, ready_tx))
             .map_err(|_| StartError::ThreadGone)?;
-        let hwnd = ready_rx.recv().map_err(|_| StartError::ThreadGone)??;
+        let (hwnd, foreground_active) = ready_rx.recv().map_err(|_| StartError::ThreadGone)??;
         Ok(ClipboardMonitor {
             handle: ClipboardHandle {
                 hwnd,
                 commands: cmd_tx,
             },
             thread: Some(thread),
+            foreground_active,
         })
     }
 
     pub fn handle(&self) -> ClipboardHandle {
         self.handle.clone()
+    }
+
+    /// The foreground hook of [`MonitorOptions::foreground`] is installed.
+    pub fn foreground_active(&self) -> bool {
+        self.foreground_active
     }
 }
 
@@ -267,8 +311,9 @@ impl Drop for ClipboardMonitor {
 
 fn thread_main(
     sink: ClipSink,
+    opts: MonitorOptions,
     commands: Receiver<Command>,
-    ready: SyncSender<Result<SendHwnd, StartError>>,
+    ready: SyncSender<Result<(SendHwnd, bool), StartError>>,
 ) {
     // SAFETY: Win32 window setup on this thread; every failure is reported
     // through `ready` and the thread exits.
@@ -308,6 +353,7 @@ fn thread_main(
             dedupe: Deduper::new(),
             self_writes: SelfWriteCache::new(),
             sink,
+            session: opts.session,
             start: Instant::now(),
         });
     });
@@ -318,7 +364,11 @@ fn thread_main(
         let _ = unsafe { DestroyWindow(hwnd) };
         return;
     }
-    let _ = ready.send(Ok(SendHwnd(hwnd.0 as isize)));
+    let session_registered = with_state_ret(|s| s.session.is_some()) && session::register(hwnd);
+    // Installed after the listener so both run on this thread's loop; a
+    // failure only loses foreground events (status stays with the worker).
+    let foreground = opts.foreground.and_then(ForegroundWatch::install);
+    let _ = ready.send(Ok((SendHwnd(hwnd.0 as isize), foreground.is_some())));
 
     if RUN_INITIAL_CHECK {
         with_state(|s| s.on_update(hwnd));
@@ -340,6 +390,10 @@ fn thread_main(
             },
         }
     }
+    drop(foreground);
+    if session_registered {
+        session::unregister(hwnd);
+    }
     // SAFETY: our window; unregister before destroying it.
     unsafe {
         let _ = RemoveClipboardFormatListener(hwnd);
@@ -357,4 +411,13 @@ fn with_state(f: impl FnOnce(&mut State)) {
             f(state);
         }
     });
+}
+
+fn with_state_ret(f: impl FnOnce(&State) -> bool) -> bool {
+    STATE.with(|s| {
+        s.try_borrow()
+            .ok()
+            .and_then(|s| s.as_ref().map(f))
+            .unwrap_or(false)
+    })
 }
