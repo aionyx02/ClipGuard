@@ -1,0 +1,89 @@
+name: desktop
+
+# Desktop app (apps/desktop, Tauri v2, docs/plan/phase-4.md): clippy and unit tests of the app
+# crate, then the installers per OS (Windows msi + nsis, macOS dmg, Linux AppImage + deb) with
+# paste-warden-nmh bundled next to the app executable (src-tauri/tauri.release.conf.json), uploaded
+# as artifacts. The app crate needs the built frontend (tauri::generate_context! embeds dist/), so
+# ci.yml's rust job excludes it and it is checked here.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  desktop:
+    name: desktop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: msi,nsis
+            artifacts: |
+              target/release/bundle/msi/*.msi
+              target/release/bundle/nsis/*.exe
+          - os: macos-latest
+            bundles: dmg
+            artifacts: |
+              target/release/bundle/dmg/*.dmg
+          - os: ubuntu-latest
+            bundles: appimage,deb
+            artifacts: |
+              target/release/bundle/appimage/*.AppImage
+              target/release/bundle/deb/*.deb
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install   # rust-toolchain.toml adds wasm32
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux build dependencies (WebKitGTK 4.1, tray, icons, AppImage)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf libxdo-dev libssl-dev build-essential file
+      - name: wasm-bindgen version (same as the crate in Cargo.lock)
+        id: wbg
+        run: echo "v=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/,"",$3); print $3; exit}' Cargo.lock)" >> "$GITHUB_OUTPUT"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@${{ steps.wbg.outputs.v }},tauri-cli@2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: build the frontend (@paste-warden/core, then the desktop UI)
+        run: |
+          pnpm --filter @paste-warden/core build
+          pnpm --filter @paste-warden/desktop build
+
+      - run: cargo clippy -p paste-warden-desktop --all-targets --locked -- -D warnings
+      - run: cargo test -p paste-warden-desktop --locked
+
+      - name: installers (cargo tauri build)
+        working-directory: apps/desktop
+        run: cargo tauri build --ci --bundles ${{ matrix.bundles }} --config src-tauri/tauri.release.conf.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paste-warden-desktop-${{ runner.os }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error

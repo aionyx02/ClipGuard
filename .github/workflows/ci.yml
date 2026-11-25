@@ -29,8 +29,9 @@ jobs:
       - run: rustup show active-toolchain || rustup toolchain install   # installs what rust-toolchain.toml pins
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo test --workspace --all-targets --locked
+      # The desktop app needs the built frontend and (Linux) WebKitGTK: desktop.yml checks it.
+      - run: cargo clippy --workspace --exclude paste-warden-desktop --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --exclude paste-warden-desktop --all-targets --locked
 
   wasm:
     runs-on: ubuntu-latest
