@@ -9,10 +9,12 @@
 //! - [`input`]: idle time for the wallet-swap timing
 //! - [`permissions`]: Accessibility, Secure Input
 //! - [`paste_tap`]: the `pw-hook` CGEventTap
+//! - [`host`]: the `Host` the desktop worker drives (wires all of the above)
 #![allow(unsafe_code)]
 
 pub mod clipboard;
 pub mod foreground;
+pub mod host;
 pub mod input;
 pub mod monitor;
 pub mod paste_tap;

@@ -2,6 +2,8 @@
 
 use objc2_application_services::AXIsProcessTrusted;
 
+use crate::status::{Capability, Reason};
+
 /// Opens System Settings → Privacy & Security → Accessibility.
 pub const ACCESSIBILITY_SETTINGS_URL: &str =
     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
@@ -27,9 +29,10 @@ pub fn secure_input_enabled() -> bool {
     unsafe { IsSecureEventInputEnabled() != 0 }
 }
 
-/// What the paste interception can do right now. Local stand-in for the
-/// `intercept` field of `ProtectionStatus` (§4.8.1) until that type exists;
-/// each non-`Active` value maps to one §4.9.4 `Reason`.
+/// What the paste interception can do right now, as far as the OS says.
+/// [`InterceptState::capability`] turns it into the `intercept` field of
+/// `ProtectionStatus` (§4.8.1); each non-`Active` value maps to one §4.9.4
+/// `Reason`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InterceptState {
     Active,
@@ -41,6 +44,21 @@ pub enum InterceptState {
     NoAccessibility,
     /// `Unavailable(NoAccessibilityAfterUpdate)`: the ad-hoc signature changed.
     NoAccessibilityAfterUpdate,
+}
+
+impl InterceptState {
+    /// The `ProtectionStatus.intercept` value for this state.
+    pub fn capability(self) -> Capability {
+        match self {
+            InterceptState::Active => Capability::Active,
+            InterceptState::HookLost => Capability::Degraded(Reason::HookLost),
+            InterceptState::SecureInput => Capability::Degraded(Reason::SecureInput),
+            InterceptState::NoAccessibility => Capability::Unavailable(Reason::NoAccessibility),
+            InterceptState::NoAccessibilityAfterUpdate => {
+                Capability::Unavailable(Reason::NoAccessibilityAfterUpdate)
+            }
+        }
+    }
 }
 
 /// Combines the checks `pw-work` makes every `TAP_CHECK_INTERVAL_MS`.
@@ -82,6 +100,28 @@ mod tests {
         );
         assert_eq!(intercept_state(true, false, false, true), HookLost);
         assert_eq!(intercept_state(true, false, true, true), SecureInput);
+    }
+
+    #[test]
+    fn maps_to_status_reasons() {
+        use InterceptState::*;
+        assert_eq!(Active.capability(), Capability::Active);
+        assert_eq!(
+            HookLost.capability(),
+            Capability::Degraded(Reason::HookLost)
+        );
+        assert_eq!(
+            SecureInput.capability(),
+            Capability::Degraded(Reason::SecureInput)
+        );
+        assert_eq!(
+            NoAccessibility.capability(),
+            Capability::Unavailable(Reason::NoAccessibility)
+        );
+        assert_eq!(
+            NoAccessibilityAfterUpdate.capability(),
+            Capability::Unavailable(Reason::NoAccessibilityAfterUpdate)
+        );
     }
 
     #[test]

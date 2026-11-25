@@ -9,6 +9,7 @@
 //! - [`text`]: MIME / TARGETS decisions, UTF-8 prefix decoding, read limits
 //! - [`transfer`]: stale-reply filter and INCR reassembly
 //! - [`foreground`]: foreground history, `WM_CLASS` parsing
+//! - [`host`]: `ProtectionStatus` mapping (pure); `start_host` (Linux only)
 //!
 //! Linux only:
 //! - [`monitor`]: `ClipboardMonitor` / `ClipboardHandle` (the public API)
@@ -21,6 +22,7 @@
 
 pub mod backend;
 pub mod foreground;
+pub mod host;
 pub mod text;
 pub mod transfer;
 
