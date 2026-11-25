@@ -8,9 +8,11 @@
 //! - [`registered`]: registered-secret HMAC matching and input validation (legacy
 //!   `RegisteredSecretStore`, `SecretRegistration`)
 //! - [`windows`]: Windows window classes / process names (`rules/policy/windows.json`)
+//! - [`macos`]: macOS bundle ids in the same layout (`rules/policy/macos.json`)
 
 pub mod entry;
 pub mod guard;
+pub mod macos;
 pub mod paste;
 pub mod registered;
 pub mod throttle;

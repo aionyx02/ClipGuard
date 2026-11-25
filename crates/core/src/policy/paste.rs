@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::eq_ignore_case;
-use super::windows::windows_rules;
+use super::windows::{PasteRules, windows_rules};
 
 /// Maximum number of user-allowlisted apps kept (legacy `MaxAllowedApps`).
 pub const MAX_ALLOWED_APPS: usize = 100;
@@ -220,10 +220,18 @@ impl PasteSecrets {
 /// Is the target allowlisted (own window, credential dialog class, built-in or
 /// user-allowlisted process; exact normalized name, not a substring)?
 pub fn is_allowed(target: &PasteTarget<'_>, settings: &PasteGuardSettings) -> bool {
+    is_allowed_with(&windows_rules().paste, target, settings)
+}
+
+/// [`is_allowed`] with explicit platform rules (macOS: `macos::macos_rules()`).
+pub fn is_allowed_with(
+    rules: &PasteRules,
+    target: &PasteTarget<'_>,
+    settings: &PasteGuardSettings,
+) -> bool {
     if target.own {
         return true;
     }
-    let rules = &windows_rules().paste;
     if rules
         .allowed_window_classes
         .iter()
@@ -249,12 +257,22 @@ pub fn decide(
     target: &PasteTarget<'_>,
     settings: &PasteGuardSettings,
 ) -> PasteDecision {
+    decide_with(&windows_rules().paste, secrets, target, settings)
+}
+
+/// [`decide`] with explicit platform rules (macOS: `macos::macos_rules()`).
+pub fn decide_with(
+    rules: &PasteRules,
+    secrets: PasteSecrets,
+    target: &PasteTarget<'_>,
+    settings: &PasteGuardSettings,
+) -> PasteDecision {
     if !(secrets.registered || secrets.detected) || target.own {
         return PasteDecision::Allow;
     }
     let applies = (settings.intercept_registered && secrets.registered)
         || (settings.intercept_detected && secrets.detected);
-    if !applies || is_allowed(target, settings) {
+    if !applies || is_allowed_with(rules, target, settings) {
         PasteDecision::Allow
     } else {
         PasteDecision::Intercept
