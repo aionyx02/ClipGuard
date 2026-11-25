@@ -55,6 +55,10 @@ Phase 4 拆成兩段。**4a** 讓 Windows 和舊版 ClipGuard 的功能完全對
 | `FORMAT_HISTORY_FLAG` | `"CanIncludeInClipboardHistory"`，值為 0 才略過；單獨的 `CanUploadToCloudClipboard=0` 照常分析 | S3 發現 7 |
 | `FORMAT_CHROMIUM_SOURCE_URL`／`FORMAT_HTML` | `"Chromium internal source URL"`／`"HTML Format"`（讀標頭的 `SourceURL:`） | S3 發現 2 |
 | `SOURCE_URL_MAX_BYTES` | `2_048` | 自訂 |
+| `HTML_HEADER_SCAN_BYTES` | `4_096`：CF_HTML 只掃這麼多 bytes 找 `SourceURL:`，不讀頁面內容 | 自訂 |
+| `CLIPBOARD_READ_DELAY_MS` | `25`：收到 `WM_CLIPBOARDUPDATE` 後延遲再讀，期間有新通知就重新計時 | 實測（見下） |
+| `CLIPBOARD_COMMAND_TIMEOUT_MS` | `1_000`：其他執行緒等 `pw-clip` 執行寫入、清空、快照的上限 | 自訂 |
+| `MAX_IMAGE_PATH_UNITS` | `32_768`：`QueryFullProcessImageNameW` 的緩衝區（UTF-16 單位） | Win32 路徑上限 |
 | 去重 | `(GetClipboardSequenceNumber, SHA-256(分析用的前綴))`，只記最後一組 | S3 發現 4 |
 | `SELF_WRITE_SUPPRESS_MS`／`SELF_WRITE_CACHE_LEN` | `3_000`／`4` | §5.3／自訂 |
 | `RUN_INITIAL_CHECK` | `true`，啟動後立刻分析現有剪貼簿 | 舊 #9 |
@@ -62,6 +66,10 @@ Phase 4 拆成兩段。**4a** 讓 Windows 和舊版 ClipGuard 的功能完全對
 | `RESTORE_TEXT_FORMATS` | `CF_UNICODETEXT`、`Rich Text Format`、`HTML Format`、`CSV`；寫入時附加 `CanIncludeInClipboardHistory=0` | §5.3 |
 
 來源判斷的順序是剪貼簿 metadata 的來源網址、剪貼簿 owner、變動前的前景視窗（S3 發現 5）。owner 是 `powershell` 不算可疑訊號（S3 發現 4）。
+
+**為什麼要延遲讀取**：C1 的整合測試發現，收到通知就立刻打開剪貼簿時，用 .NET `Clipboard.SetText` 複製的程式 20 次裡有 11 次失敗（對照組沒開監看程式時 0 次）。.NET 寫入後會再打開一次剪貼簿呼叫 `OleFlushClipboard`，被我們搶先打開就會丟出例外，使用者會在那個程式裡看到錯誤。延遲 25 ms 之後連續 4 輪、共 80 次寫入都沒有失敗（`crates/platform/tests/windows_clipboard.rs` 的 `external_writers_are_not_disturbed`）。代價是 §5.3 已知限制裡「複製後很快按 Ctrl+V，危險指令仍會被貼出去」的時間窗會多約 25 ms，C7 實測後更新 detection-rules.md 的數字。
+
+**自我寫入**：我們寫入時會加上 `CanIncludeInClipboardHistory=0`，看起來跟密碼管理器的內容一樣。所以自我寫入快取同時記下寫入後的序號，序號相符就不看這個標記、照常讀取並標成 `self_write`。
 
 ### 前景視窗（`windows/foreground.rs`）
 
@@ -142,9 +150,10 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 
 ```
 WM_CLIPBOARDUPDATE（pw-clip）
-  ├─ 序號＋雜湊與上次相同，或在自我寫入快取內 → 丟掉
+  ├─ 序號＋雜湊與上一筆文字相同 → 丟掉（空的剪貼簿會清掉這筆記錄）
   ├─ 有 Exclude 標記，或 History=0 → 只送 Empty 事件，不讀文字
   └─ 讀 CF_UNICODETEXT 前 1 Mi 字＋來源網址＋owner → ClipEvent
+       （雜湊在自我寫入快取內 → self_write：照常分析、不發通知）
 pw-work：
   ① guard.on_clipboard_text → Quarantine：清空、存隔離區、紅色通知
   ② 機密 ③ 隱藏字元 ④ 錢包（帶 GetLastInputInfo 的時間）
