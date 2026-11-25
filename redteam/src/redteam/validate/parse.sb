@@ -1,0 +1,51 @@
+;; PasteWarden red-team validator sandbox (macOS sandbox-exec).
+;; docs/spikes/s8-syntax-validation.md §5; used by redteam/validate/sandbox.py.
+;;
+;; Parameters (all realpaths):
+;;   WORK        per-run temp dir (HOME, TMPDIR, cwd and the pwsh script)
+;;   USER_HOME   the real home dir: its file contents are unreadable
+;;   EXEC        the only binary that may be exec'd (the validator itself)
+;;   EXEC_DIR    directory of EXEC (pwsh loads its runtime from there)
+;;   ALLOW_FORK  "1" for zsh (`$(...)` forks under -n), else "0"
+;;
+;; Payloads are only parsed, never executed; this profile is the backstop
+;; for parse-time side effects (pwsh `using module`, zsh `$(<file)`,
+;; osacompile resolving `tell application`).
+
+(version 1)
+(allow default)
+
+;; No network at all, including DNS through mDNSResponder.
+(deny network*)
+(deny mach-lookup
+  (global-name "com.apple.dnssd.service")
+  (global-name "com.apple.mDNSResponder"))
+
+;; Writes only inside the temp dir (plus /dev/null).
+(deny file-write*)
+(allow file-write*
+  (subpath (param "WORK"))
+  (literal "/dev/null"))
+
+;; Nothing under the user's home is readable except the validator's own
+;; install dir and the temp dir. Metadata stays readable so realpath() works.
+(deny file-read-data
+  (require-all
+    (subpath (param "USER_HOME"))
+    (require-not (subpath (param "EXEC_DIR")))
+    (require-not (subpath (param "WORK")))))
+
+;; No exec except the validator binary itself (sandbox-exec execs it).
+(deny process-exec*)
+(allow process-exec (literal (param "EXEC")))
+
+;; zsh -n forks for command substitutions in argument position; the child
+;; never execs (NO_EXEC), and exec is denied above anyway.
+(if (equal? (param "ALLOW_FORK") "1")
+  (allow process-fork)
+  (deny process-fork))
+
+;; No launching apps through LaunchServices (osacompile + tell application).
+(deny mach-lookup
+  (global-name "com.apple.coreservices.launchservicesd")
+  (global-name "com.apple.coreservices.quarantine-resolver"))
