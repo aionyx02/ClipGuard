@@ -1,5 +1,8 @@
 import { LocaleSwitcher, ShieldMark, ThemeSwitcher, useLocale } from '@paste-warden/ui';
-import { type FormEvent, type ReactNode, useId, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react';
+import { browser } from 'wxt/browser';
+import type { ToBackground } from '../../lib/messages';
+import { type DesktopState, INITIAL_RECORD, normalizeRecord } from '../../lib/native';
 import {
   type ExtSettings,
   effectivePacks,
@@ -167,6 +170,97 @@ function Allowlist() {
   );
 }
 
+const askBackground = async (msg: ToBackground) =>
+  normalizeRecord(await browser.runtime.sendMessage(msg).catch(() => INITIAL_RECORD));
+
+const STATE_ID: Record<DesktopState, string> = {
+  off: 'ui-ext-desktop-state-off',
+  absent: 'ui-ext-desktop-state-absent',
+  not_running: 'ui-ext-desktop-state-not-running',
+  incompatible: 'ui-ext-desktop-state-incompatible',
+  running: 'ui-ext-desktop-state-running',
+};
+
+/** Optional link to the desktop app: the permission is requested only from this button. */
+function DesktopLink() {
+  const { t } = useLocale();
+  const [state, setState] = useState<DesktopState | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void askBackground({ type: 'native-status' }).then((r) => setState(r.state));
+  }, []);
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const connect = () =>
+    run(async () => {
+      // Must run straight from the click (user gesture).
+      const granted = await browser.permissions
+        .request({ permissions: ['nativeMessaging'] })
+        .catch(() => false);
+      setDenied(!granted);
+      if (granted) setState((await askBackground({ type: 'native-probe' })).state);
+    });
+  const disconnect = () =>
+    run(async () => {
+      await browser.permissions.remove({ permissions: ['nativeMessaging'] }).catch(() => false);
+      setState((await askBackground({ type: 'native-probe' })).state);
+    });
+  const check = () =>
+    run(async () => setState((await askBackground({ type: 'native-probe' })).state));
+  const button =
+    'rounded-lg px-4 py-1.5 text-sm font-semibold disabled:cursor-default disabled:opacity-60';
+  return (
+    <>
+      <p role="status" aria-live="polite" className="text-sm">
+        {state ? t(STATE_ID[state]) : '…'}
+      </p>
+      {denied ? (
+        <p role="alert" className="mt-1.5 text-xs text-fg-muted">
+          {t('ui-ext-desktop-denied')}
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {state === 'off' || state === null ? (
+          <button
+            type="button"
+            disabled={busy || state === null}
+            onClick={connect}
+            className={`${button} bg-accent text-accent-fg`}
+          >
+            {t('ui-ext-desktop-connect')}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={check}
+              className={`${button} border border-line bg-surface-2`}
+            >
+              {t('ui-ext-desktop-check')}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={disconnect}
+              className={`${button} border border-line bg-surface-2`}
+            >
+              {t('ui-ext-desktop-disconnect')}
+            </button>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function App() {
   const { t } = useLocale();
   const { settings } = useSettings();
@@ -215,6 +309,12 @@ export function App() {
             description={t('ui-ext-options-allowlist-desc')}
           >
             <Allowlist />
+          </Section>
+          <Section
+            title={t('ui-ext-options-desktop')}
+            description={t('ui-ext-options-desktop-desc')}
+          >
+            <DesktopLink />
           </Section>
         </main>
       </div>

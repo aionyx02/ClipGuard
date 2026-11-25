@@ -5,6 +5,7 @@
 // docs/plan/phase-3.md §3.2, docs/spec/detection-rules.md §7.
 import type { AnalyzeOptions, Locale, Report } from '@paste-warden/core/types';
 import type { BlockedChoice, PasteChoice } from '@paste-warden/overlay';
+import { ruleIdOr, type VerdictInfo } from './native';
 import { compare, type PastejackReason } from './pastejack';
 import type { Reply, WriteRequest } from './protocol';
 import { type BlockRecord, type ExtSettings, engineSettings, isAllowlisted } from './settings';
@@ -43,7 +44,11 @@ export interface GuardEnv {
   confirmPaste(report: Report, locale: Locale): Promise<PasteChoice>;
   /** Writes to the clipboard from the extension side (optimistic-path overwrite). */
   overwriteClipboard(text: string): Promise<boolean>;
-  record(r: BlockRecord): void;
+  /**
+   * Logs a block for the popup. `verdict` (rule id, severity, action: no text) is what the
+   * extension may relay to the desktop app over Native Messaging when that link is on.
+   */
+  record(r: BlockRecord, verdict?: VerdictInfo): void;
   /** Answers a `wait` reply. */
   resolveWait(id: number, reply: Reply): void;
   now?(): number;
@@ -190,7 +195,11 @@ export class Guard {
     if (report.action === 'quarantine' && s.guardWrites) {
       reply = { v: 'block', notice: t('ui-ext-clipboard-notice') };
       this.stats.blocked++;
-      this.env.record(this.recordOf('command', ''));
+      this.env.record(this.recordOf('command', ''), {
+        kind: ruleIdOr(report.command.reasons[0]?.id, 'command'),
+        severity: 'high',
+        action: 'blocked',
+      });
       const event: BlockedEvent = {
         report,
         url: this.env.win.location.href,
@@ -219,7 +228,14 @@ export class Guard {
       }
       if (reasons.length > 0) {
         this.stats.warned++;
-        this.env.record(this.recordOf(kind, ''));
+        this.env.record(this.recordOf(kind, ''), {
+          kind:
+            kind === 'pastejack'
+              ? 'pastejack'
+              : ruleIdOr(report.command.reasons[0]?.id ?? report.hidden.reasons[0]?.id, 'warning'),
+          severity: 'medium',
+          action: 'warned',
+        });
         const event: WarnEvent = { locale, kind, reasons: [...new Set(reasons)] };
         this.later(() => this.env.presentWarning(event));
       }
@@ -294,6 +310,11 @@ export class Guard {
           .join(' ')
           .slice(0, 200),
       ),
+      {
+        kind: ruleIdOr(report.secrets[0]?.rule_id || report.secrets[0]?.kind, 'secret'),
+        severity: 'high',
+        action: 'confirm',
+      },
     );
     void this.env.confirmPaste(report, locale).then((choice) => {
       if (choice === 'cancel') {

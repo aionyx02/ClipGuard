@@ -86,8 +86,8 @@ export default defineContentScript({
           (ok) => ok === true,
           () => false,
         ),
-      record: (record) => {
-        send({ type: 'record', record }).catch(() => {});
+      record: (record, verdict) => {
+        send({ type: 'record', record, verdict }).catch(() => {});
       },
       resolveWait: (id, reply) => channel.resolve(id, reply),
     });
