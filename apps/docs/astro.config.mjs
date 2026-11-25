@@ -38,6 +38,7 @@ export default defineConfig({
               items: [{ autogenerate: { directory: 'user/install' } }],
             },
             'user/features',
+            'user/limits',
             'user/privacy',
           ],
         },
