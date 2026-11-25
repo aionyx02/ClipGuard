@@ -10,7 +10,7 @@ roadmap 的完成條件是「產出 V1 → V3 的偵測率和誤報率圖」。�
 
 | 元件 | 位置 | 技術 | 用途 |
 |---|---|---|---|
-| LLM 介接與護欄 | `crates/llm` | Rust、`ureq`（rustls）、`jsonschema` | Tier 2 解說；CLAUDE.md 的五條護欄寫在這裡 |
+| LLM 介接與護欄 | `crates/llm` | Rust、`ureq`（rustls）、`schemars` | Tier 2 解說；CLAUDE.md 的五條護欄寫在這裡 |
 | CLI 的 Tier 2 | `crates/cli` | — | `scan --llm`、`llm check` |
 | 紅隊 | `redteam/`（Python） | `uv`、`pydantic`、`httpx` | 產生混淆變體 → 語法驗證 → 偵測 |
 | 藍隊 | `redteam/src/redteam/blue/` | opencode headless（`opencode run`，免費模型） | 讀繞過樣本 → 改 `rules/`、`corpus/` → 開 PR |
@@ -195,7 +195,7 @@ CI 另外加一個 job：分支名稱是 `redteam/*` 的 PR，只要改到 §5.5
 | 開關 | 用型別保證：`Disabled` 拿不到 `Client`，所以關閉時沒有任何程式路徑能建立連線 |
 | ① 機密不送雲端 | `Client::explain(report, masked_text)` 先看 Tier 1 的 Report：有 `secrets` 或登記機密命中，而且不是本機端點（`local == true` **且** `base_url` 的 host 是 loopback）→ 回傳 `Refused(SecretsPresent)`，不發請求。送出的文字一律是遮罩後的 |
 | ② 包裝不可信內容 | 內容放進 `<untrusted_payload>…</untrusted_payload>`，裡面的 `&`、`<`、`>` 先轉成 entity，所以內容不可能關掉標籤 |
-| ③ 輸出驗證 | 要求 JSON 輸出 `{ "level": "none\|suspicious\|malicious", "explanation": string(≤ LLM_MAX_EXPLANATION_CHARS), "techniques": [enum] }`；先用 `jsonschema` 驗證，再用 `serde`（`deny_unknown_fields`）反序列化，任何一步失敗就丟棄 |
+| ③ 輸出驗證 | 要求 JSON 輸出 `{ "level": "none\|suspicious\|malicious", "explanation": string(≤ LLM_MAX_EXPLANATION_CHARS), "techniques": [enum] }`；schema 由 `schemars` 從 Rust 型別產生，放進請求的 `response_format`；收到後用 `serde`（`deny_unknown_fields`、列舉）嚴格反序列化，再檢查長度上限，任何一步失敗就丟棄。**不用 `jsonschema` crate**：它的 `pattern` 驗證依賴 `fancy-regex`（關掉預設 feature 也一樣，2026-11-25 用 `cargo tree` 確認），違反 CLAUDE.md 的 regex 規定 |
 | ④ 只升不降 | `merge(tier1: Level, llm: Option<Level>) -> Level` 回傳兩者中較高的；proptest 保證結果永遠 ≥ Tier 1 |
 | ⑤ 不給工具、有 timeout | 請求不帶 `tools`／`tool_choice`；回應含 `tool_calls` 就丟棄；連線與讀取 timeout `LLM_TIMEOUT_MS`，輸出上限 `LLM_MAX_OUTPUT_TOKENS` |
 | 稽核 | `AuditSink` trait：每次呼叫記 provider、model、護欄判定、耗時、結果代碼；**不記 prompt 或回應內容** |
@@ -287,7 +287,7 @@ CLI：
 
 ## 5.12 平行開發
 
-主 session 先做：`redteam/pyproject.toml` 與 `uv.lock`、`models.py`（所有 agent 共用的 pydantic 模型）、workspace 新增的 Rust 相依（`ureq`、`jsonschema`）、`.gitignore`、CI 骨架。之後開三個 worktree agent：
+主 session 先做：`redteam/pyproject.toml` 與 `uv.lock`、`models.py`（所有 agent 共用的 pydantic 模型）、workspace 新增的 Rust 相依（`ureq`）、`.gitignore`、CI 骨架。之後開三個 worktree agent：
 
 | Agent | 擁有的檔案 | 不能碰 |
 |---|---|---|
