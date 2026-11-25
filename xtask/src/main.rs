@@ -6,9 +6,11 @@
 //! cargo run -p xtask -- corpus stats      # cases per area / op
 //! cargo run -p xtask -- corpus run [--area A] [--op O] [--id PREFIX] [-v]
 //! cargo run -p xtask -- corpus benign [-v]  # false-positive metrics
+//! cargo run -p xtask -- corpus add-from-run <run-store-dir> <variant-id> --expect <level> [--file <name>]
 //! cargo run -p xtask -- rules gitleaks <toml> <version> <commit>  # regenerate rules/gitleaks*.json
 //! ```
 
+mod redteam;
 mod rules;
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -33,10 +35,11 @@ fn main() -> ExitCode {
         ["corpus", "stats"] => corpus_stats(),
         ["corpus", "run", rest @ ..] => corpus_run(rest),
         ["corpus", "benign", rest @ ..] => corpus_benign(rest),
+        ["corpus", "add-from-run", rest @ ..] => redteam::cli(rest, &corpus_dir().join("cases")),
         ["rules", rest @ ..] => rules::run(rest),
         _ => {
             eprintln!(
-                "usage: cargo run -p xtask -- corpus <lint|coverage|stats|run|benign> | rules gitleaks <toml> <version> <commit>"
+                "usage: cargo run -p xtask -- corpus <lint|coverage|stats|run|benign|add-from-run> | rules gitleaks <toml> <version> <commit>"
             );
             return ExitCode::from(2);
         }
@@ -177,8 +180,11 @@ fn corpus_lint() -> Result<bool> {
                     );
                 }
             }
-            None if c.source == "new" => {}
-            None => r.err(&here, "source must be `new` or `legacy:<index id>`"),
+            None if c.source == "new" || c.source.starts_with(redteam::SOURCE_PREFIX) => {}
+            None => r.err(
+                &here,
+                "source must be `new`, `legacy:<index id>` or `redteam:<run>/<variant>`",
+            ),
         }
         for (name, v) in [("input", &c.input), ("args", &c.args)] {
             if let Some(v) = v
