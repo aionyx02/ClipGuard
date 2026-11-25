@@ -1,59 +1,127 @@
 /*
- * PasteWarden palette for Starlight (matches packages/ui/src/styles.css):
- * ink-navy surfaces from the banner, teal accent #5EEAD4. Starlight already follows the system
- * colour scheme and offers an auto / light / dark picker.
+ * Park UI look for Starlight, matching the playground (apps/web/src/styles.css): Radix slate
+ * grays, a monochrome accent (near-black on light, near-white on dark), Inter, Park's radii and
+ * soft shadows. Starlight still follows the system colour scheme and keeps its auto/light/dark
+ * picker. Starlight's dark tokens run from --sl-color-white (text) down to --sl-color-black (page).
  */
 
-/* Dark (Starlight's default block) */
+/* Dark (Starlight's default block): Radix slateDark. */
 :root {
-  --sl-color-accent-low: #0c2a2a;
-  --sl-color-accent: #2dd4bf;
-  --sl-color-accent-high: #99f6e4;
-  --sl-color-white: #ffffff;
-  --sl-color-gray-1: #e8edf3;
-  --sl-color-gray-2: #c3cdd9;
-  --sl-color-gray-3: #8b9bb0;
-  --sl-color-gray-4: #566780;
-  --sl-color-gray-5: #26364c;
-  --sl-color-gray-6: #142236;
-  --sl-color-black: #0b1220;
+  --sl-color-accent-low: #272a2d;
+  --sl-color-accent: #edeef0;
+  --sl-color-accent-high: #edeef0;
+  --sl-color-white: #edeef0;
+  --sl-color-gray-1: #d5d7da;
+  --sl-color-gray-2: #b0b4ba;
+  --sl-color-gray-3: #8b8f96;
+  --sl-color-gray-4: #5a6169;
+  --sl-color-gray-5: #2e3135;
+  --sl-color-gray-6: #18191b;
+  --sl-color-black: #111113;
 
-  --sl-font: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --sl-font:
+    "Inter Variable", "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui,
+    sans-serif;
   --sl-font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --pw-radius-l2: 0.5rem;
+  --pw-radius-l3: 0.75rem;
+  --pw-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3), 0 0 1px rgb(255 255 255 / 0.12);
 }
 
+/* Light: Radix slate. */
 :root[data-theme="light"] {
-  --sl-color-accent-low: #c8fff4;
-  --sl-color-accent: #0f766e;
-  --sl-color-accent-high: #134e4a;
-  --sl-color-white: #0b1220;
-  --sl-color-gray-1: #17263a;
-  --sl-color-gray-2: #26364c;
-  --sl-color-gray-3: #4a5b72;
-  --sl-color-gray-4: #7a8aa0;
-  --sl-color-gray-5: #c3cdd9;
-  --sl-color-gray-6: #e8edf3;
-  --sl-color-gray-7: #f3f6f9;
-  --sl-color-black: #ffffff;
+  --sl-color-accent-low: #e8e8ec;
+  --sl-color-accent: #1c2024;
+  --sl-color-accent-high: #1c2024;
+  --sl-color-white: #1c2024;
+  --sl-color-gray-1: #2b2f35;
+  --sl-color-gray-2: #3f444b;
+  --sl-color-gray-3: #60646c;
+  --sl-color-gray-4: #8b8d98;
+  --sl-color-gray-5: #d9d9e0;
+  --sl-color-gray-6: #f0f0f3;
+  --sl-color-gray-7: #f9f9fb;
+  --sl-color-black: #fcfcfd;
+
+  --pw-shadow-xs: 0 1px 2px rgb(0 0 51 / 0.06), 0 0 1px rgb(0 0 51 / 0.25);
 }
 
-/* Wordmark: "Paste" + teal "Warden", like the banner. */
+:root {
+  font-feature-settings: "cv11", "ss01";
+}
+
 .site-title {
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
-/* Hero on the landing page */
+/* Headings: Park's tighter, semibold scale. */
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Content links stay readable in a monochrome palette: always underlined. */
+.sl-markdown-content a:not(:where(.not-content *)) {
+  text-decoration: underline;
+  text-decoration-color: var(--sl-color-gray-4);
+  text-underline-offset: 0.2em;
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: currentColor;
+}
+
+/* Cards, code blocks, asides and inputs: Park radii and hairline borders. */
+.card,
+.sl-link-card,
+.expressive-code .frame,
+.starlight-aside,
+.sl-markdown-content table {
+  border-radius: var(--pw-radius-l3);
+}
+.card,
+.sl-link-card {
+  box-shadow: var(--pw-shadow-xs);
+}
+.expressive-code .frame {
+  overflow: hidden;
+}
+site-search button,
+starlight-theme-select select,
+starlight-lang-select select,
+.sl-markdown-content code:not(:where(pre code)) {
+  border-radius: var(--pw-radius-l2);
+}
+
+/* Sidebar: the current page is a soft filled pill, like Park's ghost buttons. */
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  border-radius: var(--pw-radius-l2);
+}
+
+/* Landing hero: a faint grid instead of a coloured glow, as on the playground. */
 .hero .tagline {
   max-width: 38rem;
 }
 
-[data-has-hero] .page {
-  background:
-    radial-gradient(
-      60rem 30rem at 85% -10%,
-      color-mix(in srgb, var(--sl-color-accent) 14%, transparent),
-      transparent 70%
-    ),
-    var(--sl-color-black);
+/* The grid sits behind the hero only and fades out, as on the playground. */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -4rem -50vw;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--sl-color-gray-5) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--sl-color-gray-5) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.45;
+  mask-image: radial-gradient(ellipse 45% 70% at 50% 30%, #000 30%, transparent 100%);
 }

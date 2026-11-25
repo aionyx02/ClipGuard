@@ -3,8 +3,9 @@ import { defineConfig } from 'astro/config';
 
 const REPO = 'https://github.com/aionyx02/paste-warden';
 
-// phase-3 §3.5: the playground lives at `/`, the docs at `/docs/`. A project Pages site without a
-// custom domain is served under /<repo>/, so the deploy workflow can override the base.
+// phase-3 §3.5: the website (home page, playground at `#/play`) lives at `/`, the docs at
+// `/docs/`. A project Pages site without a custom domain is served under /<repo>/, so the deploy
+// workflow can override the base.
 const base = process.env.DOCS_BASE ?? '/docs/';
 
 export default defineConfig({
@@ -24,7 +25,8 @@ export default defineConfig({
       },
       social: [{ icon: 'github', label: 'GitHub', href: REPO }],
       editLink: { baseUrl: `${REPO}/edit/dev/apps/docs/` },
-      customCss: ['./src/styles/theme.css'],
+      // Inter is bundled and served from the site itself, like the playground (no font CDN).
+      customCss: ['@fontsource-variable/inter', './src/styles/theme.css'],
       lastUpdated: false,
       sidebar: [
         {
