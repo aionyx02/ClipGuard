@@ -8,12 +8,16 @@
 //! - [`scan`]: `scan`, `mask`, `bench`
 //! - [`hook`]: Claude Code / opencode hooks (fail-closed) and `hook install`
 //! - [`mcp`]: stdio MCP server, `guard` profile
+//! - [`mcp_redteam`]: the `redteam` profile tools (phase-5.md §5.7)
+//! - [`llm`]: `scan --llm` and `llm check` (Tier 2, phase-5.md §5.6)
 #![forbid(unsafe_code)]
 
 pub mod cli;
 pub mod hook;
 pub mod l10n;
+pub mod llm;
 pub mod mcp;
+pub mod mcp_redteam;
 pub mod report_json;
 pub mod scan;
 

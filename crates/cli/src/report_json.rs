@@ -34,6 +34,23 @@ pub struct ReportJson {
     pub secrets: Vec<SecretJson>,
     pub hidden: HiddenJson,
     pub wallets: Vec<WalletJson>,
+    /// Tier 2 explanation (phase-5.md §5.6); only present after `scan --llm`
+    /// produced a validated answer. `action` already includes it (only ever raised).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LlmJson>,
+}
+
+/// The optional Tier 2 block. Model text is untrusted: the explanation was
+/// validated (length, no control characters) but is still the model's words.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct LlmJson {
+    pub level: LevelJson,
+    pub explanation: String,
+    /// Technique ids (`download_execute`, `obfuscation`, …).
+    pub techniques: Vec<String>,
+    /// `openai_compatible` or `anthropic`.
+    pub provider: String,
+    pub model: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -168,6 +185,7 @@ impl ReportJson {
                     span_utf16: offsets.span(w.start, w.start + w.len),
                 })
                 .collect(),
+            llm: None,
         }
     }
 }

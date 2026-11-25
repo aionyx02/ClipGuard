@@ -14,6 +14,7 @@ use paste_warden_core::limits::MAX_ANALYZED_CHARS;
 use paste_warden_core::secret::{self, PackSet, pem_body_mask_message};
 use paste_warden_core::{Context, Engine, Settings};
 use paste_warden_i18n::Localizer;
+use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{Implementation, ServerCapabilities, ServerConfig};
 use rmcp::{Json, ServerHandler, ServiceExt, tool, tool_handler, tool_router};
@@ -21,6 +22,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::l10n::{parse_locale, t};
+use crate::mcp_redteam::RedteamConfig;
 use crate::report_json::{ReportJson, SecretJson, TraceStepJson, secrets_json};
 
 /// Longest accepted tool input, in chars (1 Mi). Longer input is an error.
@@ -93,7 +95,7 @@ impl Tools {
         }
     }
 
-    fn l10n(&self, locale: Option<&str>) -> Localizer {
+    pub(crate) fn l10n(&self, locale: Option<&str>) -> Localizer {
         Localizer::new(locale.map_or(self.locale, parse_locale))
     }
 
@@ -180,16 +182,31 @@ fn preview(s: &str) -> String {
     }
 }
 
-/// The rmcp server for the `guard` profile.
+/// The rmcp server. `guard` profile by default; [`GuardServer::redteam`]
+/// adds the `redteam` tools (`crate::mcp_redteam`).
 #[derive(Debug, Clone)]
 pub struct GuardServer {
-    tools: Tools,
+    pub(crate) tools: Tools,
+    /// `Some` only under `--profile redteam`.
+    pub(crate) redteam: Option<RedteamConfig>,
+    tool_router: ToolRouter<GuardServer>,
 }
 
 impl GuardServer {
     pub fn new(default_locale: &str) -> Self {
         GuardServer {
             tools: Tools::new(default_locale),
+            redteam: None,
+            tool_router: Self::tool_router(),
+        }
+    }
+
+    /// The `redteam` profile: the guard tools plus `run_benchmark` and `validate_syntax`.
+    pub fn redteam(default_locale: &str, cfg: RedteamConfig) -> Self {
+        GuardServer {
+            tools: Tools::new(default_locale),
+            redteam: Some(cfg),
+            tool_router: Self::tool_router() + Self::redteam_router(),
         }
     }
 }
@@ -258,31 +275,39 @@ impl GuardServer {
     }
 }
 
-#[tool_handler]
+#[tool_handler(router = self.tool_router)]
 impl ServerHandler for GuardServer {
     fn get_info(&self) -> ServerConfig {
+        let instructions = if self.redteam.is_some() {
+            "PasteWarden read-only analysis (redteam profile): the guard tools plus \
+             `run_benchmark` and `validate_syntax`. Nothing is ever executed and inputs are \
+             never echoed. There is no clipboard access."
+        } else {
+            "PasteWarden read-only analysis (guard profile). Call `analyze` on commands or \
+             snippets from untrusted sources before running them, and `mask` before sharing \
+             text that may contain secrets. There is no clipboard access."
+        };
         ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(
                 Implementation::new("paste-warden", env!("CARGO_PKG_VERSION"))
                     .with_title("PasteWarden"),
             )
-            .with_instructions(
-                "PasteWarden read-only analysis (guard profile). Call `analyze` on commands or \
-                 snippets from untrusted sources before running them, and `mask` before sharing \
-                 text that may contain secrets. There is no clipboard access.",
-            )
+            .with_instructions(instructions)
     }
 }
 
-/// Runs the server on stdio until the client disconnects.
-pub fn serve(default_locale: &str) -> anyhow::Result<()> {
+/// Runs the server on stdio until the client disconnects. `redteam` selects
+/// the redteam profile.
+pub fn serve(default_locale: &str, redteam: Option<RedteamConfig>) -> anyhow::Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
     rt.block_on(async {
-        let service = GuardServer::new(default_locale)
-            .serve(rmcp::transport::stdio())
-            .await?;
+        let server = match redteam {
+            Some(cfg) => GuardServer::redteam(default_locale, cfg),
+            None => GuardServer::new(default_locale),
+        };
+        let service = server.serve(rmcp::transport::stdio()).await?;
         service.waiting().await?;
         anyhow::Ok(())
     })

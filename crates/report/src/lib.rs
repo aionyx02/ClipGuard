@@ -161,6 +161,20 @@ pub struct ReportJson {
     pub secrets: Vec<SecretJson>,
     pub hidden: HiddenJson,
     pub wallets: Vec<WalletJson>,
+    /// Optional Tier 2 block (phase-5.md §5.6). Only the CLI's `scan --llm`
+    /// fills it; WASM and Python never call a model. Schema version stays 1.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LlmJson>,
+}
+
+/// `"llm": { level, explanation, techniques, provider, model }`.
+#[derive(Debug, Serialize)]
+pub struct LlmJson {
+    pub level: &'static str,
+    pub explanation: String,
+    pub techniques: Vec<String>,
+    pub provider: String,
+    pub model: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -336,6 +350,7 @@ pub fn report_json(text: &str, report: &Report, locale: &str) -> ReportJson {
                 span_utf16: map.span(w.start, w.start + w.len),
             })
             .collect(),
+        llm: None,
     }
 }
 

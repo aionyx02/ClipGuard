@@ -55,4 +55,3 @@ cli-uninstall-none = No PasteWarden settings found: { $path }
 ## MCP
 
 cli-mcp-too-long = Input too long: the limit is 1,048,576 characters.
-cli-mcp-redteam-later = The redteam profile arrives in Phase 5; only guard is available.
