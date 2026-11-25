@@ -22,7 +22,7 @@ corpus/
 | `id` | ✅ | 全域唯一、永遠不改。小寫，`<area>.<主題>.<流水號或簡述>`，例如 `command.bypass.caret-001` |
 | `area` | ✅ | `command`、`secret`、`hidden`、`wallet`、`entry`、`guard`、`throttle`、`paste`、`registered`、`limits`、`pastejack`、`i18n`、`checksum` 其中之一 |
 | `op` | ✅ | 要執行的動作，例如 `command.analyze`。每個 op 的定義寫在 `ops/<area>.md` |
-| `source` | ✅ | 來源。舊測試寫 `legacy:<legacy-index 的 id>`，例如 `legacy:tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[0]`。新增的案例寫 `new` |
+| `source` | ✅ | 來源。舊測試寫 `legacy:<legacy-index 的 id>`，例如 `legacy:tests/ClipGuard.Core.Tests/CommandDetectorTests.cs#ClickFix樣本判為惡意[0]`。新增的案例寫 `new`。紅藍隊閉環加進來的案例寫 `redteam:<run-id>/<variant-id>`，由 `cargo run -p xtask -- corpus add-from-run` 產生（docs/plan/phase-5.md §5.5.1），不會再被當成紅隊的種子 |
 | `input` | 依 op | 主要輸入文字，型別是 [Text](#2-text-型別) |
 | `args` | 依 op | 其他參數（物件），例如 `{"packs": ["tw"]}`。裡面的文字欄位也可以用 Text |
 | `events` | 依 op | 有時間或狀態的案例：事件陣列，例如 `[{"t_ms": 0, "copy": "…"}, {"t_ms": 400, "copy": "…", "expect": {…}}]` |

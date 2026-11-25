@@ -232,24 +232,16 @@ fn ascii_json(json: &str) -> String {
 mod tests {
     use super::*;
 
-    struct TempDir(PathBuf);
+    /// A unique temp dir per test (tests run in parallel), removed on drop.
+    struct TempDir(PathBuf, #[allow(dead_code)] tempfile::TempDir);
 
     impl TempDir {
         fn new(tag: &str) -> Self {
-            let p = std::env::temp_dir().join(format!(
-                "pw-xtask-{tag}-{}-{:?}",
-                std::process::id(),
-                std::time::SystemTime::now()
-            ));
-            let p = PathBuf::from(p.to_string_lossy().replace([' ', ':', '{', '}', ','], "_"));
-            fs::create_dir_all(&p).unwrap();
-            TempDir(p)
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.0);
+            let dir = tempfile::Builder::new()
+                .prefix(&format!("pw-xtask-{tag}-"))
+                .tempdir()
+                .unwrap();
+            TempDir(dir.path().to_path_buf(), dir)
         }
     }
 

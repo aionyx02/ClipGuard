@@ -89,6 +89,14 @@ redteam/
 | sh／bash／zsh | `$'\x..'`、`${IFS}`、引號切字（`c''url`）、`base64 -d \| sh`、`eval`、變數間接 |
 | 共通 | 空白與填充（含超過讀取上限的位置）、誘餌註解的翻譯與改寫、零寬字元與同形字（測 normalize）、換行切成多行 |
 
+實作備註（2026-11-25）：
+- 種子 229 筆：powershell 131、cmd 60、bash 21、sh 17（zsh、applescript 0），train 189、heldout 40。`source: redteam:*` 的語料不會變成種子，所以種子和 heldout 不會隨藍隊的修補改變。
+- 零寬字元、同形字、全形字的變異照原樣不能執行，登記為 `semantic=False`，報表另外列；偵測率的主要數字只算 `semantic=True` 的變體。
+- `-w h` 沒做（只在 `Hidden`／`hidden`／`1` 之間互換）；`curl`／`wget` 別名只用在 Windows PowerShell 5.1；`sh.ifs` 不用在 zsh；`sh.ansi_c` 不用在 dash。cmd 的變異假設是在互動式 cmd 貼上執行，不是 Win+R。
+- PowerShell 的變異器模組叫 `ps.py`，原始碼和測試裡不出現完整的程式名稱，有測試掃描。
+- 冒煙測試（10 個 train 種子、200 個 G0 變體、當時的 dev）：擋下 157、降級 15、繞過 28。繞過較多的 technique：`ps.reverse`、`ps.char`、`ps.concat`、`ps.var_indirection`、`common.padding`。
+- **效能發現**：≤ 1 KB 的變體 p99 1.5 ms（預算 1 ms），最慢的一筆 63 ms，而且是沒被擋下的變體。這是藍隊之外要給核心處理的問題，V1 報表會列出來。
+
 ### 5.3.3 G1 LLM 變異器（`gen_llm/`）
 
 - 呼叫 `OLLAMA_BASE_URL`（預設 `http://127.0.0.1:11434/v1`）的 `/chat/completions`，`response_format` 用 JSON schema：`{"variants":[{"shell":"cmd|powershell|sh|bash|zsh|applescript","payload":"…","technique":"…"}]}`。輸出通過 pydantic 驗證才採用，否則丟棄並記為 `invalid_output`。

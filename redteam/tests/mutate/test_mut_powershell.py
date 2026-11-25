@@ -1,5 +1,4 @@
 # Seeded RNGs drive the mutators; not crypto.
-# ruff: noqa: S311
 """PowerShell mutators. String rewrites are checked with a tiny evaluator for
 exactly the expressions they emit; word rewrites by undoing them.
 

@@ -1,5 +1,4 @@
 # Seeded RNGs drive the mutators; not crypto.
-# ruff: noqa: S311
 """cmd mutators: each output is checked against a hand-written reference of
 what cmd.exe does to it (caret removal, quote removal in the program name,
 ``%COMSPEC%`` substring expansion)."""

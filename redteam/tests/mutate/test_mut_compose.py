@@ -1,5 +1,4 @@
 # Seeded RNGs drive the mutators; not crypto.
-# ruff: noqa: S311
 import re
 from pathlib import Path
 

@@ -1,5 +1,4 @@
 # Seeded RNGs drive the mutators; not crypto.
-# ruff: noqa: S311
 """sh / bash / zsh mutators, checked by undoing each rewrite by hand.
 
 (They were also checked once by running benign scripts in bash, zsh and dash
