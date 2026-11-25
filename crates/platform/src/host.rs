@@ -91,6 +91,11 @@ pub enum HostEvent {
     EnterSwallowed {
         target: WindowId,
     },
+    /// What [`Host::status`] reports has changed on its own (macOS: Secure
+    /// Input, Accessibility, pasteboard access). The worker re-reads
+    /// [`Host::status`]; it also re-reads it on every tick, so a host that
+    /// cannot tell does not have to send this.
+    StatusChanged,
 }
 
 /// Receives [`HostEvent`]s on the host's own threads. Must not block.
@@ -169,8 +174,10 @@ pub trait Host: Send + Sync {
     /// (`SELF_INPUT_TAG`), which the hook lets through.
     fn paste_into(&self, target: WindowId) -> Result<(), HostError>;
 
-    /// Milliseconds since the last user input (wallet swap timing).
-    fn idle_ms(&self) -> u64;
+    /// Milliseconds since the last user input (wallet swap timing). `None`
+    /// when the platform cannot tell (Linux): core then treats the input
+    /// time as unknown.
+    fn idle_ms(&self) -> Option<u64>;
 
     /// Installs or removes the hook (settings change).
     fn set_intercept(&self, enabled: bool) -> Result<(), HostError>;

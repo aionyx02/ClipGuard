@@ -40,6 +40,7 @@ ui-desktop-status-x11-no-intercept = This version doesn't intercept pastes on X1
 ui-desktop-status-no-display = No graphical session found (neither Wayland nor X11), so the clipboard can't be monitored.
 ui-desktop-status-no-secret-service = No Secret Service found (such as GNOME Keyring or KWallet), so the key can't be stored safely and secrets can't be registered.
 ui-desktop-status-android-no-background = Android doesn't let apps read the clipboard in the background. Select text, or use Share, and pick PasteWarden to check it.
+ui-desktop-status-host-failed = PasteWarden couldn't connect to the system, so it can't protect the clipboard right now. Restart PasteWarden; if this keeps happening, restart the computer.
 
 ## Re-allowing Accessibility (graphical steps only)
 ui-desktop-reauth-step-1 = Click the button below, or open System Settings → Privacy & Security → Accessibility.

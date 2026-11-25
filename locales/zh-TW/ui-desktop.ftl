@@ -40,6 +40,7 @@ ui-desktop-status-x11-no-intercept = 這個版本在 X11 上不攔截貼上（�
 ui-desktop-status-no-display = 找不到圖形介面（沒有 Wayland 也沒有 X11），無法監聽剪貼簿。
 ui-desktop-status-no-secret-service = 找不到 Secret Service（例如 GNOME Keyring、KWallet），沒辦法安全保存金鑰，所以無法登記機密。
 ui-desktop-status-android-no-background = Android 不允許程式在背景讀剪貼簿。請在選取文字的選單或「分享」裡選 PasteWarden 來檢查。
+ui-desktop-status-host-failed = PasteWarden 無法連上系統，目前沒辦法保護剪貼簿。請重新啟動 PasteWarden；一直發生的話請重新開機。
 
 ## 重新授權「輔助使用」（只用圖形介面）
 ui-desktop-reauth-step-1 = 按下面的按鈕，或打開「系統設定 → 隱私權與安全性 → 輔助使用」。
