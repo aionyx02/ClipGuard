@@ -321,7 +321,11 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 
 **macOS 版的「系統管理員視窗」是 Secure Event Input**：終端機的「安全鍵盤輸入」、密碼欄位、部分密碼管理器會開啟 Secure Input，期間**所有** event tap 都收不到按鍵。`IsSecureEventInputEnabled()` 是 true 時設成 `Degraded(SecureInput)`，告知方式和 §4.8.2 相同：系統匣圖示改變；剪貼簿判定是 `Intercept` 時跳一次通知。系統 API 查不到是哪個 App 開的，訊息只說「有 App 開啟了安全輸入」。
 
-**權限**：active tap 需要「輔助使用」。第一次執行的導覽說明用途，按鈕用 `x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility` 打開系統設定；沒有權限時 `intercept = Unavailable(NoAccessibility)`，其他功能照常（只通知、不攔截）。S4 待決問題 2（全新 App bundle 的授權流程）在 4b 用乾淨的使用者帳號實測，結果寫回 S4。**ad-hoc 簽章的影響**見 §4.10 待決問題 2。
+**權限**：active tap 需要「輔助使用」。第一次執行的導覽說明用途，按鈕用 `x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility` 打開系統設定；沒有權限時 `intercept = Unavailable(NoAccessibility)`，其他功能照常（只通知、不攔截）。S4 待決問題 2（全新 App bundle 的授權流程）在 4b 用乾淨的使用者帳號實測，結果寫回 S4。
+
+**ad-hoc 簽章**（2026-11-25 決定：沒有預算，不買 Apple Developer ID）：TCC 用簽章辨識 App，ad-hoc 簽章每次建置都不同，所以**每次更新後「輔助使用」權限都會失效**。處理方式：
+- 啟動時如果版本和上次不同，而且 `AXIsProcessTrusted` 是 false，顯示專門的訊息 `ui-desktop-status-no-accessibility-after-update`：「更新後 macOS 需要重新授權」，附授權按鈕。系統設定裡舊的項目可能還顯示為開啟，訊息要教使用者先移除舊項目再重新加入。
+- Release notes 和文件網站的 macOS 安裝頁寫明這一點。和 roadmap §8 相同，只教圖形介面操作，不教任何終端機指令。
 
 入口警告的 App 清單（Terminal、iTerm2、Ghostty、Warp 等的 bundle ID）放進 `rules/policy/macos.json`，格式和 `windows.json` 一樣；core 的 `entry::classify_with` 已經支援傳入規則。
 
@@ -346,9 +350,9 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 | `DATA_CONTROL_READ_MAX_BYTES` | `MAX_ANALYZED_CHARS × 4`（UTF-8 最長 4 bytes），超過就停止讀取 | S5 坑 4 |
 | `COSMIC_ENV_HINT` | `XDG_CURRENT_DESKTOP=COSMIC` 且沒有 data-control global → 提示設定 `COSMIC_DATA_CONTROL_ENABLED=1` | S5 |
 
-**GNOME（Mutter 不支援 data-control）**：`watch = Unavailable(NoDataControl)`。系統匣選單提供「檢查剪貼簿」：使用者按下時 PasteWarden 視窗取得焦點，用一般的 `wl_data_device` 讀一次（Wayland 允許有焦點的 client 讀）。設定頁建議改裝瀏覽器擴充功能。GNOME Shell extension 列在 §4.10 待決問題 4。
+**GNOME（Mutter 不支援 data-control）**：`watch = Unavailable(NoDataControl)`。系統匣選單提供「檢查剪貼簿」：使用者按下時 PasteWarden 視窗取得焦點，用一般的 `wl_data_device` 讀一次（Wayland 允許有焦點的 client 讀）。設定頁建議改裝瀏覽器擴充功能。GNOME Shell extension 列在 §4.10 待決問題 3。
 
-**貼上攔截**：Wayland 沒有標準做法（S5），`intercept = Unavailable(WaylandNoIntercept)`，設定頁說明原因。X11 的 `XGrabKey` 會和使用者的其他快捷鍵工具衝突，也攔不到 Ctrl+Shift+V、中鍵和右鍵（S5），4b 不做。PRIMARY selection 見 §4.10 待決問題 3。
+**貼上攔截**：Wayland 沒有標準做法（S5），`intercept = Unavailable(WaylandNoIntercept)`，設定頁說明原因。X11 的 `XGrabKey` 會和使用者的其他快捷鍵工具衝突，也攔不到 Ctrl+Shift+V、中鍵和右鍵（S5），4b 不做。PRIMARY selection 見 §4.10 待決問題 2。
 
 ### 4.9.3 Android（`crates/platform/src/android/`＋`apps/desktop/src-tauri/gen/android/`）
 
@@ -362,7 +366,7 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 | 前景檢查 | App 在前景時，主畫面提供「檢查剪貼簿」按鈕 | S6 發現 5 |
 | 打包 | 只出 arm64 的 release APK，`applicationId` 是 `org.pastewarden.app`；`gen/android/` 進版控 | S6 |
 
-`ProtectionStatus` 在 Android 固定是 `watch = Unavailable(AndroidNoBackground)`、`intercept = Unavailable(AndroidNoBackground)`，主畫面直接寫明。登記機密（Keystore）不在 4b 範圍，見 §4.10 待決問題 5。選單只出現在「看得到我們」的 App 裡（S6 發現 2），說明頁要列出實測過的 App。
+`ProtectionStatus` 在 Android 固定是 `watch = Unavailable(AndroidNoBackground)`、`intercept = Unavailable(AndroidNoBackground)`，主畫面直接寫明。登記機密（Keystore）不在 4b 範圍，見 §4.10 待決問題 4。選單只出現在「看得到我們」的 App 裡（S6 發現 2），說明頁要列出實測過的 App。
 
 ### 4.9.4 新增的 `Reason`
 
@@ -370,6 +374,7 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 |---|---|---|---|
 | `SecureInput` | macOS | `intercept` Degraded | 有 App 開啟了安全輸入，暫時攔不到貼上 |
 | `NoAccessibility` | macOS | `intercept` Unavailable | 沒有「輔助使用」權限，只通知、不攔截（附授權按鈕） |
+| `NoAccessibilityAfterUpdate` | macOS | `intercept` Unavailable | 更新後 macOS 需要重新授權（ad-hoc 簽章，見 §4.9.1） |
 | `NoDataControl` | Linux GNOME | `watch` Unavailable | 這個桌面環境不允許背景監聽，請用「檢查剪貼簿」或瀏覽器擴充功能 |
 | `XWaylandUnverified` | Linux | `watch` Degraded | 只能透過 XWayland 監聽，原生 Wayland App 的複製可能收不到 |
 | `CosmicDisabled` | Linux COSMIC | `watch` Unavailable | 要設定 `COSMIC_DATA_CONTROL_ENABLED=1` |
@@ -393,7 +398,6 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 ## 4.10 待決問題
 
 1. **Windows 要不要提供「以系統管理員身分執行」**：PasteWarden 自己是高 integrity 時，hook 就收得到系統管理員視窗的按鍵。代價是每次登入都要按 UAC，而且整個 App（包括 WebView）都用系統管理員權限執行，攻擊面變大。`uiAccess=true` 的 manifest 可以不用提權就繞過 UIPI，但需要簽章，而且要安裝在 Program Files，等 Phase 6 的 SignPath 有結果再說。4a 只做 §4.8 的告知。
-2. **macOS ad-hoc 簽章會讓權限在每次更新後失效**：TCC 用簽章辨識 App，ad-hoc 簽章每次建置都不同，使用者每次更新都要重新打開「輔助使用」。roadmap 決定不上架 Apple，但 Developer ID 簽章（每年 99 美元）和上架是兩件事。要不要付費？不付費的話，更新說明要提醒使用者重新授權。
-3. **Linux PRIMARY selection**：KeePassXC 會把密碼同時放進 PRIMARY（S5 坑 7），中鍵就能貼出去。PRIMARY 每次選取文字都會變，全部送進引擎太貴。4b 先不監聽 PRIMARY，設定頁列為已知限制。
-4. **GNOME Shell extension**：S5 建議的路線之一，要另外發布到 extensions.gnome.org，4b 不做。
-5. **Android 登記機密**：要用 Android Keystore 保存 HMAC 金鑰，而且只能在 `PROCESS_TEXT`／`SEND` 時比對。範圍不大，但 4b 先不做。
+2. **Linux PRIMARY selection**：KeePassXC 會把密碼同時放進 PRIMARY（S5 坑 7），中鍵就能貼出去。PRIMARY 每次選取文字都會變，全部送進引擎太貴。4b 先不監聽 PRIMARY，設定頁列為已知限制。
+3. **GNOME Shell extension**：S5 建議的路線之一，要另外發布到 extensions.gnome.org，4b 不做。
+4. **Android 登記機密**：要用 Android Keystore 保存 HMAC 金鑰，而且只能在 `PROCESS_TEXT`／`SEND` 時比對。範圍不大，但 4b 先不做。
