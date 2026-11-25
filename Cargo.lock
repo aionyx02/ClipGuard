@@ -1206,6 +1206,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste-warden-desktop"
+version = "0.1.0"
+dependencies = [
+ "paste-warden-core",
+ "paste-warden-platform",
+]
+
+[[package]]
 name = "paste-warden-i18n"
 version = "0.1.0"
 dependencies = [

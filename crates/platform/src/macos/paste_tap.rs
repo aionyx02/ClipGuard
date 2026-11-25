@@ -11,7 +11,7 @@
 use std::ffi::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr::{NonNull, null_mut};
-use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, Ordering};
 use std::sync::mpsc::{self, SyncSender};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -36,88 +36,9 @@ pub const TAP_LOOP_TICK_MS: u64 = 250;
 pub const TAP_EVENT_QUEUE_LEN: usize = 64;
 /// `kVK_ANSI_V`: the V key on an ANSI layout.
 pub const KEYCODE_V: u16 = 9;
-/// No key is being swallowed.
-const NO_KEY: u32 = u32::MAX;
+use crate::gate::NO_KEY;
 
-/// What `pw-work` decided for the analyzed clipboard (mirrors `PasteGate`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Decision {
-    /// Not analyzed yet (or the analysis timed out).
-    Unknown = 0,
-    Allow = 1,
-    /// Secret or registered secret: ask the user first.
-    Intercept = 2,
-}
-
-impl Decision {
-    fn from_u8(v: u8) -> Decision {
-        match v {
-            1 => Decision::Allow,
-            2 => Decision::Intercept,
-            _ => Decision::Unknown,
-        }
-    }
-}
-
-/// Shared atomics read by the tap callback (local mirror of §4.2 `PasteGate`).
-///
-/// `analyzed_seq` and `decision` are packed into one atomic so the callback
-/// never sees a new sequence with an old decision.
-#[derive(Debug)]
-pub struct TapGate {
-    /// `(analyzed_seq << 8) | decision`.
-    verdict: AtomicU64,
-    /// Latest `changeCount` seen by `pw-clip` (see [`super::monitor`]).
-    clipboard_seq: AtomicU32,
-    /// The frontmost app is on the paste allowlist (computed by `pw-work`).
-    fg_allowed: AtomicBool,
-    /// Keycode whose key-down we swallowed, until its key-up.
-    swallowed_key: AtomicU32,
-}
-
-impl Default for TapGate {
-    fn default() -> Self {
-        TapGate {
-            verdict: AtomicU64::new(Decision::Unknown as u64),
-            clipboard_seq: AtomicU32::new(0),
-            fg_allowed: AtomicBool::new(false),
-            swallowed_key: AtomicU32::new(NO_KEY),
-        }
-    }
-}
-
-impl TapGate {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// `pw-work`: the clipboard at `seq` was analyzed with `decision`.
-    pub fn publish(&self, seq: u32, decision: Decision) {
-        let packed = (u64::from(seq) << 8) | decision as u64;
-        self.verdict.store(packed, Ordering::Release);
-    }
-
-    /// `(analyzed_seq, decision)`.
-    pub fn verdict(&self) -> (u32, Decision) {
-        let v = self.verdict.load(Ordering::Acquire);
-        ((v >> 8) as u32, Decision::from_u8(v as u8))
-    }
-
-    /// `pw-clip`: the pasteboard's current sequence number.
-    pub fn set_clipboard_seq(&self, seq: u32) {
-        self.clipboard_seq.store(seq, Ordering::Release);
-    }
-
-    pub fn clipboard_seq(&self) -> u32 {
-        self.clipboard_seq.load(Ordering::Acquire)
-    }
-
-    /// `pw-work`, on every foreground change.
-    pub fn set_fg_allowed(&self, allowed: bool) {
-        self.fg_allowed.store(allowed, Ordering::Release);
-    }
-}
+pub use crate::gate::{Decision, PasteGate as TapGate};
 
 /// The parts of an event [`decide`] looks at.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
