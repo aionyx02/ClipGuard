@@ -145,6 +145,7 @@ def create_worktree(
     wt = root / f'round-{round_}'
     if wt.exists():
         raise BlueError(f'worktree already exists: {wt.name}')
+    _drop_stale_branch(branch_name(round_), base, repo)
     _git(
         ['worktree', 'add', '--no-checkout', '-b', branch_name(round_),
          str(wt), base],
@@ -165,6 +166,21 @@ def create_worktree(
         with exclude.open('a') as f:
             f.write(''.join(f'{e}\n' for e in missing))
     return wt
+
+
+def _drop_stale_branch(branch: str, base: str, repo: Path) -> None:
+    """Delete a leftover round branch that has no commits of its own.
+
+    A failed round leaves its branch behind; one with its own commits is
+    kept for a human to look at.
+    """
+    ref = f'refs/heads/{branch}'
+    if _git(['rev-parse', '--verify', '-q', ref], repo, check=False) == '':
+        return
+    own = _git(['rev-list', '--count', f'{base}..{branch}'], repo).strip()
+    if own != '0':
+        raise BlueError(f'{branch} has {own} commit(s) of its own; review it')
+    _git(['branch', '-D', branch], repo)
 
 
 def remove_worktree(wt: Path, repo: Path = REPO_ROOT) -> None:

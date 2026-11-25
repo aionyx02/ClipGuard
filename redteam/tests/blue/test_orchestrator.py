@@ -101,6 +101,20 @@ def test_select_train_valid_unblocked_round_robin():
     }
 
 
+def test_stale_round_branch_is_replaced_but_work_is_kept(repo, tmp_path):
+    # A failed round leaves an empty branch behind: the rerun replaces it.
+    git('branch', 'redteam/round-1', cwd=repo)
+    wt = o.create_worktree(1, 'main', repo, tmp_path / 'wts')
+    (wt / 'rules/a.json').write_text('{"k": [1]}\n')
+    git('-c', 'user.name=t', '-c', 'user.email=t@example.invalid',
+        'commit', '-qam', 'work', cwd=wt)  # fmt: skip
+    o.remove_worktree(wt, repo)
+    # A branch with commits of its own is never deleted.
+    with pytest.raises(o.BlueError, match='commit'):
+        o.create_worktree(1, 'main', repo, tmp_path / 'wts')
+    assert 'redteam/round-1' in o._git(['branch', '--list'], repo)
+
+
 def test_worktree_is_sparse_and_handoff_holds_only_parts(repo, tmp_path):
     wt = o.create_worktree(1, 'main', repo, tmp_path / 'wts')
     try:
