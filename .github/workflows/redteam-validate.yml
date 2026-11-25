@@ -1,0 +1,46 @@
+name: redteam-validate
+
+# phase-5.md §5.3.5 / §5.10: the syntax validators (pwsh, bash 5, zsh, dash)
+# run their tests inside the locked-down Linux container, which is the
+# sandbox on Linux (docs/spikes/s8-syntax-validation.md §5).
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'redteam/**'
+      - '.github/workflows/redteam-validate.yml'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'redteam/**'
+      - '.github/workflows/redteam-validate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redteam-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validators:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: build validator container
+        run: docker build -f redteam/validate.Dockerfile -t pw-validate redteam
+      - name: validator tests (no network, read-only, non-root)
+        run: >-
+          docker run --rm
+          --network none
+          --read-only
+          --tmpfs /tmp
+          --pids-limit 64
+          --memory 512m
+          --cap-drop ALL
+          --security-opt no-new-privileges
+          --user 10001:10001
+          pw-validate
+          /opt/venv/bin/python -m pytest -q -p no:cacheprovider -rs tests/validate
