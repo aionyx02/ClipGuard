@@ -335,6 +335,7 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 
 - 同一個視窗加上同一份剪貼簿內容，只提醒一次（`EntryWarningGate`）。
 - 檔案總管只看前景視窗，不偵測網址列焦點。原因是 XAML 網址列的焦點 class 跟檔案清單分不出來，而且等使用者按 Ctrl+L 才提醒就太晚了。
+- **macOS**（Phase 4b，`rules/policy/macos.json`，`policy::macos::macos_rules()`）：沒有視窗 class，平台層把前景 App 的 bundle id 同時當成 `class` 和 `process` 傳入，比對方式和 Windows 相同（不分大小寫）。只認得出終端機和 Finder；開啟、存檔對話框在另一個行程裡，認不出來，所以 FileFix 情境在 macOS 上沒有入口警告。貼上攔截的允許清單用同一個檔案的 `paste.allowed_apps`（`paste::is_allowed_with`、`decide_with`）。
 
 ## 5. 機密偵測
 
