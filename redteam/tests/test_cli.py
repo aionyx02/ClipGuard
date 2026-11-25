@@ -30,7 +30,7 @@ def test_parser_covers_every_subcommand():
     a = p.parse_args(['attack', '--run-id', 'r1', '--round', '2'])
     assert a.split == 'train' and a.rev == 'HEAD'
     b = p.parse_args(['blue', '--run-id', 'r1', '--round', '1'])
-    assert b.open_pr is False and b.base == 'dev'
+    assert b.open_pr is False and b.base == 'feature/phase-5-agent'
     with pytest.raises(SystemExit):
         p.parse_args(['report', '--out', 'x'])  # --version is required
 

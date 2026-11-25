@@ -34,6 +34,8 @@ MAX_BYPASSES_PER_ROUND = 40
 BLUE_MAX_TOOL_CALLS = 150
 BLUE_MAX_ATTEMPTS = 2
 BLUE_TIMEOUT_MIN = 45
+# Blue rounds branch from and PR into the Phase 5 branch (phase-5.md §5.2).
+BLUE_BASE = 'feature/phase-5-agent'
 BLUE_MODELS = (
     'opencode/deepseek-v4.1-flash-free',
     'opencode/mimo-v2.6-flash-free',
@@ -504,14 +506,16 @@ def commit_round(wt: Path, round_: int, message: str) -> str:
     return _git(['rev-parse', 'HEAD'], wt).strip()
 
 
-def push_and_open_pr(wt: Path, round_: int, title: str, body: str) -> str:
-    """Push the round branch and open a DRAFT PR to dev. Never merges."""
+def push_and_open_pr(
+    wt: Path, round_: int, title: str, body: str, base: str
+) -> str:
+    """Push the round branch and open a DRAFT PR to ``base``. Never merges."""
     branch = branch_name(round_)
     if not branch.startswith('redteam/'):
         raise BlueError('refusing to push a non-redteam branch')
     _git(['push', '-u', 'origin', f'{branch}:{branch}'], wt)
     r = subprocess.run(
-        ['gh', 'pr', 'create', '--draft', '--base', 'dev', '--head', branch,
+        ['gh', 'pr', 'create', '--draft', '--base', base, '--head', branch,
          '--title', title, '--body', body],
         cwd=wt,
         capture_output=True,
@@ -667,6 +671,7 @@ def run_round(
                 round_,
                 f'fix(rules): red-team round {round_} bypasses',
                 pr_body(outcome),
+                base,
             )
         return outcome
     finally:

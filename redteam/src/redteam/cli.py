@@ -423,7 +423,7 @@ def build_parser() -> argparse.ArgumentParser:
     bl = sub.add_parser('blue', help='one blue-team round (§5.5)')
     bl.add_argument('--run-id', required=True)
     bl.add_argument('--round', type=int, required=True)
-    bl.add_argument('--base', default='dev')
+    bl.add_argument('--base', default='feature/phase-5-agent')
     bl.add_argument('--pw-bin', default='../target/release/paste-warden')
     bl.add_argument('--open-pr', action='store_true')
 
