@@ -211,6 +211,15 @@ CLI：
 
 桌面 UI 接 Tier 2 不在 Phase 5 範圍（Phase 4 的 UI 完成後再加）。
 
+實作備註（2026-11-25）：
+- 送給供應商的 schema 拿掉 `maxLength`、`maxItems`：OpenAI 和 Anthropic 的 structured output 會拒絕這兩個關鍵字。長度上限照樣在本地驗證（③）。
+- `only_high_risk` 預設 `true`：Tier 1 指令判定為 `none` 時不呼叫模型。`llm check` 不受影響。
+- 額外的限制：不跟隨 redirect、不使用環境變數的 proxy（避免本機端點把請求轉到雲端）；`base_url` 含 `user@` 拒絕；非 loopback 必須 https；解說含控制字元（換行除外）或 bidi 字元就整份丟棄；techniques 不可重複；遮罩後的文字超過 `LLM_MAX_PAYLOAD_CHARS`（8 000）截斷並告知模型；回應上限 `LLM_MAX_RESPONSE_BYTES`（64 KiB）。
+- ④ 只重新計算 `action`（malicious → quarantine、suspicious → warn），Report 的 `command.level` 保留 Tier 1 的判定。
+- MCP `validate_syntax` 同時回傳 `ok` 和 `status`；validator 回傳的錯誤 ID 不在已知清單時換成 `redacted`，避免透過錯誤 ID 外洩內容。
+- CLI 目前用 `NoAudit`，AuditSink 還沒接到檔案（Tier 2 的稽核檔位置待桌面版一起決定）。
+- 本機實測：Ollama `qwen3:0.6b`，`llm check` 約 2.2 秒、JSON 通過驗證；`scan --llm` 對 ClickFix 樣本 Tier 1 與 AI 都判 malicious。
+
 ## 5.7 MCP 的 `redteam` profile
 
 `paste-warden mcp --profile redteam` 在 guard 的四個工具之外再加：
