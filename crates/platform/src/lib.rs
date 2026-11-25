@@ -18,6 +18,7 @@
 pub mod clipboard;
 pub mod gate;
 pub mod host;
+pub mod nmh;
 pub mod status;
 
 #[cfg(windows)]
