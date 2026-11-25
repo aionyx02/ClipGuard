@@ -173,6 +173,52 @@ function SecretRow({ secret, onRemoved }: { secret: RegisteredSecret; onRemoved:
   );
 }
 
+/// Clears every registered secret (keeps the key). The way out when the keyring lost the key
+/// while secrets.json still has entries (`store-error-key-missing`), §5.1.
+function ForgetSecrets({ onForgotten }: { onForgotten: () => void }) {
+  const t = useT();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<CommandError | null>(null);
+  return (
+    <div className="grid gap-2">
+      <p className="text-xs leading-relaxed text-fg-muted">{t('ui-desktop-secrets-forget-desc')}</p>
+      {confirming ? (
+        <div className="flex gap-2">
+          <Button
+            variant="danger"
+            onClick={() => {
+              ipc
+                .forgetSecrets()
+                .then(() => {
+                  setConfirming(false);
+                  setError(null);
+                  onForgotten();
+                })
+                .catch((err) => setError(toCommandError(err)));
+            }}
+          >
+            {t('ui-desktop-secrets-forget-confirm')}
+          </Button>
+          <Button variant="ghost" onClick={() => setConfirming(false)}>
+            {t('ui-desktop-cancel')}
+          </Button>
+        </div>
+      ) : (
+        <div>
+          <Button variant="ghost" onClick={() => setConfirming(true)}>
+            {t('ui-desktop-secrets-forget')}
+          </Button>
+        </div>
+      )}
+      {error ? (
+        <p role="alert" className="text-xs text-quarantine">
+          {t(error.messageId, error.args)}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function SecretsManager() {
   const t = useT();
   const [secrets, setSecrets] = useState<RegisteredSecret[] | null>(null);
@@ -209,6 +255,9 @@ export function SecretsManager() {
           </ul>
         )}
       </div>
+      {loadError?.messageId === 'store-error-key-missing' || (secrets?.length ?? 0) > 0 ? (
+        <ForgetSecrets onForgotten={refresh} />
+      ) : null}
     </div>
   );
 }

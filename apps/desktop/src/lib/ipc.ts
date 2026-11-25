@@ -25,6 +25,7 @@ export const REASONS = [
   'no-display',
   'no-secret-service',
   'android-no-background',
+  'host-failed',
 ] as const;
 export type Reason = (typeof REASONS)[number];
 
@@ -122,6 +123,7 @@ export const ipc = {
     invoke<{ id: string }>('register_secret', { secret, confirm, label }),
   listSecrets: () => invoke<RegisteredSecret[]>('list_secrets'),
   removeSecret: (id: string) => invoke<void>('remove_secret', { id }),
+  forgetSecrets: () => invoke<void>('forget_secrets'),
   pasteChoice: (choice: PasteChoice) => invoke<void>('paste_choice', { choice }),
   quit: () => invoke<void>('quit'),
 };
