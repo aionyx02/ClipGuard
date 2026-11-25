@@ -15,7 +15,7 @@ test('loads only same-origin files, then makes zero requests while analyzing', a
   const sockets: string[] = [];
   page.on('websocket', (ws) => sockets.push(ws.url()));
 
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await page.waitForLoadState('networkidle');
 
@@ -44,7 +44,7 @@ test('loads only same-origin files, then makes zero requests while analyzing', a
 });
 
 test('works offline once loaded', async ({ page, context }) => {
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await context.setOffline(true);
   await pickExample(page, 'obfuscated');
@@ -74,7 +74,7 @@ test('the content security policy only allows the page itself', async ({ page })
 });
 
 test('the text never ends up in the URL or in storage', async ({ page }) => {
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await page.getByTestId('input').fill('my secret note A123456789');
   await expect(page.getByTestId('results')).toBeVisible();

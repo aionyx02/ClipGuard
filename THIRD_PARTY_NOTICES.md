@@ -60,3 +60,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Inter 字型
+
+- 專案：https://github.com/rsms/inter（透過 npm 套件 `@fontsource-variable/inter`）
+- 使用的部分：Inter Variable 的 woff2 檔，由 `apps/web` 打包、跟網站一起從同一個來源提供（CSP `font-src 'self'`，不連外部字型服務）。未修改。
+- 授權：SIL Open Font License 1.1。Copyright 2016 The Inter Project Authors。全文見套件內的 `LICENSE`，以及 https://openfontlicense.org
+
+## Radix Colors
+
+- 專案：https://github.com/radix-ui/colors（npm 套件 `@radix-ui/colors`，只在開發時使用）
+- 使用的部分：slate、teal、red、amber 色階的色碼，由 `apps/web/scripts/gen-park-colors.mjs` 轉成 `apps/web/src/park/colors.css`。這是 Park UI 採用的色彩系統。
+- 授權：MIT License。Copyright (c) 2021 Radix（條文同上方 gitleaks 段落的 MIT License）

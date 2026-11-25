@@ -16,6 +16,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await expect(page.locator('html')).toHaveAttribute('lang', lang);
         await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
         await expect(page.getByRole('heading', { level: 1 })).toContainText(COPY[lang].heroStart);
+        expect(await axeViolations(page), 'home').toEqual([]);
+
+        await page.getByTestId('cta-play').click();
+        await expect(page).toHaveURL(/#\/play$/);
         await waitForEngine(page);
         expect(await axeViolations(page), 'empty state').toEqual([]);
 
@@ -35,7 +39,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
 test('?lang= wins, and switching language rewrites it', async ({ page }) => {
   await page.goto('./?lang=en');
-  await waitForEngine(page);
   await page.getByText('繁體中文').click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page).toHaveURL(/[?&]lang=zh-TW/);
@@ -57,7 +60,7 @@ test('theme switch: system / light / dark', async ({ page }) => {
 });
 
 test('an example re-renders in the new language', async ({ page }) => {
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await pickExample(page, 'pii');
   await expect(page.getByTestId('input')).toHaveValue(/Taiwan ID/);
@@ -79,7 +82,7 @@ test('copy masked text writes only the masked version', async ({ page }) => {
       },
     });
   });
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await pickExample(page, 'apikey');
   const input = await page.getByTestId('input').inputValue();
@@ -96,7 +99,7 @@ test('copy masked text writes only the masked version', async ({ page }) => {
 });
 
 test('seed phrase: valid checksum is flagged, broken checksum is not', async ({ page }) => {
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await pickExample(page, 'seed-valid');
   await expect(page.locator('[data-action="warn"]')).toBeVisible();
@@ -106,11 +109,66 @@ test('seed phrase: valid checksum is flagged, broken checksum is not', async ({ 
   await expect(page.locator('[data-kind="mnemonic"]')).toHaveCount(0);
 });
 
+test('home page does not load the engine; back and forth between views', async ({ page }) => {
+  const wasm: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().endsWith('.wasm')) wasm.push(r.url());
+  });
+  await page.goto('./?lang=en');
+  await expect(page.getByTestId('cta-play')).toBeVisible();
+  await expect(page.getByTestId('input')).toHaveCount(0);
+  await page.waitForLoadState('networkidle');
+  expect(wasm).toEqual([]);
+
+  await page.getByTestId('cta-play').click();
+  await waitForEngine(page);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Playground');
+  await page.goBack();
+  await expect(page.getByTestId('cta-play')).toBeVisible();
+  // A home-page anchor from the playground lands on the home page.
+  await page.goto('./?lang=en#/play');
+  await page.getByRole('link', { name: 'Download' }).first().click();
+  await expect(page.locator('#download')).toBeInViewport();
+});
+
+test.describe('home demo', () => {
+  test('reduced motion: paused on the final frame, chapters seek', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('./?lang=en');
+    const caption = page.getByTestId('demo-caption');
+    await expect(caption).toContainText('Nothing runs');
+    await expect(page.getByTestId('demo-toggle')).toHaveAccessibleName('Play the demo');
+    await page.locator('[data-chapter="bait"]').click();
+    await expect(caption).toContainText('prove you are human');
+    await page.waitForTimeout(400);
+    await expect(caption).toContainText('prove you are human');
+    // Switching scenario while paused shows that scenario's ending.
+    await page.locator('[data-scenario-tab="secrets"]').click();
+    await expect(page.getByTestId('demo')).toHaveAttribute('data-scenario', 'secrets');
+    await expect(caption).toContainText('Only the masked token');
+    await page.locator('[data-scenario-tab="hidden"]').click();
+    await expect(caption).toContainText('an AI can read them');
+  });
+
+  test('plays by default and can be paused', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('./?lang=en');
+    const toggle = page.getByTestId('demo-toggle');
+    await expect(toggle).toHaveAccessibleName('Pause the demo');
+    await expect(page.getByTestId('demo-caption')).toContainText('clipboard', { timeout: 5_000 });
+    await toggle.click();
+    await expect(toggle).toHaveAccessibleName('Play the demo');
+    const frozen = await page.getByTestId('demo-caption').textContent();
+    await page.waitForTimeout(2_500);
+    await expect(page.getByTestId('demo-caption')).toHaveText(frozen ?? '');
+  });
+});
+
 test.describe('mobile', () => {
   test.use({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
 
   test('no horizontal scrolling', async ({ page }) => {
-    await page.goto('./?lang=zh-TW');
+    await page.goto('./?lang=zh-TW#/play');
     await waitForEngine(page);
     await pickExample(page, 'obfuscated');
     const overflow = await page.evaluate(
@@ -125,7 +183,7 @@ test('falls back to wasm2js when WebAssembly is unavailable', async ({ page }) =
     // biome-ignore lint/suspicious/noExplicitAny: simulating a browser without WebAssembly
     delete (globalThis as any).WebAssembly;
   });
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await expect(page.getByTestId('engine-info')).toContainText('JavaScript fallback');
   await pickExample(page, 'clickfix');
@@ -145,7 +203,7 @@ test('layout does not shift when the engine arrives', async ({ page }) => {
       }
     }).observe({ type: 'layout-shift', buffered: true });
   });
-  await page.goto('./?lang=en');
+  await page.goto('./?lang=en#/play');
   await waitForEngine(page);
   await page.waitForTimeout(300);
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

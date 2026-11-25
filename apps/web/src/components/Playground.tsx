@@ -9,11 +9,11 @@ import {
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { type Analysis, analyzeText, showOnion } from '../lib/analysis';
 import { buildExample, EXAMPLE_IDS, type ExampleId } from '../lib/samples';
+import { button, CARD } from '../park/recipes';
 import type { EngineState } from '../useEngine';
 import { CopyIcon } from './icons';
 
-const BUTTON =
-  'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium text-fg transition-colors motion-reduce:transition-none hover:bg-surface-2';
+const BUTTON = button({ variant: 'surface', size: 'sm' });
 
 export function Playground({ engine }: { engine: EngineState }) {
   const { t, locale } = useLocale();
@@ -40,12 +40,12 @@ export function Playground({ engine }: { engine: EngineState }) {
   };
 
   return (
-    <section id="playground" aria-labelledby={`${ids}-title`} className="scroll-mt-20">
+    <section id="playground" aria-labelledby={`${ids}-title`} className="scroll-mt-24">
       <h2 id={`${ids}-title`} className="sr-only">
         {t('ui-web-playground-title')}
       </h2>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="rounded-card border border-line bg-surface p-4 shadow-card sm:p-5 lg:sticky lg:top-20">
+        <div className={`${CARD} p-5 shadow-sm sm:p-6 lg:sticky lg:top-24`}>
           <label htmlFor={`${ids}-input`} className="text-base font-semibold">
             {t('ui-web-input-label')}
           </label>
@@ -69,7 +69,7 @@ export function Playground({ engine }: { engine: EngineState }) {
             autoCorrect="off"
             data-gramm="false"
             data-testid="input"
-            className="mt-3 block min-h-44 w-full resize-y rounded-lg border border-line bg-surface-2 p-3 font-mono text-sm leading-relaxed text-fg placeholder:text-fg-muted focus-visible:outline-2 focus-visible:outline-focus"
+            className="mt-4 block min-h-44 w-full resize-y rounded-l2 border border-border-default bg-bg-subtle p-3 font-mono text-sm leading-relaxed text-fg shadow-[inset_0_1px_2px_var(--gray-a3)] transition-colors placeholder:text-fg-subtle hover:border-gray-a7 focus-visible:border-gray-8 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus"
           />
           <div className="mt-2 flex min-h-9 flex-wrap items-center justify-between gap-2 text-xs text-fg-muted tabular-nums">
             <span>
@@ -96,7 +96,9 @@ export function Playground({ engine }: { engine: EngineState }) {
             </button>
           </div>
 
-          <h3 className="mt-5 text-sm font-semibold">{t('ui-web-examples-title')}</h3>
+          <h3 className="mt-6 border-t border-border-muted pt-5 text-sm font-semibold">
+            {t('ui-web-examples-title')}
+          </h3>
           <p className="mt-0.5 text-xs text-fg-muted">{t('ui-web-examples-note')}</p>
           <ul className="mt-3 flex flex-wrap gap-2">
             {EXAMPLE_IDS.map((id) => (
@@ -107,7 +109,7 @@ export function Playground({ engine }: { engine: EngineState }) {
                   onClick={() => pick(id)}
                   aria-pressed={example === id}
                   aria-disabled={!ready}
-                  className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface-2 px-3 text-sm text-fg transition-colors motion-reduce:transition-none hover:border-accent aria-disabled:cursor-wait aria-disabled:opacity-60 aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-accent-fg"
+                  className="inline-flex min-h-9 items-center rounded-l2 border border-border-default bg-bg-default px-3 text-sm font-medium text-fg shadow-xs transition-colors motion-reduce:transition-none hover:bg-bg-subtle aria-disabled:cursor-wait aria-disabled:opacity-60 aria-pressed:border-transparent aria-pressed:bg-solid aria-pressed:text-solid-fg aria-pressed:shadow-none aria-pressed:hover:bg-solid-hover"
                 >
                   {t(`ui-web-example-${id}`)}
                 </button>
@@ -116,7 +118,7 @@ export function Playground({ engine }: { engine: EngineState }) {
           </ul>
           {example && (
             <p
-              className="mt-3 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm"
+              className="mt-3 rounded-l2 border-l-2 border-gray-8 bg-bg-subtle px-3 py-2 text-sm text-fg-muted"
               data-testid="example-note"
             >
               {t(`ui-web-example-${example}-note`)}
@@ -153,7 +155,7 @@ function Results({ engine, analysis, t }: ResultsProps) {
     return (
       <p
         role="alert"
-        className="rounded-card border border-quarantine-line bg-quarantine-bg p-5 text-sm text-fg"
+        className="rounded-l3 border border-quarantine-line bg-quarantine-bg p-5 text-sm text-fg"
       >
         {t('ui-web-engine-error')}
       </p>
@@ -162,7 +164,7 @@ function Results({ engine, analysis, t }: ResultsProps) {
   if (!analysis) {
     return (
       <div
-        className="grid min-h-[28rem] place-items-center rounded-card border border-dashed border-line p-8 text-center"
+        className="grid min-h-[28rem] place-items-center rounded-l3 border border-dashed border-gray-a6 bg-bg-subtle/60 p-8 text-center"
         data-testid="empty"
       >
         <div className="max-w-sm">
@@ -221,12 +223,7 @@ function MaskedSection({
     <div className="grid gap-2">
       <MaskPreview masked={masked} secrets={analysis.report.secrets} headingLevel={4} />
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={copy}
-          data-testid="copy-masked"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-accent-fg hover:opacity-90"
-        >
+        <button type="button" onClick={copy} data-testid="copy-masked" className={button()}>
           <CopyIcon className="size-4" />
           {t('ui-web-copy-masked')}
         </button>
@@ -242,7 +239,7 @@ function MaskedSection({
 function Skeleton({ label }: { label: string }) {
   return (
     <div className="grid gap-5" data-testid="skeleton">
-      <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+      <div className={`${CARD} overflow-hidden`}>
         <div className="flex items-center gap-4 border-b border-line px-5 py-4">
           <div className="skeleton size-10 rounded-full" />
           <div className="flex-1 space-y-2">

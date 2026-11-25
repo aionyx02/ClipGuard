@@ -1,11 +1,137 @@
+@import "@fontsource-variable/inter";
 @import "@paste-warden/ui/styles.css";
+@import "./park/colors.css";
 @source "./";
+
+/*
+ * Park UI look on Tailwind (https://park-ui.com): Radix Colors scales (gray = slate, neutral
+ * accent; teal only for the "allow" verdict), Park's layered radii (l1 inner / l2 control /
+ * l3 container) and soft two-part shadows.
+ * Park UI itself needs Panda CSS; the frontend stays on Tailwind (roadmap.md), so the tokens are
+ * ported here and the recipes live in src/park/recipes.ts. Scoped to the playground: the shared
+ * components in @paste-warden/ui follow because the --pw-* variables below are remapped.
+ */
+@theme {
+  --font-sans:
+    "Inter Variable", "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", ui-sans-serif,
+    system-ui, sans-serif;
+
+  --radius-l1: 0.375rem;
+  --radius-l2: 0.5rem;
+  --radius-l3: 0.75rem;
+  --radius-card: var(--radius-l3);
+
+  --shadow-xs: 0 1px 2px var(--gray-a5), 0 0 1px var(--gray-a7);
+  --shadow-sm: 0 2px 4px var(--gray-a3), 0 0 1px var(--gray-a7);
+  --shadow-md: 0 4px 8px var(--gray-a3), 0 0 1px var(--gray-a7);
+  --shadow-lg: 0 8px 16px var(--gray-a3), 0 0 1px var(--gray-a7);
+  --shadow-card: var(--shadow-xs);
+
+  /*
+   * The shared components' brand scale, made neutral (no mint glow). Fixed values, not theme
+   * vars: brand-200/300 are both text on the always-dark ink chips and a light highlight.
+   */
+  --color-brand-100: #edeef0;
+  --color-brand-200: #e0e1e6;
+  --color-brand-300: #edeef0;
+  --color-brand-800: #363a3f;
+  --color-ink-50: var(--gray-1);
+  --color-ink-100: #edeef0;
+  --color-ink-800: var(--gray-12);
+  --color-ink-900: #18191b;
+  --color-ink-950: #111113;
+}
+
+@theme inline {
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-gray-5: var(--gray-5);
+  --color-gray-6: var(--gray-6);
+  --color-gray-7: var(--gray-7);
+  --color-gray-8: var(--gray-8);
+  --color-gray-9: var(--gray-9);
+  --color-gray-10: var(--gray-10);
+  --color-gray-11: var(--gray-11);
+  --color-gray-12: var(--gray-12);
+  --color-gray-a2: var(--gray-a2);
+  --color-gray-a3: var(--gray-a3);
+  --color-gray-a4: var(--gray-a4);
+  --color-gray-a5: var(--gray-a5);
+  --color-gray-a6: var(--gray-a6);
+  --color-gray-a7: var(--gray-a7);
+
+  /* Park semantic tokens. */
+  --color-bg-default: var(--pw-surface);
+  --color-bg-subtle: var(--gray-2);
+  --color-bg-muted: var(--gray-3);
+  --color-border-default: var(--gray-a5);
+  --color-border-muted: var(--gray-a4);
+  --color-fg-subtle: var(--gray-10);
+  --color-solid: var(--pw-solid);
+  --color-solid-hover: var(--pw-solid-hover);
+  --color-solid-fg: var(--pw-solid-fg);
+}
+
+/* Remap the shared semantic tokens onto the Radix scales (both themes via the scale vars). */
+/* :root:not([data-theme]) matches the specificity of the shared dark fallback. */
+:root,
+:root:not([data-theme]),
+[data-theme] {
+  --pw-canvas: var(--gray-1);
+  --pw-surface: #ffffff;
+  --pw-surface-2: var(--gray-2);
+  --pw-line: var(--gray-a5);
+  --pw-fg: var(--gray-12);
+  --pw-fg-muted: var(--gray-11);
+  /* Monochrome accent, Park UI's neutral palette: gray-12 flips with the theme. */
+  --pw-accent: var(--gray-12);
+  --pw-accent-fg: var(--gray-1);
+  --pw-focus: var(--gray-9);
+  --pw-solid: var(--gray-12);
+  --pw-solid-hover: var(--gray-11);
+  --pw-solid-fg: var(--gray-1);
+
+  --pw-quarantine: var(--red-11);
+  --pw-quarantine-bg: var(--red-2);
+  --pw-quarantine-line: var(--red-6);
+  /* Radix amber-11 is 4.43:1 on amber-2; the previous ink-amber passes. */
+  --pw-warn: #935f00;
+  --pw-warn-bg: var(--amber-2);
+  --pw-warn-line: var(--amber-6);
+  --pw-allow: var(--teal-11);
+  --pw-allow-bg: var(--teal-2);
+  --pw-allow-line: var(--teal-6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --pw-surface: var(--gray-2);
+    --pw-warn: var(--amber-11);
+    --pw-quarantine-bg: var(--red-3);
+    --pw-warn-bg: var(--amber-3);
+    --pw-allow: #6cc3ad;
+    --pw-allow-bg: var(--teal-3);
+  }
+}
+
+[data-theme="dark"] {
+  --pw-surface: var(--gray-2);
+  --pw-warn: var(--amber-11);
+  --pw-quarantine-bg: var(--red-3);
+  --pw-warn-bg: var(--amber-3);
+  /* Radix teal-11 dark (#0bd8b6) reads as neon; a muted teal still passes AA (7:1). */
+  --pw-allow: #6cc3ad;
+  --pw-allow-bg: var(--teal-3);
+}
 
 @layer base {
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
     -webkit-text-size-adjust: 100%;
+    font-feature-settings: "cv11", "ss01";
   }
   @media (prefers-reduced-motion: reduce) {
     html {
@@ -18,19 +144,17 @@
   }
 }
 
-@utility hero-glow {
-  background:
-    radial-gradient(60rem 28rem at 15% -10%, rgb(94 234 212 / 0.18), transparent 60%),
-    radial-gradient(40rem 24rem at 95% 0%, rgb(59 130 246 / 0.14), transparent 60%);
+/* Faint grid behind the hero, faded out at the edges (Park / Ark docs style). */
+@utility hero-grid {
+  background-image:
+    linear-gradient(to right, var(--gray-a3) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--gray-a3) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
 @utility skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--pw-surface-2) 25%,
-    var(--pw-line) 50%,
-    var(--pw-surface-2) 75%
-  );
+  background: linear-gradient(90deg, var(--gray-3) 25%, var(--gray-4) 50%, var(--gray-3) 75%);
   background-size: 200% 100%;
   animation: pw-shimmer 1.4s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {
