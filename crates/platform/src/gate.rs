@@ -44,6 +44,8 @@ pub struct PasteGate {
     /// The frontmost app is on the paste allowlist (computed by `pw-work`).
     pub(crate) fg_allowed: AtomicBool,
     /// Keycode whose key-down we swallowed, until its key-up.
+    // Read by the macOS tap and the Windows hook; Linux has no interception.
+    #[cfg_attr(target_os = "linux", allow(dead_code))]
     pub(crate) swallowed_key: AtomicU32,
     /// Root window of the foreground at the last change (Windows HWND as
     /// i64; 0 = unknown). Written by `pw-work`.
