@@ -143,6 +143,7 @@ class PwshServer:
                 str(script),
             ),
             rlimit_as=False,
+            rlimit_fsize=False,
             env=PWSH_DOTNET_ENV,
         )
         self._server = sandbox.Server(spec, self._ws)

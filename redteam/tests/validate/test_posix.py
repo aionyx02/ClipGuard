@@ -76,7 +76,12 @@ def test_zsh_dev_zero_is_crash_within_timeout():
     verdict = PosixValidator().parse('echo $(</dev/zero)', Shell.ZSH)
     elapsed = time.monotonic() - start
     assert verdict.status == 'validator_crash'
-    assert verdict.errors[0].id in ('zsh.rss-limit', 'zsh.timeout')
+    # macOS: RSS watchdog; Linux: RLIMIT_AS -> 'out of heap memory'.
+    assert verdict.errors[0].id in (
+        'zsh.rss-limit',
+        'zsh.timeout',
+        'zsh.parse-time-io',
+    )
     assert elapsed < sandbox.VALIDATOR_TIMEOUT_MS / 1000 + 1.5
 
 

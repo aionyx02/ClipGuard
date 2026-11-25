@@ -89,8 +89,11 @@ def test_rss_watchdog(bash, workspace):
     res = run_bash(
         bash, 'x=a; while :; do x="$x$x"; done', workspace, timeout_ms=5000
     )
-    assert res.failure in ('rss-limit', 'signal', 'timeout')
-    assert res.failure != 'timeout' or sys.platform != 'darwin'
+    if sys.platform.startswith('linux'):
+        # RLIMIT_AS makes the allocation fail inside bash first.
+        assert res.failure in ('rss-limit', 'signal') or res.returncode != 0
+    else:
+        assert res.failure in ('rss-limit', 'signal')
 
 
 def test_write_outside_temp_dir_denied(bash, workspace, tmp_path):
@@ -180,6 +183,7 @@ def test_pwsh_network_denied(workspace):
             find_pwsh(),
             ('-NoProfile', '-NonInteractive', '-File', str(script)),
             rlimit_as=False,
+            rlimit_fsize=False,
             env=PWSH_DOTNET_ENV,
         ),
         b'',
@@ -228,3 +232,14 @@ def test_workspace_cleanup():
     assert root.is_dir()
     ws.close()
     assert not os.path.exists(root)
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='sandbox-exec only')
+def test_broken_wrapper_is_no_sandbox(monkeypatch):
+    """A wrapper that cannot start must not look like a syntax error."""
+    monkeypatch.setattr(sandbox, '_PROBED', {})
+    monkeypatch.setattr(sandbox, 'SANDBOX_EXEC', '/usr/bin/false')
+    assert sandbox.backend() is None
+    verdict = PosixValidator().parse('echo a', Shell.BASH)
+    assert verdict.status == 'validator_crash'
+    assert verdict.errors[0].id == 'no-sandbox'

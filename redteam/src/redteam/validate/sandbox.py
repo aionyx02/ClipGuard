@@ -88,9 +88,15 @@ class ExecSpec:
     exe: str
     args: tuple[str, ...] = ()
     allow_fork: bool = False
-    # .NET reserves far more address space than it uses, so pwsh opts out of
-    # RLIMIT_AS and relies on the RSS watchdog and GCHeapHardLimit instead.
+    # .NET reserves far more address space than it uses (the GC alone wants
+    # a 256 MiB region range even with GCHeapHardLimit), so pwsh opts out of
+    # RLIMIT_AS and relies on the RSS watchdog, GCHeapHardLimit and the
+    # container's cgroup memory limit instead.
     rlimit_as: bool = True
+    # .NET's W^X double-maps JIT code through a memfd larger than
+    # VALIDATOR_FSIZE_BYTES; pwsh opts out (writes stay confined to the temp
+    # dir by the sandbox either way).
+    rlimit_fsize: bool = True
     env: tuple[tuple[str, str], ...] = ()
 
 
@@ -132,16 +138,54 @@ def _bwrap() -> str | None:
     return None
 
 
+_PROBED: dict[str, bool] = {}
+PROBE_TIMEOUT_S = 10
+
+
+def _probe(kind: str) -> bool:
+    """Run ``true`` through the wrapper once: a wrapper that cannot start
+    (bwrap without user namespaces, a broken profile) must not be mistaken
+    for a validator's "syntax error" exit status."""
+    if kind not in _PROBED:
+        true_bin = find_executable('/usr/bin/true', '/bin/true')
+        ok = False
+        if true_bin:
+            ws = Workspace()
+            try:
+                spec = ExecSpec(true_bin)
+                proc = subprocess.run(
+                    _argv(spec, ws, kind),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    cwd=ws.cwd,
+                    env=_env(spec, ws),
+                    timeout=PROBE_TIMEOUT_S,
+                    check=False,
+                )
+                ok = proc.returncode == 0
+            except (OSError, subprocess.SubprocessError):
+                ok = False
+            finally:
+                ws.close()
+        _PROBED[kind] = ok
+    return _PROBED[kind]
+
+
 def backend() -> str | None:
     """``sandbox-exec``, ``container``, ``bwrap`` or None (refuse to run)."""
     if sys.platform == 'darwin':
-        if os.access(SANDBOX_EXEC, os.X_OK) and PROFILE.is_file():
+        if (
+            os.access(SANDBOX_EXEC, os.X_OK)
+            and PROFILE.is_file()
+            and _probe('sandbox-exec')
+        ):
             return 'sandbox-exec'
         return None
     if sys.platform.startswith('linux'):
         if _container_ok():
             return 'container'
-        if _bwrap():
+        if _bwrap() and _probe('bwrap'):
             return 'bwrap'
     return None
 
@@ -289,10 +333,11 @@ def _limits(spec: ExecSpec, cpu_seconds: int):
         resource.setrlimit(
             resource.RLIMIT_NOFILE, (VALIDATOR_NOFILE, VALIDATOR_NOFILE)
         )
-        resource.setrlimit(
-            resource.RLIMIT_FSIZE,
-            (VALIDATOR_FSIZE_BYTES, VALIDATOR_FSIZE_BYTES),
-        )
+        if spec.rlimit_fsize:
+            resource.setrlimit(
+                resource.RLIMIT_FSIZE,
+                (VALIDATOR_FSIZE_BYTES, VALIDATOR_FSIZE_BYTES),
+            )
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         if spec.rlimit_as and sys.platform.startswith('linux'):
             limit = VALIDATOR_RLIMIT_AS_MB << 20

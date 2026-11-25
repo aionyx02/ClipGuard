@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from redteam.models import Shell
@@ -26,9 +28,17 @@ def _skip_reason(shell: Shell) -> str | None:
     return None
 
 
+# Set in redteam/validate.Dockerfile: there, a missing validator is a
+# failure, not a skip (CI must not go green by skipping everything).
+REQUIRE_ENV = 'PASTEWARDEN_REQUIRE_VALIDATORS'
+
+
 def require(shell: Shell) -> None:
     reason = _skip_reason(shell)
     if reason:
+        required = os.environ.get(REQUIRE_ENV, '').split(',')
+        if shell.value in required:
+            pytest.fail(f'required validator unavailable: {reason}')
         pytest.skip(reason)
 
 
