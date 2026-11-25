@@ -114,6 +114,11 @@ def test_worktree_is_sparse_and_handoff_holds_only_parts(repo, tmp_path):
         line = (wt / '.pw-blue/blue-input.jsonl').read_text()
         assert ''.join(json.loads(line)['parts']).startswith('echo ')
         assert (wt / '.opencode/plugins/pw-blue-guard.ts').exists()
+        cfg = json.loads((wt / '.opencode/opencode.json').read_text())
+        assert o.BLUE_MODELS[0].startswith('ollama/')
+        model = o.BLUE_MODELS[0].split('/', 1)[1]
+        assert model in cfg['provider']['ollama']['models']
+        assert cfg['permission']['webfetch'] == 'deny'
         # Hand-off and plugin are git-excluded, so the diff stays clean.
         o.stage_all(wt)
         assert o.changed_files(wt, 'main') == []

@@ -36,7 +36,12 @@ BLUE_MAX_ATTEMPTS = 2
 BLUE_TIMEOUT_MIN = 45
 # Blue rounds branch from and PR into the Phase 5 branch (phase-5.md §5.2).
 BLUE_BASE = 'feature/phase-5-agent'
+# Local Ollama first: no quota (opencode Zen's free tier ran out after a few
+# dozen requests on 2026-11-25). Zen free models stay as fallbacks.
+OLLAMA_BASE_URL = 'http://127.0.0.1:11434/v1'
+OLLAMA_MODELS = ('qwen3.8:27b-mlx',)
 BLUE_MODELS = (
+    'ollama/qwen3.8:27b-mlx',
     'opencode/deepseek-v4.1-flash-free',
     'opencode/mimo-v2.6-flash-free',
     'opencode/nemotron-3.5-super-vl-free',
@@ -206,6 +211,14 @@ def install_plugin(wt: Path) -> None:
         shutil.copyfile(BLUE_DIR / name, plugins / name)
     config = {
         '$schema': 'https://opencode.ai/config.json',
+        'provider': {
+            'ollama': {
+                'npm': '@ai-sdk/openai-compatible',
+                'name': 'Ollama (local)',
+                'options': {'baseURL': OLLAMA_BASE_URL},
+                'models': {m: {'name': m} for m in OLLAMA_MODELS},
+            }
+        },
         # Depth in defense only: pw-blue-guard is the enforcing layer.
         'permission': {
             'webfetch': 'deny',

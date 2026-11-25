@@ -22,6 +22,7 @@ roadmap 的完成條件是「產出 V1 → V3 的偵測率和誤報率圖」。�
 
 - 紅隊的 LLM 以**本機 Ollama 為主**：模型 `qwen3.8:27b-mlx`，報表上記下 model digest、Ollama 版本、temperature、seed，讓數字可以重現。紅隊程式用 OpenAI 相容的 API 呼叫，所以也能換成 OpenRouter，但報表只用 Ollama 的結果。
 - **預算 0 元**：所有線上模型都只用免費的。藍隊用 **opencode headless** 加上 opencode Zen 的免費模型（不用登入、不用 API key；Phase 2 實測 hook 時用過），權限限制寫在程式裡，見 §5.5。OpenRouter 的免費模型是備案（要免費帳號的 API key，沒儲值時每天約 50 次請求，不夠藍隊的 agent 迴圈用）。
+- **更新（2026-11-25）**：opencode Zen 的免費額度很小，今天幾十次請求就用完（`FreeUsageLimitError`，`retryAfterMs` 約 17.8 小時），一輪藍隊就跑不完。藍隊改成優先用**本機 Ollama**（`ollama/qwen3.8:27b-mlx`，透過 opencode 的 `@ai-sdk/openai-compatible` provider），Zen 的免費模型排在後面當備援。實測：本機模型能正確呼叫 read／write，寫 `crates/` 會被 plugin 擋下；MLX runner 的 context 是 262,144。第一次使用這個 provider 時，opencode 要先下載 npm 套件，會卡幾分鐘才送出請求。
 - 免費模型的服務條款通常允許供應商記錄輸入。送出去的只有公開 repo 的規則、語料和合成的 payload，沒有使用者資料。
 - 另外有一組**不用 LLM 的確定性變異器**（G0），當作基準線，CI 也跑它。這樣沒有 LLM 時，整個閉環仍然能跑。
 
