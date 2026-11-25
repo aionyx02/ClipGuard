@@ -120,6 +120,12 @@ def cmd_attack(a: argparse.Namespace) -> int:
     build = engine.prepare(a.rev)
     verdicts = engine.score(variants, build)
     run.add_verdicts(verdicts)
+    g1 = None
+    if a.g1:
+        g1 = _attack_g1(a, usable, run, audit, build)
+        variants = [*variants, *g1.variants]
+        syntax = [*syntax, *g1.syntax.items()]
+        verdicts = [*verdicts, *g1.verdicts.values()]
 
     by_syntax = Counter(s.status for _, s in syntax)
     by_outcome = Counter(v.outcome for v in verdicts)
@@ -152,9 +158,51 @@ def cmd_attack(a: argparse.Namespace) -> int:
             'syntax': dict(by_syntax),
             'outcome': dict(by_outcome),
             'latency_us': engine.latency(verdicts),
+            'g1': _g1_summary(g1),
         }
     )
     return 0
+
+
+def _attack_g1(a, seeds, run, audit, build):
+    """G1 against the same engine build as G0 (§5.3.3)."""
+    from redteam import engine
+    from redteam.gen_llm import G1_FALLBACK_MODELS, ChatClient, generate_g1
+    from redteam.validate import Validator
+
+    def scorer(items):
+        return engine.score(items, build)
+
+    with ChatClient(model=a.g1_model) as client, Validator() as validator:
+        result = generate_g1(
+            seeds,
+            run_seed=a.run_seed,
+            round=a.round,
+            client=client,
+            scorer=scorer,
+            validator=validator,
+            audit=audit,
+            run_id=run.run_id,
+            fallback_models=G1_FALLBACK_MODELS,
+        )
+    run.add_variants(result.variants)
+    run.add_syntax(result.syntax.items())
+    run.add_verdicts(result.verdicts.values())
+    return result
+
+
+def _g1_summary(result) -> dict[str, object] | None:
+    if result is None:
+        return None
+    st = result.stats
+    return {
+        'models': result.models,
+        'calls': st.calls,
+        'refused': st.refused,
+        'invalid_output': st.invalid_output,
+        'variants': st.variants,
+        'outcomes': {k: dict(v) for k, v in st.outcomes.items()},
+    }
 
 
 # -- freeze --------------------------------------------------------------------
@@ -352,6 +400,8 @@ def build_parser() -> argparse.ArgumentParser:
     at.add_argument('--split', choices=('train', 'heldout'), default='train')
     at.add_argument('--seed-limit', type=int, default=0)
     at.add_argument('--run-seed', type=int, default=20261125)
+    at.add_argument('--g1', action='store_true', help='also run G1 (Ollama)')
+    at.add_argument('--g1-model', default='qwen3.8:27b-mlx')
 
     fr = sub.add_parser('freeze', help='heldout run -> redteam/eval/')
     fr.add_argument('--run-id', required=True)
