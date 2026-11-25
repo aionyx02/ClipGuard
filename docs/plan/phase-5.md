@@ -97,13 +97,21 @@ redteam/
 - 冒煙測試（10 個 train 種子、200 個 G0 變體、當時的 dev）：擋下 157、降級 15、繞過 28。繞過較多的 technique：`ps.reverse`、`ps.char`、`ps.concat`、`ps.var_indirection`、`common.padding`。
 - **效能發現**：≤ 1 KB 的變體 p99 1.5 ms（預算 1 ms），最慢的一筆 63 ms，而且是沒被擋下的變體。這是藍隊之外要給核心處理的問題，V1 報表會列出來。
 
+- **種子的語法檢查**：`redteam attack` 先在種子自己的 shell 驗證它；229 個裡有 2 個不合法（一個 Markdown 跳脫案例、一個 bypass 案例），跳過並計數。刻意超過 validator 輸入上限（256 KiB）的 padding 變體記為 `unchecked`，不算 `validator_crash`。
+
 ### 5.3.3 G1 LLM 變異器（`gen_llm/`）
 
 - 呼叫 `OLLAMA_BASE_URL`（預設 `http://127.0.0.1:11434/v1`）的 `/chat/completions`，`response_format` 用 JSON schema：`{"variants":[{"shell":"cmd|powershell|sh|bash|zsh|applescript","payload":"…","technique":"…"}]}`。輸出通過 pydantic 驗證才採用，否則丟棄並記為 `invalid_output`。
 - prompt 包含：種子指令、它的 shell、**上一次嘗試時引擎給的判定原因 ID**（只給 ID 和分數，不給規則原文），以及「要保持語意不變、不能改變下載網址和執行行為」的要求。第 2 次以後的嘗試會看到自己前一個變體的判定結果（最多 `G1_MAX_ATTEMPTS` 次）。
-- 關掉 qwen3 的 thinking（`think: false`），加快速度。
+- 關掉 qwen3 的 thinking：在 Ollama 0.40.16 的 `/v1/chat/completions` 實測，`reasoning_effort: "none"` 有效（沒有 reasoning 輸出），頂層 `think: false` 在 `/v1` 會被忽略，所以用前者。
 - **模型拒絕**（沒有可解析的輸出，或輸出是拒絕的句子）記為 `refused`，計入報表，不重試。試跑時如果拒絕率超過 50%，依序改用 `G1_FALLBACK_MODELS` 的下一個（本機模型優先，最後才是 opencode Zen 的免費模型），報表寫明實際用的模型。
 - 紅隊的 prompt 和輸出只送到本機的 Ollama。改用 OpenRouter 時，payload 會送到第三方；payload 都是合成的、網址都是 `example.invalid`，沒有使用者資料，但要在文件寫明。
+
+實作備註與試跑（2026-11-25）：
+- 每次呼叫有總時間上限（httpx 的 timeout 只管單次讀取），連線逾時 `G1_CONNECT_TIMEOUT_S = 10`。輸出被 token 上限截斷（`finish_reason == 'length'`）記為 `invalid_output`、會重試，不算拒絕；連線錯誤不計入拒絕率的分母。
+- `G1_FALLBACK_MODELS` 預設 `('qwen3.8:27b-mlx', 'qwen3:0.6b')`；opencode Zen 的免費模型需要另外的 base URL，用傳入的 `ChatClient` 指定。
+- **試跑**（`qwen3.8:27b-mlx@5642e97495e1`、Ollama 0.40.16、10 個 train 種子、最多 3 次嘗試）：21 次呼叫，拒絕 0、`invalid_output` 0；平均 8.9 秒／次；61 個變體，語法有效 60 個（98.4%）。各次嘗試的擋下／降級／完全繞過：第 1 次 23／4／3、第 2 次 16／0／1、第 3 次 9／1／3。10 個種子裡 8 個至少有一個變體沒被擋下。稽核日誌外洩檢查 0 筆。
+- 以這個速度估計，183 個 train 種子 × 3 次嘗試約 45–80 分鐘。
 
 ### 5.3.4 payload 的處理（不可妥協）
 
@@ -289,7 +297,7 @@ CLI：
 自訂值的理由：
 
 - `G0_MAX_DEPTH = 3`：疊越多層越不像真實攻擊，也越容易超過語料的效能預算。3 層已經涵蓋 S8 的混合型（cmd → powershell → base64）。
-- `G1_VARIANTS_PER_CALL = 3`：一次要 3 個比要 1 個省掉重複的 prompt 成本。27B 模型在這台 M5 Max 估計每次呼叫 10–20 秒，183 個 train 種子 × 3 次嘗試約 1.5–3 小時，一個晚上跑得完。實際速度在試跑後補進本文件。
+- `G1_VARIANTS_PER_CALL = 3`：一次要 3 個比要 1 個省掉重複的 prompt 成本。實測 27B 模型在這台 M5 Max 每次呼叫平均 8.9 秒（§5.3.3），183 個 train 種子約 45–80 分鐘。
 - `STORE_PART_CHARS = 6`：比任何偵測關鍵字（`powershell`、`mshta`、`Invoke-Expression`）都短，單一片段不會被防毒軟體認成完整的指令。
 - `MAX_BYPASSES_PER_ROUND = 40`、`BLUE_MAX_TOOL_CALLS = 150`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。opencode 沒有 `--max-turns`，所以由 plugin 計數。
 - `BLUE_MODELS`：免費模型會下架或改名，每一輪開始前先用 `opencode models` 確認，不在清單上就跳過。
