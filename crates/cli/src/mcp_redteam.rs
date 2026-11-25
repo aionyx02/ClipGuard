@@ -511,10 +511,7 @@ mod tests {
         let dir2 = tempfile::tempdir().unwrap();
         let invalid = fake(
             dir2.path(),
-            &echo_status(
-                "invalid",
-                r#"{"id":"UnexpectedToken","line":1,"column":7}"#,
-            ),
+            &echo_status("invalid", r#"{"id":"UnexpectedToken","line":1,"column":7}"#),
         );
         let out = validate_syntax(&invalid, "echo (", None, &l10n()).unwrap();
         assert_eq!(out.status, SyntaxStatus::Invalid);
