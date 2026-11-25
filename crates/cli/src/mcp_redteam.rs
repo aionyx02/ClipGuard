@@ -513,7 +513,7 @@ mod tests {
             dir2.path(),
             &echo_status(
                 "invalid",
-                r#"{\"id\":\"UnexpectedToken\",\"line\":1,\"column\":7}"#,
+                r#"{"id":"UnexpectedToken","line":1,"column":7}"#,
             ),
         );
         let out = validate_syntax(&invalid, "echo (", None, &l10n()).unwrap();
