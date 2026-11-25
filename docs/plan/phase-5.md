@@ -48,9 +48,11 @@ roadmap 的完成條件是「產出 V1 → V3 的偵測率和誤報率圖」。�
 
 | 版本 | 定義 |
 |---|---|
-| V1 | Phase 5 開始時的 `dev`，打 tag `redteam-v1` |
-| V2 | 第 1 輪藍隊 PR 合併後的 `dev`，tag `redteam-v2` |
-| V3 | 第 2 輪藍隊 PR 合併後的 `dev`，tag `redteam-v3` |
+| V1 | `feature/phase-5-agent` 上凍結 heldout 的 commit（偵測規則和核心與 `dev` 的 `e9ce55d` 完全相同），tag `redteam-v1` |
+| V2 | 第 1 輪藍隊 PR 合併進 `feature/phase-5-agent` 後，tag `redteam-v2` |
+| V3 | 第 2 輪藍隊 PR 合併進 `feature/phase-5-agent` 後，tag `redteam-v3` |
+
+**偏離**（2026-11-25）：藍隊的分支和 PR 改成以 `feature/phase-5-agent` 為基底，不是 `dev`。藍隊要用的 `xtask corpus add-from-run` 和 lint 對 `redteam:` source 的支援只在 Phase 5 分支上，`dev` 沒有。這樣 Phase 5 仍然只有一個 PR（#45），規則的修補跟著它一起進 `dev`。代價是藍隊 PR 的目標不是 `dev`，CI 不會自動跑；orchestrator 在本機跑完 §5.5.2 的全部檢查，合併進 Phase 5 分支後 #45 的 CI 會再驗證一次。
 
 每一輪的紅隊都**針對當時的最新版本**產生變體（會適應的攻擊者）。heldout 在 Phase 5 一開始就產生並凍結，藍隊看不到，三個版本都用同一份 heldout 評分，所以 V1→V3 的進步不是過擬合造成的。
 
@@ -158,8 +160,20 @@ redteam/
 | 3 | **攻擊成功率** | 每一輪紅隊針對當時版本產生的新變體中，繞過的比例（G0、G1 分開） | 每一輪的 train |
 | 4 | **修補成本** | 每個藍隊 PR 改動的規則行數、新增的語料筆數、heldout 的 p99 分析時間（對照 phase-1.md 的效能預算：一般 1 KB 輸入 ≤ 1 ms）、藍隊花的時間和回合數 | 藍隊 PR |
 
-- `eval/benign-extra.jsonl`：約 300 筆真實世界的良性指令（官方安裝指令、winget／scoop／choco／brew、docker、kubectl、git、npm scripts、常見的 PowerShell 系統管理 one-liner），手寫加人工 review，藍隊看不到。用來看規則有沒有「為了擋繞過而開始誤報沒看過的良性指令」。
+- `eval/benign-extra.jsonl`：202 筆真實世界的良性指令（原本寫了 290 筆，去掉和 `corpus/benign` 重複的 88 筆，因為藍隊看得到 `corpus/benign`）（官方安裝指令、winget／scoop／choco／brew、docker、kubectl、git、npm scripts、常見的 PowerShell 系統管理 one-liner），手寫加人工 review，藍隊看不到。用來看規則有沒有「為了擋繞過而開始誤報沒看過的良性指令」。
 - 輔助數字：語法有效率、G1 的拒絕率和 `invalid_output` 比例、每個 technique 的偵測率。
+
+### V1 基準線（2026-11-25，`redteam-v1`）
+
+heldout 凍結：40 個種子、897 個變體（G0 783、G1 114；G1 只試 1 次，不針對 V1 調整）。另有 18 個變體外層合法但內層腳本不合法，照設計排除。
+
+| 資料集 | allow | warn | quarantine |
+|---|---|---|---|
+| heldout（種子＋變體，937） | 67 | 78 | 792 |
+| `corpus/benign`（982） | 933 | 49 | 0 |
+| `benign-extra`（202） | 196 | 2 | 4 |
+
+`benign-extra` 的 4 筆 quarantine 都是合法的官方安裝指令（NodeSource、Poetry、Tailscale、Nix 的 `curl … | sh`），因為它們的網域不在 `rules/command/official-hosts.json` 裡。這是真實的誤報，照實列入報表；**不能**依 `benign-extra` 調整規則，否則它就不再是沒看過的資料。
 
 ### 報表（`redteam report`）
 

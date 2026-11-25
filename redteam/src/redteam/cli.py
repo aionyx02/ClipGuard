@@ -219,7 +219,11 @@ def cmd_freeze(a: argparse.Namespace) -> int:
         print('freeze needs a run made with --split heldout', file=sys.stderr)
         return 3
     syntax = run.syntax()
-    keep = [v for v in run.variants() if syntax.get(v.id) and syntax[v.id].ok]
+    keep = [
+        v
+        for v in run.variants()
+        if syntax.get(v.id) and usable_syntax(syntax[v.id])
+    ]
     out = Path(a.out) if a.out else EVAL_DIR / EVAL_HELDOUT
     if out.exists() and not a.force:
         print(f'{out.name} exists; pass --force to replace it', file=sys.stderr)
