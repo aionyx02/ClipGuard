@@ -23,6 +23,11 @@ const ADD_FROM_RUN = 'cargo run -p xtask -- corpus add-from-run '
 // of the sparse checkout, so these normally do not exist at all).
 export const READ_DENY_PREFIXES = ['redteam/', '.git/', '.opencode/']
 
+// Engine code and docs: the agent cannot change them, and reading them is
+// what grew round 1's context to ~184k tokens (3 minutes per step). The task
+// prompt carries the spec summary it needs instead.
+export const CONTEXT_DENY_PREFIXES = ['crates/', 'docs/', 'xtask/', 'target/']
+
 // The only shell commands allowed, as exact prefixes.
 export const SHELL_PREFIXES = [
   'cargo run -p xtask -- corpus ',
@@ -95,6 +100,14 @@ export function decide(tool, input, state, root) {
       const rel = relInside(root, p)
       if (rel === null) return deny('read-outside-worktree')
       if (startsWithAny(rel, READ_DENY_PREFIXES)) return deny('read-denied-path')
+      if (startsWithAny(rel, CONTEXT_DENY_PREFIXES)) return deny('read-engine-or-docs')
+    }
+    // A glob pattern can name a tree on its own (`crates/**/*.rs`).
+    if (t === 'glob' && input && typeof input.pattern === 'string') {
+      const rel = relInside(root, input.pattern.replace(/^\.\//, ''))
+      if (rel !== null && startsWithAny(rel, [...READ_DENY_PREFIXES, ...CONTEXT_DENY_PREFIXES])) {
+        return deny('read-engine-or-docs')
+      }
     }
     return { allow: true }
   }

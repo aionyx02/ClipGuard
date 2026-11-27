@@ -7,7 +7,7 @@ Every subcommand prints counts only, never payload text (§5.3.4).
                     [--seed-limit K] [--run-seed S]
     redteam freeze  --run-id R            # heldout run -> redteam/eval/
     redteam eval    --label V1 --rev REV  # heldout + benign at REV
-    redteam blue    --run-id R --round N [--base dev] [--open-pr]
+    redteam blue    --run-id R --round N [--base dev] [--open-pr] [--model M]...
     redteam report  --out DIR --version V1=REV ... [--round N=RUN ...]
 """
 
@@ -328,6 +328,7 @@ def cmd_blue(a: argparse.Namespace) -> int:
         rescore=rescore,
         heldout_p99=heldout_p99,
         open_pr=a.open_pr,
+        **({'models': tuple(a.model)} if a.model else {}),
     )
     summary = out.summary() | {'pr': out.pr_url}
     (run.dir / f'blue-r{a.round}-summary.json').write_text(
@@ -426,6 +427,11 @@ def build_parser() -> argparse.ArgumentParser:
     bl.add_argument('--base', default='feature/phase-5-agent')
     bl.add_argument('--pw-bin', default='../target/release/paste-warden')
     bl.add_argument('--open-pr', action='store_true')
+    bl.add_argument(
+        '--model',
+        action='append',
+        help='opencode model, in fallback order (default: BLUE_MODELS)',
+    )
 
     rp = sub.add_parser('report', help='four metrics and V1->V3 charts')
     rp.add_argument('--out', required=True)

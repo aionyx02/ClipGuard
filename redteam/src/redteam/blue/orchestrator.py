@@ -30,7 +30,9 @@ from redteam.store import RunStore, encode, to_parts
 BLUE_DIR = Path(__file__).resolve().parent
 PLUGIN_FILES = ('pw-blue-guard.ts', 'pw-blue-policy.mjs')
 
-MAX_BYPASSES_PER_ROUND = 40
+# 10, not 40: with 40 the agent's context grew to ~184k tokens and each step
+# took ~3 minutes, so round 1 timed out twice with no output (2026-11-25).
+MAX_BYPASSES_PER_ROUND = 10
 BLUE_MAX_TOOL_CALLS = 150
 BLUE_MAX_ATTEMPTS = 2
 BLUE_TIMEOUT_MIN = 45
@@ -262,45 +264,103 @@ def install_plugin(wt: Path) -> None:
 # -- the agent run -----------------------------------------------------------
 
 
+EXECUTION_REASONS = (
+    'cmd-reason-powershell cmd-reason-mshta cmd-reason-cmd '
+    'cmd-reason-delayed-expansion cmd-reason-certutil cmd-reason-bitsadmin '
+    'cmd-reason-rundll32 cmd-reason-regsvr32 cmd-reason-msiexec '
+    'cmd-reason-conhost cmd-reason-curl-shell cmd-reason-script-host '
+    'cmd-reason-html-help cmd-reason-cmstp cmd-reason-pcalua '
+    'cmd-reason-odbcconf cmd-reason-installutil cmd-reason-ftp-script '
+    'cmd-reason-remote-file cmd-reason-webdav cmd-reason-search-ms '
+    'cmd-reason-ms-msdt cmd-reason-osascript cmd-reason-quarantine '
+    'cmd-reason-decode-shell cmd-reason-dev-tcp cmd-reason-download-exec '
+    'cmd-reason-net-use'
+)
+SCAM_REASONS = (
+    'cmd-reason-hidden-window cmd-reason-encoded cmd-reason-bait-comment '
+    'cmd-reason-check-mark cmd-reason-padding cmd-reason-mshta-remote '
+    'cmd-reason-reverse-shell cmd-reason-background '
+    'cmd-reason-msiexec-quiet cmd-reason-unofficial-source '
+    '(weak, never enough alone: cmd-reason-download cmd-reason-iex)'
+)
+
+
 def task_prompt(round_: int, n: int, feedback: str | None = None) -> str:
-    """The blue task. It names files, never payloads."""
+    """The blue task. It names files, never payloads.
+
+    Everything the agent needs from docs/spec/detection-rules.md §3.2 and
+    §3.7 is summarised here, and the policy plugin blocks reading crates/,
+    docs/ and xtask/: reading them is what blew the context up in round 1.
+    """
     text = f"""You are the blue team of PasteWarden, a clipboard-security tool.
 A red team found {n} command variants that the detection engine does not
 block. Make the engine block them by changing DATA ONLY.
+
+Everything you need is in this message. Reading crates/, docs/ and xtask/
+is blocked; do not explore the repository. Keep reads small (use a line
+limit on corpus files, some are 50 KB).
 
 Inputs (read-only): {HANDOFF}/blue-input.jsonl, one JSON object per line with
 variant_id, shell, techniques, the engine's action/risk_score/reason_ids, and
 `parts` (join the strings in order to get the command; it was never run and
 must never be run).
 
+How the engine decides (spec §3.2):
+- no execution signal -> none; execution signal only (weak scam signals
+  allowed) -> suspicious; execution signal + strong scam signal ->
+  malicious (blocked). Download-then-execute alone is already malicious
+  unless every source is an official installer host.
+- Signals are matched on the normalized text and on every deobfuscation
+  layer (up to 5 layers: base64 / -EncodedCommand, string concat,
+  variable substitution, cmd escapes...).
+
+The only file you can add detection to is rules/command/signals.json
+(spec §3.7). Its current content is an empty list for both keys:
+{{"format": 1, "_comment": "...", "execution": [], "scam": []}}
+Add entries like
+{{"id": "data-exec-001", "pattern": "<regex>", "reason": "<reason id>"}}
+- "execution" entries add an execution signal. `reason` must be one of:
+  {EXECUTION_REASONS}
+- "scam" entries add a scam signal. `reason` must be one of:
+  {SCAM_REASONS}
+- `id` uses only [a-z0-9-] and is unique. Pattern: Rust `regex` syntax,
+  matched with (?im), max 512 chars, no lookaround, no backreferences.
+- A variant that already has an execution signal (action "warn" /
+  suspicious) usually needs one narrow "scam" entry; one with action
+  "allow" needs an "execution" entry, often plus a "scam" entry.
+- Keep patterns narrow so benign developer commands still pass. Prefer one
+  pattern that covers several variants of the same technique.
+Other rule files in rules/command/ (bait-keywords.json, official-hosts.json,
+official-paths.json) can only make detection weaker or are keyword lists;
+do not touch official-hosts.json or official-paths.json.
+
 Steps:
 1. For each variant decide whether it means the same as a malicious command
    (same download and execution behaviour). Write {HANDOFF}/blue-output.json
    as {{"judgments": [{{"variant_id": "...", "verdict": "equivalent" |
    "not_equivalent" | "unsure", "reason": "short"}}]}}. Only fix equivalent
-   ones.
-2. Change rule data under rules/ (read docs/spec/detection-rules.md §3 and
-   §5.4 first: Rust `regex` syntax only, no lookaround or backreferences).
-   To add a new detection pattern, add an entry to
-   rules/command/signals.json (§3.7): "execution" entries add an execution
-   signal, "scam" entries a scam signal; `reason` must be an existing
-   reason id listed in §3.7. Patterns are matched on the normalized text and
-   on every deobfuscation layer. Keep patterns narrow so benign commands
-   still pass. You cannot change engine code; some variants may be
-   unfixable with data alone, so skip those and say why.
+   ones. Write this file first, before any rule change.
+2. Add entries to rules/command/signals.json as described above. Some
+   variants may be unfixable with data alone; skip those and say why.
 3. For every fixed variant add the corpus case with exactly:
    cargo run -p xtask -- corpus add-from-run {HANDOFF}/store <variant_id> \\
      --expect malicious --file redteam-r{round_}
    Never type a command payload into any file yourself.
-4. For every rule you add or change, also add at least one benign case that
-   must NOT match (a JSON line in corpus/cases/redteam-r{round_}-benign.jsonl
-   with "expect": {{"level": "none"}}; copy the format of existing cases).
-   Never modify or delete existing corpus lines.
+4. For every signals.json entry, add at least one benign case that must NOT
+   match, as a line in corpus/cases/redteam-r{round_}-benign.jsonl:
+   {{"id": "redteam.r{round_}.benign-001", "area": "command", "op":
+   "command.analyze", "source": "new", "input": {{"parts": ["git ",
+   "status"]}}, "expect": {{"level": "none"}}}}
+   (ids unique; benign text must be harmless, e.g. a normal developer
+   command that looks similar). Never modify or delete existing corpus
+   lines.
 5. Run `cargo run -p xtask -- corpus run` and
    `cargo run -p xtask -- corpus benign` until both report 0 failures and 0
-   flagged benign samples.
+   flagged benign samples. Run them in the foreground; each takes about a
+   minute.
 
-Allowed shell commands: `cargo run -p xtask -- corpus ...`,
+Allowed shell commands, exactly as written, with no pipes, redirects, `;`,
+`&&` or `$(...)`: `cargo run -p xtask -- corpus ...`,
 `cargo test -p paste-warden-rules`, `cargo test -p paste-warden-core`.
 Everything else (git, network, other paths) is blocked by policy. When done,
 reply with a short summary of what you changed and what you skipped."""

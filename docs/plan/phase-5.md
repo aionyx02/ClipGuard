@@ -301,7 +301,7 @@ CLI：
 | `VALIDATOR_TIMEOUT_MS` | `2_000`（pwsh、sh、zsh） | S8 |
 | `VALIDATOR_RLIMIT_AS_MB` | `512`（Linux）；macOS 用看門狗監看 RSS | S8 |
 | `PWSH_RESTART_EVERY` | `5_000` | S8 |
-| `MAX_BYPASSES_PER_ROUND` | `40`（分群後的代表樣本） | 自訂 |
+| `MAX_BYPASSES_PER_ROUND` | `10`（分群後的代表樣本；原本 40，2026-11-27 降低，理由見下方） | 自訂 |
 | `BLUE_MAX_TOOL_CALLS`／`BLUE_MAX_ATTEMPTS`／`BLUE_TIMEOUT_MIN` | `150`／`2`／`45` | 自訂 |
 | `BLUE_MODELS` | `opencode/deepseek-v4.1-flash-free`、`opencode/mimo-v2.6-flash-free`、`opencode/nemotron-3.5-super-vl-free`（2026-11-25 `opencode models` 列出的免費模型；第一個在 Phase 2 實測過） | 自訂 |
 | `G1_FALLBACK_MODELS` | 本機 `qwen3.8:27b-mlx` → 之後試跑時挑一個本機模型 → `opencode/deepseek-v4.1-flash-free` | 自訂 |
@@ -314,7 +314,9 @@ CLI：
 - `G0_MAX_DEPTH = 3`：疊越多層越不像真實攻擊，也越容易超過語料的效能預算。3 層已經涵蓋 S8 的混合型（cmd → powershell → base64）。
 - `G1_VARIANTS_PER_CALL = 3`：一次要 3 個比要 1 個省掉重複的 prompt 成本。實測 27B 模型在這台 M5 Max 每次呼叫平均 8.9 秒（§5.3.3），183 個 train 種子約 45–80 分鐘。
 - `STORE_PART_CHARS = 6`：比任何偵測關鍵字（`powershell`、`mshta`、`Invoke-Expression`）都短，單一片段不會被防毒軟體認成完整的指令。
-- `MAX_BYPASSES_PER_ROUND = 40`、`BLUE_MAX_TOOL_CALLS = 150`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。opencode 沒有 `--max-turns`，所以由 plugin 計數。
+- `MAX_BYPASSES_PER_ROUND = 10`、`BLUE_MAX_TOOL_CALLS = 150`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。opencode 沒有 `--max-turns`，所以由 plugin 計數。
+  - **更新（2026-11-27）**：原本是 40。第 1 輪跑了兩次都在 45 分鐘逾時，什麼都沒產出：agent 讀了 `crates/core/src/command/*.rs`、`docs/spec/detection-rules.md`、`xtask/` 和 52 KB 的良性語料，context 漲到約 184k token，每一步要 181 秒，37 次工具呼叫就用完時間。換小模型解決不了，所以改成三件事：每輪降到 10 筆；task prompt 直接附上 §3.2 判定表、§3.7 的 `signals.json` 格式和全部可用的 reason ID、良性語料的範例；policy plugin 拒絕讀取 `crates/`、`docs/`、`xtask/`、`target/`（`read-engine-or-docs`，glob 的 pattern 也檢查）。藍隊本來就改不到這些目錄，讀了也沒用。
+  - `redteam blue` 新增可重複的 `--model`，用來覆寫 `BLUE_MODELS` 的順序。Zen 額度重置後可以讓 Zen 排第一，本機 Ollama 當備援；不加的話照預設，本機排第一。
 - `BLUE_MODELS`：免費模型會下架或改名，每一輪開始前先用 `opencode models` 確認，不在清單上就跳過。
 - `LLM_TIMEOUT_MS = 20_000`：本機 27B 模型產生 512 tokens 需要的時間，加上餘裕。
 

@@ -45,6 +45,17 @@ test('reads cannot reach redteam/, .git or outside the worktree', () => {
   assert.equal(ok('read', { filePath: '/Users/someone/.ssh/id_ed25519' }).allow, false)
 })
 
+test('reads cannot reach engine code or docs (keeps the context small)', () => {
+  assert.equal(ok('read', { filePath: 'rules/command/signals.json' }).allow, true)
+  assert.equal(ok('glob', { pattern: 'corpus/cases/*.jsonl' }).allow, true)
+  assert.equal(ok('read', { filePath: 'crates/core/src/command/verdict.rs' }).reason, 'read-engine-or-docs')
+  assert.equal(ok('read', { filePath: 'docs/spec/detection-rules.md' }).allow, false)
+  assert.equal(ok('read', { filePath: 'xtask/src/main.rs' }).allow, false)
+  assert.equal(ok('grep', { pattern: 'x', path: 'crates' }).allow, false)
+  assert.equal(ok('glob', { pattern: 'crates/core/src/**/*.rs' }).allow, false)
+  assert.equal(ok('glob', { pattern: './docs/**' }).allow, false)
+})
+
 test('shell: exact allowlisted prefixes, no chaining', () => {
   assert.equal(ok('shell', { command: 'cargo run -p xtask -- corpus run' }).allow, true)
   assert.equal(ok('bash', { command: 'cargo test -p paste-warden-rules' }).allow, true)
