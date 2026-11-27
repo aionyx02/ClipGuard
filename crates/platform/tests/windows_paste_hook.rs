@@ -70,8 +70,9 @@ impl Drop for ClipboardGuard {
     }
 }
 
-/// Untagged key events, as a user's keyboard would produce them.
-fn press(keys: &[(VIRTUAL_KEY, bool)]) {
+/// Untagged key events, as a user's keyboard would produce them. Returns
+/// how many events `SendInput` accepted; never panics (used from `Drop`).
+fn send_keys(keys: &[(VIRTUAL_KEY, bool)]) -> usize {
     let inputs: Vec<INPUT> = keys
         .iter()
         .map(|&(vk, up)| INPUT {
@@ -99,7 +100,11 @@ fn press(keys: &[(VIRTUAL_KEY, bool)]) {
         .collect();
     // SAFETY: a fully initialized slice of keyboard inputs.
     let sent = unsafe { SendInput(&inputs, size_of::<INPUT>() as i32) };
-    assert_eq!(sent as usize, inputs.len(), "SendInput blocked");
+    sent as usize
+}
+
+fn press(keys: &[(VIRTUAL_KEY, bool)]) {
+    assert_eq!(send_keys(keys), keys.len(), "SendInput blocked");
 }
 
 /// Releases every key the tests press, also when a test panics halfway: a
@@ -109,12 +114,17 @@ struct ReleaseKeys;
 
 impl Drop for ReleaseKeys {
     fn drop(&mut self) {
-        press(&[
+        // Must not panic: a second panic while a failed test unwinds aborts
+        // the process and the first failure's message is lost.
+        let keys = [
             (VK_V, true),
             (VK_INSERT, true),
             (VK_CONTROL, true),
             (VK_SHIFT, true),
-        ]);
+        ];
+        if send_keys(&keys) != keys.len() {
+            eprintln!("warning: could not release the injected keys");
+        }
     }
 }
 
