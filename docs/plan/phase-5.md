@@ -359,12 +359,12 @@ CLI：
 
 ## 5.13 完成條件
 
-- [ ] `crates/llm`：五條護欄各有測試；AI 關閉時 0 連線的測試；`no-http-in-core` 通過。
-- [ ] `scan --llm`、`llm check` 能用本機 Ollama 跑通。
-- [ ] MCP `redteam` profile 的兩個工具；guard profile 不含它們。
-- [ ] G0、G1、validator（pwsh、bash、zsh、cmd tokenizer、osacompile）、引擎評分、稽核日誌。
-- [ ] heldout、benign-extra 凍結並進版控（parts 格式）。
-- [ ] 至少兩輪藍隊 PR 經人工 review 後合併，V1、V2、V3 都有 tag。
+- [x] `crates/llm`：五條護欄各有測試；AI 關閉時 0 連線的測試；`no-http-in-core` 通過。
+- [x] `scan --llm`、`llm check` 能用本機 Ollama 跑通（§5.6 的本機實測）。
+- [x] MCP `redteam` profile 的兩個工具；guard profile 不含它們。
+- [x] G0、G1、validator（pwsh、bash、zsh、cmd tokenizer、osacompile）、引擎評分、稽核日誌。
+- [x] heldout、benign-extra 凍結並進版控（parts 格式）：heldout 897 個變體、benign-extra 202 筆，tag `redteam-v1`。
+- [ ] 至少兩輪藍隊 PR 經人工 review 後合併，V1、V2、V3 都有 tag。（2026-11-28：第 1 輪 #48 已合併，`redteam-v2` = `81f5e4e`；第 2 輪進行中）
 - [ ] `redteam/reports/` 產出四項指標與 V1→V3 圖，文件網站的開發者區段可以看到。
 - [ ] CI 全綠（含 `redteam`、`redteam-smoke`、`redteam-paths`）。
 
