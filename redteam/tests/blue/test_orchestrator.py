@@ -150,6 +150,9 @@ def test_worktree_is_sparse_and_handoff_holds_only_parts(repo, tmp_path):
         assert o.BLUE_MODELS[0].startswith('ollama/')
         model = o.BLUE_MODELS[0].split('/', 1)[1]
         assert model in cfg['provider']['ollama']['models']
+        limit = cfg['provider']['ollama']['models'][model]['limit']
+        assert limit['output'] == o.OLLAMA_MAX_OUTPUT_TOKENS
+        assert limit['context'] >= limit['output']
         assert cfg['permission']['webfetch'] == 'deny'
         # Hand-off and plugin are git-excluded, so the diff stays clean.
         o.stage_all(wt)

@@ -35,13 +35,22 @@ PLUGIN_FILES = ('pw-blue-guard.ts', 'pw-blue-policy.mjs')
 MAX_BYPASSES_PER_ROUND = 10
 BLUE_MAX_TOOL_CALLS = 150
 BLUE_MAX_ATTEMPTS = 2
-BLUE_TIMEOUT_MIN = 45
+# 75, not 45: the local model needs longer (round 2, 2026-11-28); the output
+# cap below keeps a single step from eating the whole budget.
+BLUE_TIMEOUT_MIN = 75
 # Blue rounds branch from and PR into the Phase 5 branch (phase-5.md §5.2).
 BLUE_BASE = 'feature/phase-5-agent'
 # Local Ollama first: no quota (opencode Zen's free tier ran out after a few
 # dozen requests on 2026-11-25). Zen free models stay as fallbacks.
 OLLAMA_BASE_URL = 'http://127.0.0.1:11434/v1'
 OLLAMA_MODELS = ('qwen3.8:27b-mlx',)
+# Per-step output cap for local models (thinking + answer). Round 2 on the
+# local qwen spent 417 s and 1,485 s on two steps that produced 16k and 46k
+# tokens, almost all hidden thinking; a normal step is a few hundred to a
+# few thousand. 16k still leaves ~14k for thinking. Context: the MLX
+# runner's 262,144.
+OLLAMA_MAX_OUTPUT_TOKENS = 16_384
+OLLAMA_CONTEXT_TOKENS = 262_144
 BLUE_MODELS = (
     'ollama/qwen3.8:27b-mlx',
     'opencode/deepseek-v4.1-flash-free',
@@ -261,7 +270,16 @@ def install_plugin(wt: Path) -> None:
                 'npm': '@ai-sdk/openai-compatible',
                 'name': 'Ollama (local)',
                 'options': {'baseURL': OLLAMA_BASE_URL},
-                'models': {m: {'name': m} for m in OLLAMA_MODELS},
+                'models': {
+                    m: {
+                        'name': m,
+                        'limit': {
+                            'context': OLLAMA_CONTEXT_TOKENS,
+                            'output': OLLAMA_MAX_OUTPUT_TOKENS,
+                        },
+                    }
+                    for m in OLLAMA_MODELS
+                },
             }
         },
         # Depth in defense only: pw-blue-guard is the enforcing layer.
