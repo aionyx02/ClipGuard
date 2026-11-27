@@ -250,6 +250,37 @@ def _fake(tmp_path, body):
     return str(fake)
 
 
+def test_base_branch_moving_during_the_run_is_not_the_agents_change(
+    repo, tmp_path, monkeypatch
+):
+    real = o.run_agent
+
+    def agent_while_main_moves(*args, **kwargs):
+        # Someone pushes to the base branch while the agent runs.
+        (repo / 'crates/core/lib.rs').write_text('// moved\n')
+        git('-c', 'user.name=t', '-c', 'user.email=t@example.invalid',
+            'commit', '-qam', 'meanwhile on main', cwd=repo)  # fmt: skip
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(o, 'run_agent', agent_while_main_moves)
+    out = o.run_round(
+        _store(tmp_path),
+        1,
+        base='main',
+        pw_bin=tmp_path / 'paste-warden',
+        rescore=lambda vs, sha: [
+            verdict(int(v.id[1:]), action='quarantine') for v in vs
+        ],
+        heldout_p99=lambda sha: 400,
+        repo=repo,
+        opencode=_fake(tmp_path, FAKE_AGENT),
+        worktree_root=tmp_path / 'wts',
+        run_checks=lambda c, cwd: 0,
+    )
+    assert out.ok, out.problems
+    assert 'crates/core/lib.rs' not in out.check.changed
+
+
 def test_run_round_end_to_end_without_network(repo, tmp_path):
     run = _store(tmp_path)
     seen = {}

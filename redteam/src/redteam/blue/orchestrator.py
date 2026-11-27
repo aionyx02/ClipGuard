@@ -802,6 +802,11 @@ def run_round(
         outcome.problems.append('no train bypasses to fix')
         return outcome
     wt = create_worktree(round_, base, repo, worktree_root)
+    # Diff against the commit the worktree started from, not the branch
+    # name: the base branch can move while the agent runs (round 2, attempt
+    # 4: commits pushed meanwhile were counted as the agent's changes, the
+    # round failed and the model fallback never triggered).
+    start = _git(['rev-parse', 'HEAD'], wt).strip()
     denials = run.dir / f'blue-r{round_}-denials.jsonl'
     try:
         write_handoff(wt, picked, run.run_id)
@@ -820,7 +825,7 @@ def run_round(
                 opencode=opencode,
             )
             outcome.attempts.append(agent)
-            check = check_round(wt, base, run_checks=run_checks)
+            check = check_round(wt, start, run_checks=run_checks)
             outcome.check = check
             if check.ok:
                 break
