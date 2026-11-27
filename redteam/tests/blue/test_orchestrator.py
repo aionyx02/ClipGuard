@@ -40,14 +40,14 @@ def repo(tmp_path):
     return r
 
 
-def variant(i, seed='s-train', tech=('cmd.caret',)):
+def variant(i, seed='s-train', tech=('cmd.caret',), gen='g0', shell=Shell.CMD):
     return Variant(
         id=f'v{i}',
         seed_id=seed,
         round=1,
-        generator='g0',
+        generator=gen,
         techniques=tech,
-        shell=Shell.CMD,
+        shell=shell,
         payload=f'echo {MARK} {i}',
     )
 
@@ -99,6 +99,24 @@ def test_select_train_valid_unblocked_round_robin():
         'v2',
         'v3',
     }
+
+
+def test_select_covers_every_generator_and_shell_not_the_alphabet():
+    # Many G1 clusters whose names sort first ('alias…') must not crowd out
+    # G0 or other shells (rounds 1-2 only ever picked G1 'a'/'b' names).
+    vs = [variant(i, tech=(f'a{i:02d}',), gen='g1') for i in range(20)]
+    vs += [variant(100 + i, tech=('sh.ifs',), shell=Shell.SH) for i in range(5)]
+    vs += [variant(200, tech=('sh.quote_split',), shell=Shell.SH)]
+    vs += [variant(300, tech=('ps.reverse',), shell=Shell.POWERSHELL)]
+    syn = {v.id: OK for v in vs}
+    picked = o.select_bypasses(
+        vs, [verdict(int(v.id[1:])) for v in vs], syn, SEEDS, limit=4
+    )
+    lanes = {(str(v.generator), str(v.shell)) for v, _ in picked}
+    assert lanes == {('g0', 'sh'), ('g0', 'powershell'), ('g1', 'cmd')}
+    # Inside the sh lane the bigger cluster (sh.ifs, 5 samples) goes first.
+    sh = [v for v, _ in picked if v.shell == Shell.SH]
+    assert sh[0].techniques == ('sh.ifs',)
 
 
 def test_stale_round_branch_is_replaced_but_work_is_kept(repo, tmp_path):

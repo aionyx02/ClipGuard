@@ -84,9 +84,15 @@ def select_bypasses(
 ) -> list[tuple[Variant, EngineVerdict]]:
     """Train-split, syntax-valid variants the engine did not block.
 
-    Clustered by (technique chain, reason ids); clusters are visited
-    round-robin, full bypasses before downgrades, so ``limit`` samples cover
-    as many distinct weaknesses as possible.
+    Clustered by (technique chain, reason ids) within lanes of
+    (generator, shell). Lanes are visited round-robin so G0 and G1 and every
+    shell get a turn; inside a lane, full bypasses come before downgrades
+    and bigger clusters before smaller ones, one sample per cluster.
+
+    Round 1 and 2 sorted all clusters by key and took the first ``limit``:
+    with far more clusters than ``limit`` that was alphabetical, so only G1
+    techniques starting with 'a' or 'b' were ever picked and no G0 variant
+    (most of the bypasses, and most of heldout) reached the blue team.
     """
     train = {s.case_id for s in seeds if s.split == 'train'}
     by_id = {v.id: v for v in variants}
@@ -101,20 +107,41 @@ def select_bypasses(
         if sv is None or not sv.ok:
             continue
         key = (
+            str(v.generator),
+            str(v.shell),
             verdict.outcome != 'bypassed',
             v.techniques,
             verdict.reason_ids,
         )
         clusters.setdefault(key, []).append((v, verdict))
+    lanes: dict[tuple[str, str], list[list[tuple[Variant, EngineVerdict]]]] = {}
+    order = sorted(
+        clusters, key=lambda k: (k[0], k[1], k[2], -len(clusters[k]), k)
+    )
+    for k in order:
+        lanes.setdefault((k[0], k[1]), []).append(clusters[k])
+
+    def lane_samples(qs: list[list[tuple[Variant, EngineVerdict]]]):
+        # One sample per cluster in order, then the second of each, ...
+        depth = 0
+        while True:
+            row = [q[depth] for q in qs if depth < len(q)]
+            if not row:
+                return
+            yield from row
+            depth += 1
+
+    streams = [lane_samples(lanes[k]) for k in sorted(lanes)]
     picked: list[tuple[Variant, EngineVerdict]] = []
-    queues = [clusters[k] for k in sorted(clusters)]
-    while queues and len(picked) < limit:
-        for q in list(queues):
+    while streams and len(picked) < limit:
+        for it in list(streams):
             if len(picked) >= limit:
                 break
-            picked.append(q.pop(0))
-            if not q:
-                queues.remove(q)
+            nxt = next(it, None)
+            if nxt is None:
+                streams.remove(it)
+            else:
+                picked.append(nxt)
     return picked
 
 

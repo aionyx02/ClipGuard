@@ -316,6 +316,7 @@ CLI：
 - `STORE_PART_CHARS = 6`：比任何偵測關鍵字（`powershell`、`mshta`、`Invoke-Expression`）都短，單一片段不會被防毒軟體認成完整的指令。
 - `MAX_BYPASSES_PER_ROUND = 10`、`BLUE_MAX_TOOL_CALLS = 150`：讓一輪藍隊在 45 分鐘內做完，PR 的大小也還能人工 review。opencode 沒有 `--max-turns`，所以由 plugin 計數。
   - **更新（2026-11-27）**：原本是 40。第 1 輪跑了兩次都在 45 分鐘逾時，什麼都沒產出：agent 讀了 `crates/core/src/command/*.rs`、`docs/spec/detection-rules.md`、`xtask/` 和 52 KB 的良性語料，context 漲到約 184k token，每一步要 181 秒，37 次工具呼叫就用完時間。換小模型解決不了，所以改成三件事：每輪降到 10 筆；task prompt 直接附上 §3.2 判定表、§3.7 的 `signals.json` 格式和全部可用的 reason ID、良性語料的範例；policy plugin 拒絕讀取 `crates/`、`docs/`、`xtask/`、`target/`（`read-engine-or-docs`，glob 的 pattern 也檢查）。藍隊本來就改不到這些目錄，讀了也沒用。
+  - **挑選邏輯（2026-11-28 修正）**：原本把所有分群照 key 的字母順序排好，再從頭輪流取一筆。分群數遠多於 10，所以實際上只挑到字母最前面的 10 群：第 1、2 輪挑到的全是 G1、名稱以 a 或 b 開頭的手法（`alias`、`assembly-load`、`base64-…`），G0 一筆都沒有。可是 G0 占了大多數繞過（第 2 輪 370 筆裡有 235 筆），heldout 也幾乎都是 G0（783/897），heldout 裡存活的又以 `sh.*` 為主，所以這兩輪對 heldout 的判定完全沒有影響（V1、V2 和第 2 輪的候選版都是放行 67、降級 78、擋下 792）。現在改成以「產生器 × shell」為單位輪流挑，每個單位內完全繞過排在降級前面、大的分群排在小的前面，每個分群取一筆。第 2 輪用新邏輯重跑，舊的結果留在本機分支 `redteam/round-2-alphabetical`，不開 PR。
   - `redteam blue` 新增可重複的 `--model`，用來覆寫 `BLUE_MODELS` 的順序。Zen 額度重置後可以讓 Zen 排第一，本機 Ollama 當備援；不加的話照預設，本機排第一。
 - `BLUE_MODELS`：免費模型會下架或改名，每一輪開始前先用 `opencode models` 確認，不在清單上就跳過。
 - `LLM_TIMEOUT_MS = 20_000`：本機 27B 模型產生 512 tokens 需要的時間，加上餘裕。
