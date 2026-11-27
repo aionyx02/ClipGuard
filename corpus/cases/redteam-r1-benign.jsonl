@@ -1,0 +1,6 @@
+{"id": "redteam.r1.benign-001", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["& 'git' ", "log --oneline -5"]}, "expect": {"level": "none"}}
+{"id": "redteam.r1.benign-002", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["$opts = @('-NoProfile', '-File', '.\\build.ps1'); ", "& 'msbuild' @opts"]}, "expect": {"level": "none"}}
+{"id": "redteam.r1.benign-003", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["[Reflection.Assembly]::LoadFrom(", "'.\\plugins\\MyPlugin.dll')"]}, "expect": {"level": "none"}}
+{"id": "redteam.r1.benign-004", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["& 'npm' ", "run build"]}, "expect": {"level": "none"}}
+{"id": "redteam.r1.benign-005", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["git commit -m ", "\"fix -WindowStyle Normal handling\""]}, "expect": {"level": "none"}}
+{"id": "redteam.r1.benign-006", "area": "command", "op": "command.analyze", "source": "new", "input": {"parts": ["[Reflection.Assembly]::Load([IO.File]::ReadAllBytes(", "'.\\plugins\\MyPlugin.dll'))"]}, "expect": {"level": "none"}}
