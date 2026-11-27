@@ -580,6 +580,46 @@ def read_judgments(wt: Path) -> dict[str, str]:
         data = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError):
         return {}
+    return _judgments(data)
+
+
+def judgments_from_log(log: Path) -> dict[str, str]:
+    """The last ``blue-output.json`` the agent wrote, from an opencode
+    ``--format json`` log. For rounds whose worktree is already gone."""
+    last: dict[str, str] = {}
+    try:
+        lines = log.read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return {}
+    for line in lines:
+        try:
+            e = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        part = e.get('part') if isinstance(e, dict) else None
+        if not isinstance(part, dict) or part.get('type') != 'tool':
+            continue
+        if part.get('tool') != 'write':
+            continue
+        state = part.get('state') or {}
+        inp = state.get('input') or {}
+        path = str(inp.get('filePath') or inp.get('path') or '')
+        if state.get('status') != 'completed':
+            continue
+        if not path.endswith(f'{HANDOFF}/blue-output.json'):
+            continue
+        try:
+            got = _judgments(json.loads(inp.get('content') or ''))
+        except json.JSONDecodeError:
+            continue
+        if got:
+            last = got
+    return last
+
+
+def _judgments(data: object) -> dict[str, str]:
+    """Verdicts only: the agent's reasons are model text and may quote
+    payload fragments, so they are never stored."""
     out = {}
     for j in data.get('judgments', []) if isinstance(data, dict) else []:
         if isinstance(j, dict) and isinstance(j.get('variant_id'), str):
@@ -857,6 +897,7 @@ spot-check the equivalence verdicts (§5.3.5).
 
 __all__ = [
     'RoundOutcome',
+    'judgments_from_log',
     'pr_body',
     'run_round',
     'AgentRun',

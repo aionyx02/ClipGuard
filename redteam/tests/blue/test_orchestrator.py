@@ -335,3 +335,49 @@ def test_misbehaving_agent_is_rejected_after_retries(repo, tmp_path):
 def test_prompt_names_files_not_payloads():
     p = o.task_prompt(3, 7, feedback='- x failed')
     assert 'redteam-r3' in p and 'x failed' in p and MARK not in p
+
+
+def test_judgments_from_log_takes_the_last_completed_write(tmp_path):
+    def write(content, status='completed', path='.pw-blue/blue-output.json'):
+        return json.dumps(
+            {
+                'type': 'tool_use',
+                'part': {
+                    'type': 'tool',
+                    'tool': 'write',
+                    'state': {
+                        'status': status,
+                        'input': {
+                            'filePath': f'/wt/{path}',
+                            'content': content,
+                        },
+                    },
+                },
+            }
+        )
+
+    first = json.dumps(
+        {'judgments': [{'variant_id': 'v1', 'verdict': 'unsure'}]}
+    )
+    second = json.dumps(
+        {
+            'judgments': [
+                {'variant_id': 'v1', 'verdict': 'equivalent', 'reason': 'x'},
+                {'variant_id': 'v2', 'verdict': 'bogus'},
+            ]
+        }
+    )
+    log = tmp_path / 'a1.jsonl'
+    log.write_text(
+        '\n'.join(
+            [
+                write(first),
+                'not json',
+                write(second),
+                write('{"judgments": []}', status='error'),
+                write(second, path='rules/x.json'),
+            ]
+        )
+    )
+    assert o.judgments_from_log(log) == {'v1': 'equivalent'}
+    assert o.judgments_from_log(tmp_path / 'missing.jsonl') == {}

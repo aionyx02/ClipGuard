@@ -334,8 +334,55 @@ def cmd_blue(a: argparse.Namespace) -> int:
     (run.dir / f'blue-r{a.round}-summary.json').write_text(
         json.dumps(summary, indent=2, sort_keys=True) + '\n'
     )
+    judged = out.check.judgments if out.check else {}
+    write_judgments(run.dir, a.round, judged)
     _print(summary)
     return 0 if out.ok else 1
+
+
+def write_judgments(run_dir: Path, round_: int, judged: dict[str, str]) -> Path:
+    """``blue-r{N}-judgments.json``: variant id -> verdict, nothing else."""
+    path = run_dir / f'blue-r{round_}-judgments.json'
+    path.write_text(
+        json.dumps(
+            {'round': round_, 'judgments': judged}, indent=2, sort_keys=True
+        )
+        + '\n'
+    )
+    return path
+
+
+def read_blue(run_dir: Path, round_: int):
+    """(PatchCost or None, equivalence map) for one round's blue team."""
+    from redteam.report.models import PatchCost
+
+    cost = None
+    try:
+        s = json.loads((run_dir / f'blue-r{round_}-summary.json').read_text())
+    except (OSError, json.JSONDecodeError):
+        s = None
+    if isinstance(s, dict) and s.get('ok'):
+        models = s.get('models') or []
+        cost = PatchCost(
+            round=round_,
+            pr=s.get('pr'),
+            rules_lines_changed=int(s.get('rules_lines') or 0),
+            corpus_cases_added=int(s.get('cases_added') or 0),
+            heldout_p99_us=s.get('heldout_p99_us'),
+            blue_minutes=s.get('minutes'),
+            blue_turns=s.get('tool_calls'),
+            model=models[-1] if models else None,
+        )
+    try:
+        j = json.loads((run_dir / f'blue-r{round_}-judgments.json').read_text())
+        equivalence = {
+            k: v
+            for k, v in (j.get('judgments') or {}).items()
+            if isinstance(v, str)
+        }
+    except (OSError, json.JSONDecodeError, AttributeError):
+        equivalence = {}
+    return cost, equivalence
 
 
 # -- report --------------------------------------------------------------------
@@ -371,21 +418,32 @@ def cmd_report(a: argparse.Namespace) -> int:
             )
         )
     rounds = []
+    costs = []
     for spec in a.round or ():
         n, _, run_id = spec.partition('=')
         run = RunStore(run_id)
         verdicts = run.verdicts()
         rev = verdicts[0].rules_rev if verdicts else ''
+        cost, equivalence = read_blue(run.dir, int(n))
+        if cost is not None:
+            costs.append(cost)
         rounds.append(
             RoundInput(
                 round=int(n),
                 version=rev,
                 items=tuple(
-                    join(run.variants(), verdicts, syntax=run.syntax())
+                    join(
+                        run.variants(),
+                        verdicts,
+                        syntax=run.syntax(),
+                        equivalence=equivalence,
+                    )
                 ),
             )
         )
-    report = build_report(versions, rounds, generated_at=_now())
+    report = build_report(
+        versions, rounds, patch_costs=costs, generated_at=_now()
+    )
     paths = write_report(report, Path(a.out))
     _print({'out': str(a.out), 'files': [p.name for p in paths]})
     return 0
