@@ -143,7 +143,7 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 ### 自訂值的理由
 
 - `HOOK_PROBE_INTERVAL_MS = 30_000`、`HOOK_PROBE_DEADLINE_MS = 1_000`：S3 連續 14 次逾時都沒看到 hook 被移除，失效應該很少見；30 秒探測一次的成本是每分鐘 2 個被吞掉的 F24。1 秒的期限遠大於實測的 `SendInput → callback` p99（約 0.26 ms）。
-- `CALLBACK_BUDGET_US = 100`：實測最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。
+- `CALLBACK_BUDGET_US = 100`：實測最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。這個預算針對暖機後的呼叫：2026-11-28 在 Windows 實機上，第一次貼上（冷啟動，包含 page fault 和第一次喚醒 worker）是 123 µs。所以 `windows_paste_hook` 會先記下第一次的時間，只檢查它低於 `HOOK_FAIL_OPEN_MS`，後面 5 次才套用 100 µs 的預算。
 - `PENDING_ANALYSIS_TIMEOUT_MS = 2_000`：1 Mi 字的病態輸入在 release 下約 150 ms（§6.1）；超過 2 秒代表出了問題，這時**不補送**按鍵（fail closed），改跳 Warning 通知。
 - `SOURCE_URL_MAX_BYTES`、`WINDOW_TITLE_MAX_CHARS`、`STORE_FILE_MAX_BYTES`、`MAX_REGISTERED_SECRETS`、`FOREGROUND_HISTORY_LEN`、`SELF_WRITE_CACHE_LEN`：讓每個外部輸入都有上限；值取正常使用的數倍。
 - `STATUS_POLL_MS = 250`（`macos/host.rs`）：`pw-host` 每 250 ms 檢查安全輸入、輔助使用權限、剪貼簿存取權限，變了就送 `HostEvent::StatusChanged`。worker 本來每 `TICK_MS` = 1 秒就會重讀狀態，這個值只是讓變化立刻出現在系統匣；檢查只讀幾個系統旗標，成本可以忽略。

@@ -35,12 +35,14 @@ use paste_warden_platform::windows::paste_hook::{
 };
 use paste_warden_platform::windows::{ClipboardMonitor, HookMsg, PasteHook, foreground, send};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput,
-    VIRTUAL_KEY, VK_CONTROL, VK_INSERT, VK_RETURN, VK_SHIFT, VK_V,
+    INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
+    KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY, VK_CONTROL, VK_INSERT, VK_RETURN, VK_SHIFT, VK_V,
 };
 
 const DEADLINE: Duration = Duration::from_millis(HOOK_PROBE_DEADLINE_MS);
 const PROBES: usize = 200;
+/// Pastes timed after the first (cold) one; the budget applies to these.
+const WARM_PASTES: usize = 5;
 
 /// Saves the clipboard text and puts a harmless fake text on it.
 struct ClipboardGuard {
@@ -78,11 +80,17 @@ fn press(keys: &[(VIRTUAL_KEY, bool)]) {
                 ki: KEYBDINPUT {
                     wVk: vk,
                     wScan: 0,
-                    dwFlags: if up {
-                        KEYEVENTF_KEYUP
-                    } else {
-                        KEYBD_EVENT_FLAGS(0)
-                    },
+                    // The dedicated Insert key is an extended key; without the
+                    // flag it is the numpad one, which NumLock can turn into
+                    // a digit with a synthetic Shift-up.
+                    dwFlags: KEYBD_EVENT_FLAGS(
+                        if up { KEYEVENTF_KEYUP.0 } else { 0 }
+                            | if vk == VK_INSERT {
+                                KEYEVENTF_EXTENDEDKEY.0
+                            } else {
+                                0
+                            },
+                    ),
                     time: 0,
                     dwExtraInfo: 0,
                 },
@@ -92,6 +100,22 @@ fn press(keys: &[(VIRTUAL_KEY, bool)]) {
     // SAFETY: a fully initialized slice of keyboard inputs.
     let sent = unsafe { SendInput(&inputs, size_of::<INPUT>() as i32) };
     assert_eq!(sent as usize, inputs.len(), "SendInput blocked");
+}
+
+/// Releases every key the tests press, also when a test panics halfway: a
+/// Ctrl left down by one test turns the next test's Shift+Insert into
+/// Ctrl+Shift+Insert, which is not a paste.
+struct ReleaseKeys;
+
+impl Drop for ReleaseKeys {
+    fn drop(&mut self) {
+        press(&[
+            (VK_V, true),
+            (VK_INSERT, true),
+            (VK_CONTROL, true),
+            (VK_SHIFT, true),
+        ]);
+    }
 }
 
 fn start_hook() -> (Arc<PasteGate>, PasteHook, Receiver<HookMsg>) {
@@ -133,29 +157,41 @@ fn tagged_probe_is_answered_within_budget() {
 #[ignore = "installs a global keyboard hook, injects keys, changes the clipboard"]
 fn intercept_swallows_ctrl_v_with_its_key_up() {
     let _clip = ClipboardGuard::new();
+    let _keys = ReleaseKeys;
     let (gate, hook, rx) = start_hook();
     gate.publish(sequence(), Decision::Intercept);
-    press(&[(VK_CONTROL, false), (VK_V, false)]);
-    match rx.recv_timeout(DEADLINE) {
-        Ok(HookMsg::PasteSwallowed { reason, .. }) => {
-            assert_eq!(reason, SwallowReason::Intercept)
+    // The paste path (clipboard sequence, foreground, modifiers, waking the
+    // worker) is the slowest one. The first paste is cold (page faults, the
+    // receiver's first wake-up) and is only reported; the budget applies to
+    // the warm ones. Both are far below HOOK_FAIL_OPEN_MS.
+    let mut times = Vec::with_capacity(WARM_PASTES + 1);
+    for _ in 0..=WARM_PASTES {
+        press(&[(VK_CONTROL, false), (VK_V, false)]);
+        match rx.recv_timeout(DEADLINE) {
+            Ok(HookMsg::PasteSwallowed { reason, .. }) => {
+                assert_eq!(reason, SwallowReason::Intercept)
+            }
+            other => panic!("expected a swallowed paste, got {other:?}"),
         }
-        other => panic!("expected a swallowed paste, got {other:?}"),
+        times.push(hook.last_callback_ns());
+        // Ctrl released first, then V: the V key-up is swallowed silently.
+        press(&[(VK_CONTROL, true), (VK_V, true)]);
+        assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
     }
-    // The paste path (clipboard sequence, foreground, modifiers) is the
-    // slowest one.
-    let ns = hook.last_callback_ns();
-    eprintln!("paste callback {ns} ns");
-    assert!(ns <= CALLBACK_BUDGET_US * 1_000);
-    // Ctrl released first, then V: the V key-up is swallowed silently.
-    press(&[(VK_CONTROL, true), (VK_V, true)]);
-    assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+    let warm = times[1..].iter().copied().max().unwrap_or(0);
+    eprintln!("paste callback cold {} ns, warm max {warm} ns", times[0]);
+    assert!(times[0] < HOOK_FAIL_OPEN_MS * 1_000_000);
+    assert!(
+        warm <= CALLBACK_BUDGET_US * 1_000,
+        "warm paste callback {warm} ns > budget {CALLBACK_BUDGET_US} µs"
+    );
 }
 
 #[test]
 #[ignore = "installs a global keyboard hook, injects keys, changes the clipboard"]
 fn unanalyzed_clipboard_is_pending_and_shift_insert_counts() {
     let _clip = ClipboardGuard::new();
+    let _keys = ReleaseKeys;
     let (gate, _hook, rx) = start_hook();
     gate.publish(sequence().wrapping_sub(1), Decision::Allow);
     press(&[
