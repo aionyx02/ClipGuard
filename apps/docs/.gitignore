@@ -4,3 +4,5 @@ node_modules/
 # Copied from ../../docs at build time by scripts/sync-docs.mjs — edit the originals.
 src/content/docs/dev/generated/
 src/content/docs/en/dev/generated/
+# Red-team report charts, copied from ../../redteam/reports by scripts/sync-docs.mjs.
+public/dev/redteam-report/

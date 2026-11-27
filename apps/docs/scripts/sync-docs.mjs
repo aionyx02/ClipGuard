@@ -1,6 +1,14 @@
 // Copies the canonical specs from ../../docs into the Starlight content tree at build time, so
 // the site never drifts from the repo. Edit the originals; the copies are gitignored.
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,6 +18,18 @@ export const BRANCH = 'dev';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..', '..', '..');
 const outDir = join(here, '..', 'src', 'content', 'docs', 'dev', 'generated');
+// Charts are served from public/ (gitignored): the page shows the light or the dark SVG
+// depending on Starlight's data-theme, which a plain Markdown image cannot do.
+const chartDir = join(here, '..', 'public', 'dev', 'redteam-report');
+const base = process.env.DOCS_BASE ?? '/docs/';
+
+/** phase-5.md §5.13: `redteam report --out redteam/reports` output, when it exists. */
+export const REPORT = [
+  'redteam/reports/report.md',
+  'redteam-report',
+  30,
+  '紅藍隊報表 Red-team report',
+];
 
 /** [source path in the repo, output slug, sidebar order, sidebar label] */
 export const SOURCES = [
@@ -35,6 +55,20 @@ export function rewriteLinks(markdown, sourcePath) {
     if (resolved.startsWith('..')) return whole;
     const kind = path.endsWith('/') ? 'tree' : 'blob';
     return `${open}${REPO}/${kind}/${BRANCH}/${resolved}${hash ? `#${hash}` : ''}${close}`;
+  });
+}
+
+/**
+ * `![alt](name.svg)` -> a light and a dark <img>; theme.css hides the one that does not match
+ * Starlight's resolved theme. `chartBase` is the URL the SVGs are copied to.
+ */
+export function themedCharts(markdown, chartBase) {
+  return markdown.replace(/!\[([^\]]*)\]\(([a-z0-9-]+)\.svg\)/g, (_, alt, name) => {
+    const a = alt.replace(/"/g, '&quot;');
+    return [
+      `<img class="pw-chart-light" src="${chartBase}${name}.svg" alt="${a}" />`,
+      `<img class="pw-chart-dark" src="${chartBase}${name}-dark.svg" alt="${a}" />`,
+    ].join('\n');
   });
 }
 
@@ -71,6 +105,25 @@ export function sync() {
     writeFileSync(join(outDir, `${slug}.md`), toStarlightPage(markdown, source, order, label));
     console.log(`synced ${source} -> ${relative(repoRoot, join(outDir, `${slug}.md`))}`);
   }
+  syncReport();
+}
+
+function syncReport() {
+  rmSync(chartDir, { recursive: true, force: true });
+  const [source, slug, order, label] = REPORT;
+  const src = join(repoRoot, source);
+  if (!existsSync(src)) {
+    console.log(`no ${source}: red-team report page skipped`);
+    return;
+  }
+  mkdirSync(chartDir, { recursive: true });
+  const srcDir = dirname(src);
+  for (const name of readdirSync(srcDir).filter((n) => n.endsWith('.svg'))) {
+    copyFileSync(join(srcDir, name), join(chartDir, name));
+  }
+  const markdown = themedCharts(readFileSync(src, 'utf8'), `${base}dev/redteam-report/`);
+  writeFileSync(join(outDir, `${slug}.md`), toStarlightPage(markdown, source, order, label));
+  console.log(`synced ${source} (+ charts) -> ${relative(repoRoot, join(outDir, `${slug}.md`))}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) sync();

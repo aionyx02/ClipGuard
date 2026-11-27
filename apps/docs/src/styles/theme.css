@@ -57,3 +57,9 @@
     ),
     var(--sl-color-black);
 }
+
+/* Red-team report charts (scripts/sync-docs.mjs): one SVG per theme. */
+:root[data-theme="light"] .pw-chart-dark,
+:root:not([data-theme="light"]) .pw-chart-light {
+  display: none;
+}
