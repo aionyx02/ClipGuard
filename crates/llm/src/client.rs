@@ -767,6 +767,36 @@ mod tests {
         handle.join().unwrap();
     }
 
+    /// Reads one whole HTTP request (headers plus `Content-Length` bytes).
+    /// A single `read` can return only part of it; on Windows, closing a
+    /// socket with unread request bytes sends RST, and the client then sees
+    /// a reset (`Transport`) instead of the response.
+    #[cfg(feature = "net")]
+    fn read_request(s: &mut std::net::TcpStream) {
+        use std::io::Read;
+        let mut got = Vec::new();
+        let mut buf = [0u8; 8192];
+        loop {
+            let n = match s.read(&mut buf) {
+                Ok(0) | Err(_) => return,
+                Ok(n) => n,
+            };
+            got.extend_from_slice(&buf[..n]);
+            let Some(end) = got.windows(4).position(|w| w == b"\r\n\r\n") else {
+                continue;
+            };
+            let head = String::from_utf8_lossy(&got[..end]).to_ascii_lowercase();
+            let len = head
+                .lines()
+                .find_map(|l| l.strip_prefix("content-length:"))
+                .and_then(|v| v.trim().parse::<usize>().ok())
+                .unwrap_or(0);
+            if got.len() >= end + 4 + len {
+                return;
+            }
+        }
+    }
+
     /// Real HTTP: oversize bodies are cut at the cap.
     #[cfg(feature = "net")]
     #[test]
@@ -776,14 +806,19 @@ mod tests {
         let port = listener.local_addr().unwrap().port();
         let handle = std::thread::spawn(move || {
             let (mut s, _) = listener.accept().unwrap();
-            let mut buf = [0u8; 65536];
-            let _ = s.read(&mut buf);
+            read_request(&mut s);
             let body = "x".repeat(LLM_MAX_RESPONSE_BYTES + 10);
             let _ = write!(
                 s,
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                 body.len()
             );
+            // Close gracefully: FIN first, then wait for the client to hang
+            // up, so nothing unread is left to turn the close into a RST.
+            let _ = s.shutdown(std::net::Shutdown::Write);
+            let _ = s.set_read_timeout(Some(Duration::from_secs(2)));
+            let mut sink = [0u8; 1024];
+            while matches!(s.read(&mut sink), Ok(n) if n > 0) {}
         });
         let cfg = EnabledConfig::new(EnabledConfigInput {
             base_url: Some(format!("http://127.0.0.1:{port}/v1")),
