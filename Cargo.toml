@@ -63,6 +63,8 @@ windows = { version = "0.62", features = [
     "Win32_System_Registry",
     "Win32_Storage_FileSystem",
     "Win32_Security_Authorization",
+    # tests only: windows_paste_hook reports console control events
+    "Win32_System_Console",
 ] }
 zeroize = "1"
 # Phase 4 desktop (phase-4.md §4.1): Tauri v2 only (CLAUDE.md), OS keyring.

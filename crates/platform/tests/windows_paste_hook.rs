@@ -35,10 +35,12 @@ use paste_warden_platform::windows::paste_hook::{
     CALLBACK_BUDGET_US, HOOK_EVENT_QUEUE_LEN, HOOK_FAIL_OPEN_MS, HOOK_PROBE_DEADLINE_MS,
 };
 use paste_warden_platform::windows::{ClipboardMonitor, HookMsg, PasteHook, foreground, send};
+use windows::Win32::System::Console::SetConsoleCtrlHandler;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
     KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY, VK_CONTROL, VK_INSERT, VK_RETURN, VK_SHIFT, VK_V,
 };
+use windows::core::BOOL;
 
 const DEADLINE: Duration = Duration::from_millis(HOOK_PROBE_DEADLINE_MS);
 const PROBES: usize = 200;
@@ -131,6 +133,21 @@ impl Drop for ReleaseKeys {
     }
 }
 
+/// Prints console control events (Ctrl+C = 0, Ctrl+Break = 1, close = 2)
+/// and lets the default handler run: a run on Windows ended silently, the
+/// way a Ctrl+C to the whole console group does.
+unsafe extern "system" fn report_ctrl(event: u32) -> BOOL {
+    eprintln!("console control event {event} received");
+    BOOL(0)
+}
+
+fn watch_console_events() {
+    // SAFETY: registers a plain function; it only prints.
+    if let Err(e) = unsafe { SetConsoleCtrlHandler(Some(report_ctrl), true) } {
+        eprintln!("SetConsoleCtrlHandler failed: {e}");
+    }
+}
+
 fn start_hook() -> (Arc<PasteGate>, PasteHook, Receiver<HookMsg>) {
     let gate = Arc::new(PasteGate::new());
     let (tx, rx) = mpsc::sync_channel(HOOK_EVENT_QUEUE_LEN);
@@ -189,6 +206,7 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
             std::process::exit(3);
         })
     };
+    watch_console_events();
     step("clipboard guard");
     let _clip = ClipboardGuard::new();
     let _keys = ReleaseKeys;
@@ -214,8 +232,10 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
         step(&format!("paste {i}: callback {} ns; key-ups", times[i]));
         // Ctrl released first, then V: the V key-up is swallowed silently.
         press(&[(VK_CONTROL, true), (VK_V, true)]);
+        step(&format!("paste {i}: key-ups sent"));
         let extra = rx.recv_timeout(Duration::from_millis(200));
         assert!(extra.is_err(), "paste {i}: key-up reported {extra:?}");
+        step(&format!("paste {i}: done"));
     }
     let warm = times[1..].iter().copied().max().unwrap_or(0);
     step(&format!("cold {} ns, warm max {warm} ns", times[0]));
