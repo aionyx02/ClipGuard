@@ -255,6 +255,19 @@ def test_write_report(tmp_path):
     assert light != dark
 
 
+def test_markdown_labels_rounds_and_skips_empty_splits():
+    r = build_report(
+        versions(),
+        [RoundInput(round=1, version='a' * 40, items=rounds()[0].items)],
+    )
+    md = render_markdown(r)
+    assert '| 1 | V1 | g0 |' in md
+    assert 'a' * 40 not in md
+    # Versions are scored on heldout only: no all-zero train rows.
+    assert '| V1 | train | 0 |' not in md
+    assert '1 KiB' in md
+
+
 def test_empty_inputs_render():
     r = build_report([VersionInput(label='V1', rules_rev='x')])
     assert render_markdown(r)

@@ -203,6 +203,9 @@ def render_markdown(report: Report) -> str:
         '|---|---|---:|---:|---:|---:|---:|---:|',
     ]
     for d in report.detection:
+        if d.valid == 0:
+            # e.g. the train split of a version: only heldout is scored.
+            continue
         out.append(
             f'| {d.version} | {d.split} | {d.valid} | {d.blocked} | '
             f'{d.downgraded} | {d.bypassed} | {_pct(d.detection_rate)} | '
@@ -228,15 +231,24 @@ def render_markdown(report: Report) -> str:
         'Success | G1 equivalent | G1 unconfirmed |',
         '|---:|---|---|---:|---:|---:|---:|---:|---:|',
     ]
+    label_of = {rev: label for label, rev in report.rules_revs.items()}
     for a in report.attack_success:
+        if a.version in report.rules_revs:
+            version = a.version  # already a label
+        else:
+            version = label_of.get(a.version) or f'`{a.version[:12]}`'
         out.append(
-            f'| {a.round} | {a.version} | {a.generator} | {a.valid} | '
+            f'| {a.round} | {version} | {a.generator} | {a.valid} | '
             f'{a.not_blocked} | {a.allowed} | {_pct(a.success_rate)} | '
             f'{a.confirmed_equivalent} | {a.unconfirmed} |'
         )
     out += [
         '',
         '## 4. Patch cost (blue-team PRs)',
+        '',
+        'Heldout p99 here counts only inputs of at most 1 KiB, the phase-1'
+        ' budget (1 KB in 1 ms); the latency table below covers every heldout'
+        ' item.',
         '',
         '| Round | PR | Rule lines | Cases added | Heldout p99 | Budget ok | '
         'Minutes | Turns | Model |',
@@ -255,6 +267,9 @@ def render_markdown(report: Report) -> str:
     out += [
         '',
         '## Latency (heldout)',
+        '',
+        'All heldout items, including the padded and multi-layer ones that'
+        ' are far larger than 1 KiB.',
         '',
         '| Version | N | p50 | p99 | max |',
         '|---|---:|---:|---:|---:|',
