@@ -152,6 +152,9 @@ def test_worktree_is_sparse_and_handoff_holds_only_parts(repo, tmp_path):
         assert model in cfg['provider']['ollama']['models']
         limit = cfg['provider']['ollama']['models'][model]['limit']
         assert limit['output'] == o.OLLAMA_MAX_OUTPUT_TOKENS
+        # Ollama only honours max_tokens, not max_completion_tokens.
+        opts = cfg['provider']['ollama']['models'][model]['options']
+        assert opts['max_tokens'] == o.OLLAMA_MAX_OUTPUT_TOKENS
         assert limit['context'] >= limit['output']
         assert cfg['permission']['webfetch'] == 'deny'
         # Hand-off and plugin are git-excluded, so the diff stays clean.

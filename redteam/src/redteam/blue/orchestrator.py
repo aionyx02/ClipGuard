@@ -44,12 +44,16 @@ BLUE_BASE = 'feature/phase-5-agent'
 # dozen requests on 2026-11-25). Zen free models stay as fallbacks.
 OLLAMA_BASE_URL = 'http://127.0.0.1:11434/v1'
 OLLAMA_MODELS = ('qwen3.8:27b-mlx',)
-# Per-step output cap for local models (thinking + answer). Round 2 on the
+# Per-call output cap for local models (thinking + answer). Round 2 on the
 # local qwen spent 417 s and 1,485 s on two steps that produced 16k and 46k
 # tokens, almost all hidden thinking; a normal step is a few hundred to a
-# few thousand. 16k still leaves ~14k for thinking. Context: the MLX
-# runner's 262,144.
-OLLAMA_MAX_OUTPUT_TOKENS = 16_384
+# few thousand. Sent as `max_tokens` through the model's `options`: Ollama
+# 0.40.16 ignores `max_completion_tokens`, which is all `limit.output`
+# produces (checked against a fake server and against Ollama, 2026-11-28).
+# On a cut, opencode continues twice and then fails the run with
+# `output-limit`, so one step can reach 3x this (~24.6k tokens) before the
+# attempt ends and the next one starts with feedback.
+OLLAMA_MAX_OUTPUT_TOKENS = 8_192
 OLLAMA_CONTEXT_TOKENS = 262_144
 BLUE_MODELS = (
     'ollama/qwen3.8:27b-mlx',
@@ -277,6 +281,7 @@ def install_plugin(wt: Path) -> None:
                             'context': OLLAMA_CONTEXT_TOKENS,
                             'output': OLLAMA_MAX_OUTPUT_TOKENS,
                         },
+                        'options': {'max_tokens': OLLAMA_MAX_OUTPUT_TOKENS},
                     }
                     for m in OLLAMA_MODELS
                 },
