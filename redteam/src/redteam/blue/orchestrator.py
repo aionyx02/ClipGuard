@@ -355,6 +355,14 @@ Add entries like
 - A variant that already has an execution signal (action "warn" /
   suspicious) usually needs one narrow "scam" entry; one with action
   "allow" needs an "execution" entry, often plus a "scam" entry.
+- An execution hit plus a strong scam hit is malicious: the clipboard is
+  cleared. So the same (or overlapping) pattern in both "execution" and
+  "scam" blocks on its own. Only do that when the pattern is malicious by
+  itself (for example a download piped into an interpreter). Never for
+  generic syntax such as a variable assignment (`$x = ...`, `X=sh;`), a
+  bare alias name, or "any URL": those appear in normal scripts.
+- Use word boundaries (`\\b`) around command names (`iex` must not match
+  `iexplore`).
 - Keep patterns narrow so benign developer commands still pass. Prefer one
   pattern that covers several variants of the same technique.
 Other rule files in rules/command/ (bait-keywords.json, official-hosts.json,
@@ -379,12 +387,14 @@ Steps:
    "command.analyze", "source": "new", "input": {{"parts": ["git ",
    "status"]}}, "expect": {{"level": "none"}}}}
    (ids unique; benign text must be harmless, e.g. a normal developer
-   command that looks similar). Never modify or delete existing corpus
-   lines.
-5. Run `cargo run -p xtask -- corpus run` and
-   `cargo run -p xtask -- corpus benign` until both report 0 failures and 0
-   flagged benign samples. Run them in the foreground; each takes about a
-   minute.
+   command that looks similar). Split every benign text into at least two
+   `parts` (the lint rejects a single literal that looks like a command).
+   Never modify or delete existing corpus lines.
+5. Run `cargo run -p xtask -- corpus lint`,
+   `cargo run -p xtask -- corpus run` and
+   `cargo run -p xtask -- corpus benign` until lint is ok and the others
+   report 0 failures and 0 flagged benign samples. Run them in the
+   foreground; each takes about a minute.
 
 Allowed shell commands, exactly as written, with no pipes, redirects, `;`,
 `&&` or `$(...)`: `cargo run -p xtask -- corpus ...`,
