@@ -23,6 +23,7 @@
 #![allow(unsafe_code)]
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver};
 use std::time::{Duration, Instant};
 
@@ -43,6 +44,8 @@ const DEADLINE: Duration = Duration::from_millis(HOOK_PROBE_DEADLINE_MS);
 const PROBES: usize = 200;
 /// Pastes timed after the first (cold) one; the budget applies to these.
 const WARM_PASTES: usize = 5;
+/// The Ctrl+V test takes about 7 s; past this it is stuck.
+const WATCHDOG: Duration = Duration::from_secs(20);
 
 /// Saves the clipboard text and puts a harmless fake text on it.
 struct ClipboardGuard {
@@ -166,8 +169,30 @@ fn tagged_probe_is_answered_within_budget() {
 #[test]
 #[ignore = "installs a global keyboard hook, injects keys, changes the clipboard"]
 fn intercept_swallows_ctrl_v_with_its_key_up() {
+    let started = Instant::now();
+    let step = |what: &str| eprintln!("[{:>6} ms] {what}", started.elapsed().as_millis());
+    // A run on Windows ended with no output at all; if a step blocks, say
+    // which one instead of hanging (the panic hook is not reached then).
+    let done = Arc::new(AtomicBool::new(false));
+    let watchdog = {
+        let done = Arc::clone(&done);
+        std::thread::spawn(move || {
+            let until = Instant::now() + WATCHDOG;
+            while Instant::now() < until {
+                if done.load(Ordering::Acquire) {
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            eprintln!("watchdog: no progress for {WATCHDOG:?}; see the last step above");
+            let _ = send_keys(&[(VK_V, true), (VK_CONTROL, true)]);
+            std::process::exit(3);
+        })
+    };
+    step("clipboard guard");
     let _clip = ClipboardGuard::new();
     let _keys = ReleaseKeys;
+    step("start hook");
     let (gate, hook, rx) = start_hook();
     gate.publish(sequence(), Decision::Intercept);
     // The paste path (clipboard sequence, foreground, modifiers, waking the
@@ -175,21 +200,27 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
     // receiver's first wake-up) and is only reported; the budget applies to
     // the warm ones. Both are far below HOOK_FAIL_OPEN_MS.
     let mut times = Vec::with_capacity(WARM_PASTES + 1);
-    for _ in 0..=WARM_PASTES {
+    for i in 0..=WARM_PASTES {
+        step(&format!("paste {i}: Ctrl+V down"));
         press(&[(VK_CONTROL, false), (VK_V, false)]);
+        step(&format!("paste {i}: wait for the hook"));
         match rx.recv_timeout(DEADLINE) {
             Ok(HookMsg::PasteSwallowed { reason, .. }) => {
                 assert_eq!(reason, SwallowReason::Intercept)
             }
-            other => panic!("expected a swallowed paste, got {other:?}"),
+            other => panic!("paste {i}: expected a swallowed paste, got {other:?}"),
         }
         times.push(hook.last_callback_ns());
+        step(&format!("paste {i}: callback {} ns; key-ups", times[i]));
         // Ctrl released first, then V: the V key-up is swallowed silently.
         press(&[(VK_CONTROL, true), (VK_V, true)]);
-        assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+        let extra = rx.recv_timeout(Duration::from_millis(200));
+        assert!(extra.is_err(), "paste {i}: key-up reported {extra:?}");
     }
     let warm = times[1..].iter().copied().max().unwrap_or(0);
-    eprintln!("paste callback cold {} ns, warm max {warm} ns", times[0]);
+    step(&format!("cold {} ns, warm max {warm} ns", times[0]));
+    done.store(true, Ordering::Release);
+    let _ = watchdog.join();
     assert!(times[0] < HOOK_FAIL_OPEN_MS * 1_000_000);
     assert!(
         warm <= CALLBACK_BUDGET_US * 1_000,
