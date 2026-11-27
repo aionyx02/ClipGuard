@@ -318,7 +318,7 @@ def cmd_blue(a: argparse.Namespace) -> int:
             for v, item in zip(res['malicious'], res['items'], strict=True)
             if len(item.payload.encode('utf-8')) <= 1024
         ]
-        return engine.latency(small).get('p99')
+        return engine.latency(small)['p99_us']
 
     out = o.run_round(
         run,
