@@ -138,7 +138,7 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 
 ### UI 指令（`apps/desktop/src-tauri/src/commands.rs`）
 
-`restore`、`set_paste_guard { registered, detected }`、`allowlist_add`／`allowlist_remove(name)`、`register_secret { secret, confirm, label }`、`list_secrets`、`remove_secret(id)`、`set_locale`（`system`／`zh-TW`／`en`）、`set_theme`（`system`／`light`／`dark`）、`paste_choice`（`cancel`／`masked`／`original`）、`get_protection_status`（§4.8.1）、`quit`。所有參數都在 Rust 端用 core 的檢查函式重新驗證；`register_secret` 收到後立刻放進 `Zeroizing`，錯誤只回欄位和訊息 ID。每個視窗的 capability 只開它需要的指令。
+`restore`、`set_paste_guard { registered, detected }`、`allowlist_add`／`allowlist_remove(name)`、`register_secret { secret, confirm, label }`、`list_secrets`、`remove_secret(id)`、`set_locale`（`system`／`zh-TW`／`en`）、`set_theme`（`system`／`light`／`dark`）、`paste_choice`（`cancel`／`masked`／`original`）、`get_protection_status`（§4.8.1）、`forget_secrets`（刪除全部登記的機密，見 §4.5「登記機密的儲存」）、`quit`。所有參數都在 Rust 端用 core 的檢查函式重新驗證；`register_secret` 收到後立刻放進 `Zeroizing`，錯誤只回欄位和訊息 ID。每個視窗的 capability 只開它需要的指令。
 
 ### 自訂值的理由
 
@@ -146,6 +146,8 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 - `CALLBACK_BUDGET_US = 100`：實測最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。
 - `PENDING_ANALYSIS_TIMEOUT_MS = 2_000`：1 Mi 字的病態輸入在 release 下約 150 ms（§6.1）；超過 2 秒代表出了問題，這時**不補送**按鍵（fail closed），改跳 Warning 通知。
 - `SOURCE_URL_MAX_BYTES`、`WINDOW_TITLE_MAX_CHARS`、`STORE_FILE_MAX_BYTES`、`MAX_REGISTERED_SECRETS`、`FOREGROUND_HISTORY_LEN`、`SELF_WRITE_CACHE_LEN`：讓每個外部輸入都有上限；值取正常使用的數倍。
+- `STATUS_POLL_MS = 250`（`macos/host.rs`）：`pw-host` 每 250 ms 檢查安全輸入、輔助使用權限、剪貼簿存取權限，變了就送 `HostEvent::StatusChanged`。worker 本來每 `TICK_MS` = 1 秒就會重讀狀態，這個值只是讓變化立刻出現在系統匣；檢查只讀幾個系統旗標，成本可以忽略。
+- 桌面 App 的其他常數（`apps/desktop/src-tauri/src/`，都是自訂）：`TICK_MS = 1_000`（worker 最少多久醒一次，重讀 host 狀態和探測排程）、`COMMAND_TIMEOUT_MS = 5_000`（UI 指令等 worker 回覆的上限）、`SHUTDOWN_TIMEOUT_MS = 2_000`（結束時等 host 和 worker 停下的上限）、`FOREGROUND_SETTLE_MS = 150`（複製前這麼短時間內才切換的前景視窗不算來源，大於 `CLIPBOARD_READ_DELAY_MS` 加上 100 ms 的前景輪詢）、`CONFIRM_PREVIEW_MAX_CHARS = 400`、`NOTIFY_MAX_SECRETS = 3`（同舊版 `SecretGuard.MaxListed`）、`NOTIFY_MAX_REASONS = 2`。
 - `IPC_TIMEOUT_MS = 500`：named pipe 在本機的來回時間是毫秒以下，500 ms 夠讓忙碌中的桌面 App 回應，又不會讓擴充功能等太久。
 
 ## 4.4 流程
@@ -230,6 +232,9 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 | 確認框的 Enter | 焦點在任何按鈕上按 Enter 都是取消，「貼原文」只能用滑鼠或 Space | 避免連按 Enter 誤貼原文 |
 | Native Messaging 的範圍 | manifest 也寫給 Brave（只寫偵測得到設定資料夾的瀏覽器）；Windows 的 manifest 放在 `%LOCALAPPDATA%\PasteWarden\NativeMessagingHosts\`。一個連線只處理一個請求，最多同時 8 個連線。`match_registered` 協定已實作，但擴充功能沒有桌面端的 HMAC 金鑰，目前不會送這個 op（見 §4.10 第 7 項） | 啟動時重跑安裝，之後才裝的瀏覽器也會被設定 |
 | Android | 2026-11-25 決定照 §4.9.5 先不做，發表版的平台表標成「尚未提供」 | 時間留給 Windows、macOS、Linux |
+| host 啟動失敗（2026-11-26 補） | 平台 host 啟動失敗或中途停止時，改用 `NullHost`：四個項目全部是 `Unavailable(HostFailed)`（`host-failed`），不讀也不寫剪貼簿，App 照常開著讓使用者看到原因、改設定。`HostFailed` 不算平台限制（`is_platform_limit` 是 false），所以系統匣顯示「失效」而不是「部分受限」 | 不能因為 host 起不來就整個 App 結束，也不能假裝還在保護 |
+| 清除全部機密（2026-11-26 補） | 設定頁的「清除全部登記的機密」按鈕呼叫 `forget_secrets`：只刪 `secrets.json`（keyring 的金鑰保留），再重新載入；金鑰已經不見時，重新載入會建立新的金鑰。這是 `KeyMissing` 唯一的出路。按鈕按下後要再確認一次才執行 | §5.1 禁止自動重建金鑰 |
+| 打包設定（2026-11-26 補） | `tauri.conf.json` 不含 NMH；正式打包用 `cargo tauri build --config src-tauri/tauri.release.conf.json`，它在 `beforeBuildCommand` 多跑 `scripts/build-nmh.mjs`，並把 `binaries/paste-warden-nmh` 設成 `externalBin`，放在 App 執行檔旁邊。desktop CI job 也用這份設定 | `cargo tauri dev` 和一般 `cargo test` 不必先建置 NMH；externalBin 的檔案不存在時 Tauri 會直接建置失敗 |
 
 ## 4.6 測試
 
@@ -407,6 +412,7 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 | `WaylandNoIntercept` | Linux Wayland | `intercept` Unavailable | Wayland 不允許攔截按鍵，只通知、不攔截 |
 | `NoSecretService` | Linux | 登記機密停用 | 沒有 Secret Service（例如 GNOME Keyring、KWallet），無法安全保存金鑰 |
 | `AndroidNoBackground` | Android | `watch`、`intercept` Unavailable | Android 不允許背景讀剪貼簿，請用選取文字選單或分享 |
+| `HostFailed` | 全部 | 四個項目都 Unavailable | 平台整合沒有啟動，PasteWarden 現在沒有保護剪貼簿（§4.5「host 啟動失敗」） |
 
 ### 4.9.5 優先順序與截止線
 
