@@ -247,7 +247,7 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 
 - [x] CLI 改用 `crates/report`。
 - [x] S9 的 Windows 部分（registry 位置、`--parent-window`、stdout 是否為 binary mode）實測，結果寫回 `s9-native-messaging.md`。Chromium、Edge 已測；這台電腦沒有 Firefox，Windows 的 Firefox 放進手動測試清單。
-- [ ] `crates/platform` 的 Windows 元件與 §4.6 的測試。
+- [x] `crates/platform` 的 Windows 元件與 §4.6 的測試。2026-11-28 在 Windows 11 實機（Windows Terminal、一般權限）通過：`windows_paste_hook` 6 個（Ctrl+V 冷啟動 84.4 µs、暖機後最慢 8.6 µs）、`windows_host` 1 個、`windows_clipboard` 6 個；實體鍵盤的 `manual_physical_ctrl_v` 也通過（被吞掉的 Ctrl+V 不會影響前景終端機裡執行中的程式）。注入按鍵時每次貼上都重按 Ctrl，第二次會讓主控台收到 Ctrl+C（Tabby、Windows Terminal 都會，實體鍵盤不會），所以測試改成按住 Ctrl 連按 V。
 - [ ] `apps/desktop`：系統匣選單和舊版對等、通知、確認框、登記和管理機密、允許清單、設定頁、深淺色、語言（`locales/{zh-TW,en}/ui-desktop.ftl`，前綴 `ui-desktop-`）。
 - [ ] `paste-warden-nmh` 與擴充功能的探測、降級。
 - [ ] `cargo tauri build` 產出 msi 與 nsis 安裝檔。
