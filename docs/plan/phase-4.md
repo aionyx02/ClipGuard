@@ -229,7 +229,7 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 | 前景偵測（macOS、Linux） | host 每 100 ms（`FOREGROUND_POLL_MS`）比對前景紀錄，變了才送 `HostEvent::Foreground` | observer 和 tracker 沒有回呼介面；100 ms 的延遲遠小於使用者切視窗再貼上的時間 |
 | macOS 的遮罩貼上 | `paste_into` 一律送 Cmd+V，不重現原本被吞掉的組合鍵 | 「貼上並符合樣式」的差別對純文字沒有意義 |
 | 登記機密的儲存 | keyring v4 的 `v1` feature（Windows Credential Manager、macOS Keychain、Linux 用 zbus 的 Secret Service；規格原本寫的 `sync-secret-service` 是 v3 的名稱）。金鑰用 `getrandom` 產生。keyring 沒有金鑰但 `secrets.json` 還有資料時回 `KeyMissing`，不自動重建（§5.1），使用者可以用 `forget_secrets` 清掉舊資料後重新登記。寫檔一律先寫暫存檔再 rename，Unix 上資料夾 0700、檔案 0600 | §5.1 禁止自動重建金鑰，但使用者要有出路 |
-| 確認框的 Enter | 焦點在任何按鈕上按 Enter 都是取消，「貼原文」只能用滑鼠或 Space | 避免連按 Enter 誤貼原文 |
+| 確認框的 Enter | 焦點在任何按鈕上按 Enter 都是取消，「貼原文」只能用滑鼠或 Space。**偏離 detection-rules §5.3**（2026-11-28 補記）：舊版的 Alt+M（貼遮罩版）、Alt+O（貼原文）沒有做，「貼原文」也在 Tab 順序裡 | 避免連按 Enter 誤貼原文；Enter 已經不會誤觸，Alt 快捷鍵留到之後 |
 | Native Messaging 的範圍 | manifest 也寫給 Brave（只寫偵測得到設定資料夾的瀏覽器）；Windows 的 manifest 放在 `%LOCALAPPDATA%\PasteWarden\NativeMessagingHosts\`。一個連線只處理一個請求，最多同時 8 個連線。`match_registered` 協定已實作，但擴充功能沒有桌面端的 HMAC 金鑰，目前不會送這個 op（見 §4.10 第 7 項） | 啟動時重跑安裝，之後才裝的瀏覽器也會被設定 |
 | Android | 2026-11-25 決定照 §4.9.5 先不做，發表版的平台表標成「尚未提供」 | 時間留給 Windows、macOS、Linux |
 | host 啟動失敗（2026-11-26 補） | 平台 host 啟動失敗或中途停止時，改用 `NullHost`：四個項目全部是 `Unavailable(HostFailed)`（`host-failed`），不讀也不寫剪貼簿，App 照常開著讓使用者看到原因、改設定。`HostFailed` 不算平台限制（`is_platform_limit` 是 false），所以系統匣顯示「失效」而不是「部分受限」 | 不能因為 host 起不來就整個 App 結束，也不能假裝還在保護 |
@@ -241,7 +241,7 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 - 單元測試：`crates/platform` 的純邏輯（去重、自我寫入快取、`PasteGate` 的編碼、儲存檔損毀與過大、舊版資料只刪列出的檔案）一律把時間當參數傳入。keyring 用 mock 後端。
 - 整合測試（`#[ignore]`，本機執行）：真的剪貼簿（測試前備份、結束時還原）；同一個行程用 `SendInput` 送帶標記的 F24，斷言 callback ≤ `CALLBACK_BUDGET_US`。跨行程的逾時行為手動測一次。
 - Native Messaging：Chromium E2E 用 Playwright 的暫存 `user-data-dir`；Windows 的 registry 只寫 HKCU，測完刪掉。
-- 手動測試清單（C7 補上）：舊 #9 的 4 項（系統匣還原且還原後不再被攔、通知文字完整、啟動時現有的剪貼簿會被分析、第二個實例直接結束）、§4 的入口表、§5.3 的已知限制。
+- 手動測試清單（整理在 `docs/testing/windows-manual.md`，2026-11-28）：舊 #9 的 4 項（系統匣還原且還原後不再被攔、通知文字完整、啟動時現有的剪貼簿會被分析、第二個實例直接結束）、§4 的入口表、§5.3 的已知限制。
 
 ## 4.7 完成條件
 
