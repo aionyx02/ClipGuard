@@ -1,0 +1,2694 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-27T21:13:11+00:00",
+  "versions": [
+    "V1",
+    "V2"
+  ],
+  "rules_revs": {
+    "V1": "04534570d4e3b3278c23f688c298a147325b0e9d",
+    "V2": "81f5e4ec1b8ff3420419dfa65f6580306c9cebac"
+  },
+  "count_unchecked_as_valid": true,
+  "detection": [
+    {
+      "version": "V1",
+      "split": "heldout",
+      "valid": 937,
+      "blocked": 792,
+      "downgraded": 78,
+      "bypassed": 67,
+      "detection_rate": 0.8453,
+      "at_least_warn_rate": 0.9285
+    },
+    {
+      "version": "V1",
+      "split": "train",
+      "valid": 0,
+      "blocked": 0,
+      "downgraded": 0,
+      "bypassed": 0,
+      "detection_rate": null,
+      "at_least_warn_rate": null
+    },
+    {
+      "version": "V2",
+      "split": "heldout",
+      "valid": 937,
+      "blocked": 792,
+      "downgraded": 78,
+      "bypassed": 67,
+      "detection_rate": 0.8453,
+      "at_least_warn_rate": 0.9285
+    },
+    {
+      "version": "V2",
+      "split": "train",
+      "valid": 0,
+      "blocked": 0,
+      "downgraded": 0,
+      "bypassed": 0,
+      "detection_rate": null,
+      "at_least_warn_rate": null
+    }
+  ],
+  "false_positives": [
+    {
+      "version": "V1",
+      "dataset": "corpus",
+      "n": 992,
+      "warn": 49,
+      "quarantine": 0,
+      "fp_rate": 0.0494,
+      "warn_rate": 0.0494,
+      "quarantine_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "dataset": "extra",
+      "n": 202,
+      "warn": 2,
+      "quarantine": 4,
+      "fp_rate": 0.0297,
+      "warn_rate": 0.0099,
+      "quarantine_rate": 0.0198
+    },
+    {
+      "version": "V1",
+      "dataset": "all",
+      "n": 1194,
+      "warn": 51,
+      "quarantine": 4,
+      "fp_rate": 0.0461,
+      "warn_rate": 0.0427,
+      "quarantine_rate": 0.0034
+    },
+    {
+      "version": "V2",
+      "dataset": "corpus",
+      "n": 992,
+      "warn": 49,
+      "quarantine": 0,
+      "fp_rate": 0.0494,
+      "warn_rate": 0.0494,
+      "quarantine_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "dataset": "extra",
+      "n": 202,
+      "warn": 2,
+      "quarantine": 4,
+      "fp_rate": 0.0297,
+      "warn_rate": 0.0099,
+      "quarantine_rate": 0.0198
+    },
+    {
+      "version": "V2",
+      "dataset": "all",
+      "n": 1194,
+      "warn": 51,
+      "quarantine": 4,
+      "fp_rate": 0.0461,
+      "warn_rate": 0.0427,
+      "quarantine_rate": 0.0034
+    }
+  ],
+  "attack_success": [
+    {
+      "round": 1,
+      "version": "04534570d4e3b3278c23f688c298a147325b0e9d",
+      "generator": "g0",
+      "valid": 3579,
+      "not_blocked": 624,
+      "allowed": 241,
+      "confirmed_equivalent": 0,
+      "unconfirmed": 0,
+      "success_rate": 0.1744,
+      "full_bypass_rate": 0.0673
+    },
+    {
+      "round": 1,
+      "version": "04534570d4e3b3278c23f688c298a147325b0e9d",
+      "generator": "g1",
+      "valid": 1015,
+      "not_blocked": 198,
+      "allowed": 126,
+      "confirmed_equivalent": 4,
+      "unconfirmed": 194,
+      "success_rate": 0.1951,
+      "full_bypass_rate": 0.1241
+    },
+    {
+      "round": 2,
+      "version": "81f5e4ec1b8ff3420419dfa65f6580306c9cebac",
+      "generator": "g0",
+      "valid": 3578,
+      "not_blocked": 641,
+      "allowed": 234,
+      "confirmed_equivalent": 0,
+      "unconfirmed": 0,
+      "success_rate": 0.1792,
+      "full_bypass_rate": 0.0654
+    },
+    {
+      "round": 2,
+      "version": "81f5e4ec1b8ff3420419dfa65f6580306c9cebac",
+      "generator": "g1",
+      "valid": 1046,
+      "not_blocked": 194,
+      "allowed": 135,
+      "confirmed_equivalent": 0,
+      "unconfirmed": 194,
+      "success_rate": 0.1855,
+      "full_bypass_rate": 0.1291
+    }
+  ],
+  "patch_cost": [
+    {
+      "round": 1,
+      "pr": "https://github.com/aionyx02/paste-warden/pull/48",
+      "rules_lines_changed": 36,
+      "corpus_cases_added": 10,
+      "heldout_p99_us": 581,
+      "blue_minutes": 16.1,
+      "blue_turns": 54,
+      "model": "opencode/deepseek-v4.1-flash-free",
+      "budget_us": 1000,
+      "within_budget": true
+    }
+  ],
+  "techniques": [
+    {
+      "version": "V1",
+      "technique": "absolute-path",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "alias-expansion",
+      "semantic": true,
+      "n": 5,
+      "blocked": 5,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "alias-full-cmd",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "alias-replace",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "alias-shortening",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "alias-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ansi-c-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "append-null",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "binary-alias-double-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "block-scope",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "casing",
+      "semantic": true,
+      "n": 3,
+      "blocked": 3,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "casing-params",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "char-code",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmd-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmd-start-min",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmd-suppress-output",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.caret",
+      "semantic": true,
+      "n": 21,
+      "blocked": 19,
+      "downgraded": 1,
+      "detection_rate": 0.9048,
+      "at_least_warn_rate": 0.9524
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.case",
+      "semantic": true,
+      "n": 30,
+      "blocked": 25,
+      "downgraded": 3,
+      "detection_rate": 0.8333,
+      "at_least_warn_rate": 0.9333
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.empty_quotes",
+      "semantic": true,
+      "n": 20,
+      "blocked": 18,
+      "downgraded": 1,
+      "detection_rate": 0.9,
+      "at_least_warn_rate": 0.95
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.set_indirection",
+      "semantic": true,
+      "n": 8,
+      "blocked": 8,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.substring",
+      "semantic": true,
+      "n": 24,
+      "blocked": 18,
+      "downgraded": 3,
+      "detection_rate": 0.75,
+      "at_least_warn_rate": 0.875
+    },
+    {
+      "version": "V1",
+      "technique": "cmd.wrap",
+      "semantic": true,
+      "n": 18,
+      "blocked": 16,
+      "downgraded": 2,
+      "detection_rate": 0.8889,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmdlet-alias",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmdlet-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "cmdlet-fullname",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "command-chain-noop",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "command-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "common.decoy_comment",
+      "semantic": true,
+      "n": 180,
+      "blocked": 157,
+      "downgraded": 15,
+      "detection_rate": 0.8722,
+      "at_least_warn_rate": 0.9556
+    },
+    {
+      "version": "V1",
+      "technique": "common.fullwidth",
+      "semantic": false,
+      "n": 98,
+      "blocked": 80,
+      "downgraded": 4,
+      "detection_rate": 0.8163,
+      "at_least_warn_rate": 0.8571
+    },
+    {
+      "version": "V1",
+      "technique": "common.homoglyph",
+      "semantic": false,
+      "n": 106,
+      "blocked": 40,
+      "downgraded": 63,
+      "detection_rate": 0.3774,
+      "at_least_warn_rate": 0.9717
+    },
+    {
+      "version": "V1",
+      "technique": "common.newline_split",
+      "semantic": true,
+      "n": 136,
+      "blocked": 110,
+      "downgraded": 16,
+      "detection_rate": 0.8088,
+      "at_least_warn_rate": 0.9265
+    },
+    {
+      "version": "V1",
+      "technique": "common.padding",
+      "semantic": true,
+      "n": 185,
+      "blocked": 152,
+      "downgraded": 19,
+      "detection_rate": 0.8216,
+      "at_least_warn_rate": 0.9243
+    },
+    {
+      "version": "V1",
+      "technique": "common.zero_width",
+      "semantic": false,
+      "n": 108,
+      "blocked": 97,
+      "downgraded": 9,
+      "detection_rate": 0.8981,
+      "at_least_warn_rate": 0.9815
+    },
+    {
+      "version": "V1",
+      "technique": "double-quote-path",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "echo-no-newline",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "empty-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "encoded-command",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "exec-prefix",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "expand-aliases",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "explicit-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "explicit-uri",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "extra-whitespace",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "flag-alternative-and-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "flag-expansion",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "flag-separation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "flag-shortening",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "full-cmdlet",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "full-cmdlet-names",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "full-flag-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "fully-qualified-type-and-explicit-invoca",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "inline-iex-pipeline",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "invocation-wrap",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "long-flag",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "long-flag-parens",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "long-flags",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "mshta-urlencode",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "object-instantiation",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "param-casing",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "parameter-casing",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "paren-wrapping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "parenthesis-grouping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "parenthesization",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "powershell-equiv",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "printf-base64-upper",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "process-substitution-to-command-substitu",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.alias",
+      "semantic": true,
+      "n": 21,
+      "blocked": 20,
+      "downgraded": 0,
+      "detection_rate": 0.9524,
+      "at_least_warn_rate": 0.9524
+    },
+    {
+      "version": "V1",
+      "technique": "ps.backtick",
+      "semantic": true,
+      "n": 93,
+      "blocked": 86,
+      "downgraded": 4,
+      "detection_rate": 0.9247,
+      "at_least_warn_rate": 0.9677
+    },
+    {
+      "version": "V1",
+      "technique": "ps.case",
+      "semantic": true,
+      "n": 60,
+      "blocked": 56,
+      "downgraded": 4,
+      "detection_rate": 0.9333,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.char",
+      "semantic": true,
+      "n": 30,
+      "blocked": 30,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.concat",
+      "semantic": true,
+      "n": 26,
+      "blocked": 25,
+      "downgraded": 1,
+      "detection_rate": 0.9615,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.encoded_command",
+      "semantic": true,
+      "n": 105,
+      "blocked": 105,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.format",
+      "semantic": true,
+      "n": 24,
+      "blocked": 22,
+      "downgraded": 1,
+      "detection_rate": 0.9167,
+      "at_least_warn_rate": 0.9583
+    },
+    {
+      "version": "V1",
+      "technique": "ps.param_abbrev",
+      "semantic": true,
+      "n": 34,
+      "blocked": 34,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "ps.reverse",
+      "semantic": true,
+      "n": 28,
+      "blocked": 24,
+      "downgraded": 1,
+      "detection_rate": 0.8571,
+      "at_least_warn_rate": 0.8929
+    },
+    {
+      "version": "V1",
+      "technique": "ps.var_indirection",
+      "semantic": true,
+      "n": 53,
+      "blocked": 48,
+      "downgraded": 1,
+      "detection_rate": 0.9057,
+      "at_least_warn_rate": 0.9245
+    },
+    {
+      "version": "V1",
+      "technique": "quote-spacing",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "quote-swap",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting-and-operator",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting-args",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting-backtick",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting-path",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "quoting-url",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "sh.ansi_c",
+      "semantic": true,
+      "n": 22,
+      "blocked": 11,
+      "downgraded": 1,
+      "detection_rate": 0.5,
+      "at_least_warn_rate": 0.5455
+    },
+    {
+      "version": "V1",
+      "technique": "sh.base64_pipe",
+      "semantic": true,
+      "n": 26,
+      "blocked": 26,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "sh.eval",
+      "semantic": true,
+      "n": 20,
+      "blocked": 15,
+      "downgraded": 1,
+      "detection_rate": 0.75,
+      "at_least_warn_rate": 0.8
+    },
+    {
+      "version": "V1",
+      "technique": "sh.ifs",
+      "semantic": true,
+      "n": 25,
+      "blocked": 13,
+      "downgraded": 4,
+      "detection_rate": 0.52,
+      "at_least_warn_rate": 0.68
+    },
+    {
+      "version": "V1",
+      "technique": "sh.quote_split",
+      "semantic": true,
+      "n": 21,
+      "blocked": 10,
+      "downgraded": 1,
+      "detection_rate": 0.4762,
+      "at_least_warn_rate": 0.5238
+    },
+    {
+      "version": "V1",
+      "technique": "sh.var_indirection",
+      "semantic": true,
+      "n": 18,
+      "blocked": 6,
+      "downgraded": 3,
+      "detection_rate": 0.3333,
+      "at_least_warn_rate": 0.5
+    },
+    {
+      "version": "V1",
+      "technique": "short-flags",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "short-option-slash-strip-extension",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-amp",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-quote-cmd",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-quote-cmd-arg",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-quote-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-quote-wrapping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "single-quotes-and-logical-and",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "start-verb",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "string-concat",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "string-interpolation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "string-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "string-split-variable",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "subexpression-with-double-quotes",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "switch-casing-caret-escape",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "uppercase-binary-and-long-flag",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "url-encoding",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "var-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-alias",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-assignment",
+      "semantic": true,
+      "n": 3,
+      "blocked": 3,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-elimination",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-indirect",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-intermediate",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-interpolation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-invocation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "variable-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "webclient-equiv",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "webclient-instead-of-iwr",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "whitespace-injection",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V1",
+      "technique": "whitespace-padding",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "whitespace-removal",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "whitespace-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V1",
+      "technique": "zero-width-removal",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "absolute-path",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "alias-expansion",
+      "semantic": true,
+      "n": 5,
+      "blocked": 5,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "alias-full-cmd",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "alias-replace",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "alias-shortening",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "alias-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ansi-c-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "append-null",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "binary-alias-double-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "block-scope",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "casing",
+      "semantic": true,
+      "n": 3,
+      "blocked": 3,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "casing-params",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "char-code",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmd-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmd-start-min",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmd-suppress-output",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.caret",
+      "semantic": true,
+      "n": 21,
+      "blocked": 19,
+      "downgraded": 1,
+      "detection_rate": 0.9048,
+      "at_least_warn_rate": 0.9524
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.case",
+      "semantic": true,
+      "n": 30,
+      "blocked": 25,
+      "downgraded": 3,
+      "detection_rate": 0.8333,
+      "at_least_warn_rate": 0.9333
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.empty_quotes",
+      "semantic": true,
+      "n": 20,
+      "blocked": 18,
+      "downgraded": 1,
+      "detection_rate": 0.9,
+      "at_least_warn_rate": 0.95
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.set_indirection",
+      "semantic": true,
+      "n": 8,
+      "blocked": 8,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.substring",
+      "semantic": true,
+      "n": 24,
+      "blocked": 18,
+      "downgraded": 3,
+      "detection_rate": 0.75,
+      "at_least_warn_rate": 0.875
+    },
+    {
+      "version": "V2",
+      "technique": "cmd.wrap",
+      "semantic": true,
+      "n": 18,
+      "blocked": 16,
+      "downgraded": 2,
+      "detection_rate": 0.8889,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmdlet-alias",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmdlet-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "cmdlet-fullname",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "command-chain-noop",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "command-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "common.decoy_comment",
+      "semantic": true,
+      "n": 180,
+      "blocked": 157,
+      "downgraded": 15,
+      "detection_rate": 0.8722,
+      "at_least_warn_rate": 0.9556
+    },
+    {
+      "version": "V2",
+      "technique": "common.fullwidth",
+      "semantic": false,
+      "n": 98,
+      "blocked": 80,
+      "downgraded": 4,
+      "detection_rate": 0.8163,
+      "at_least_warn_rate": 0.8571
+    },
+    {
+      "version": "V2",
+      "technique": "common.homoglyph",
+      "semantic": false,
+      "n": 106,
+      "blocked": 40,
+      "downgraded": 63,
+      "detection_rate": 0.3774,
+      "at_least_warn_rate": 0.9717
+    },
+    {
+      "version": "V2",
+      "technique": "common.newline_split",
+      "semantic": true,
+      "n": 136,
+      "blocked": 110,
+      "downgraded": 16,
+      "detection_rate": 0.8088,
+      "at_least_warn_rate": 0.9265
+    },
+    {
+      "version": "V2",
+      "technique": "common.padding",
+      "semantic": true,
+      "n": 185,
+      "blocked": 152,
+      "downgraded": 19,
+      "detection_rate": 0.8216,
+      "at_least_warn_rate": 0.9243
+    },
+    {
+      "version": "V2",
+      "technique": "common.zero_width",
+      "semantic": false,
+      "n": 108,
+      "blocked": 97,
+      "downgraded": 9,
+      "detection_rate": 0.8981,
+      "at_least_warn_rate": 0.9815
+    },
+    {
+      "version": "V2",
+      "technique": "double-quote-path",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "echo-no-newline",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "empty-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "encoded-command",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "exec-prefix",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "expand-aliases",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "explicit-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "explicit-uri",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "extra-whitespace",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "flag-alternative-and-quote",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "flag-expansion",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "flag-separation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "flag-shortening",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "full-cmdlet",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "full-cmdlet-names",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "full-flag-quoting",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "fully-qualified-type-and-explicit-invoca",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "inline-iex-pipeline",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "invocation-wrap",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "long-flag",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "long-flag-parens",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "long-flags",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "mshta-urlencode",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "object-instantiation",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "param-casing",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "parameter-casing",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "paren-wrapping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "parenthesis-grouping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "parenthesization",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "powershell-equiv",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "printf-base64-upper",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "process-substitution-to-command-substitu",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.alias",
+      "semantic": true,
+      "n": 21,
+      "blocked": 20,
+      "downgraded": 0,
+      "detection_rate": 0.9524,
+      "at_least_warn_rate": 0.9524
+    },
+    {
+      "version": "V2",
+      "technique": "ps.backtick",
+      "semantic": true,
+      "n": 93,
+      "blocked": 86,
+      "downgraded": 4,
+      "detection_rate": 0.9247,
+      "at_least_warn_rate": 0.9677
+    },
+    {
+      "version": "V2",
+      "technique": "ps.case",
+      "semantic": true,
+      "n": 60,
+      "blocked": 56,
+      "downgraded": 4,
+      "detection_rate": 0.9333,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.char",
+      "semantic": true,
+      "n": 30,
+      "blocked": 30,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.concat",
+      "semantic": true,
+      "n": 26,
+      "blocked": 25,
+      "downgraded": 1,
+      "detection_rate": 0.9615,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.encoded_command",
+      "semantic": true,
+      "n": 105,
+      "blocked": 105,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.format",
+      "semantic": true,
+      "n": 24,
+      "blocked": 22,
+      "downgraded": 1,
+      "detection_rate": 0.9167,
+      "at_least_warn_rate": 0.9583
+    },
+    {
+      "version": "V2",
+      "technique": "ps.param_abbrev",
+      "semantic": true,
+      "n": 34,
+      "blocked": 34,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "ps.reverse",
+      "semantic": true,
+      "n": 28,
+      "blocked": 24,
+      "downgraded": 1,
+      "detection_rate": 0.8571,
+      "at_least_warn_rate": 0.8929
+    },
+    {
+      "version": "V2",
+      "technique": "ps.var_indirection",
+      "semantic": true,
+      "n": 53,
+      "blocked": 48,
+      "downgraded": 1,
+      "detection_rate": 0.9057,
+      "at_least_warn_rate": 0.9245
+    },
+    {
+      "version": "V2",
+      "technique": "quote-spacing",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "quote-swap",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting-and-operator",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting-args",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting-backtick",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting-path",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "quoting-url",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "sh.ansi_c",
+      "semantic": true,
+      "n": 22,
+      "blocked": 11,
+      "downgraded": 1,
+      "detection_rate": 0.5,
+      "at_least_warn_rate": 0.5455
+    },
+    {
+      "version": "V2",
+      "technique": "sh.base64_pipe",
+      "semantic": true,
+      "n": 26,
+      "blocked": 26,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "sh.eval",
+      "semantic": true,
+      "n": 20,
+      "blocked": 15,
+      "downgraded": 1,
+      "detection_rate": 0.75,
+      "at_least_warn_rate": 0.8
+    },
+    {
+      "version": "V2",
+      "technique": "sh.ifs",
+      "semantic": true,
+      "n": 25,
+      "blocked": 13,
+      "downgraded": 4,
+      "detection_rate": 0.52,
+      "at_least_warn_rate": 0.68
+    },
+    {
+      "version": "V2",
+      "technique": "sh.quote_split",
+      "semantic": true,
+      "n": 21,
+      "blocked": 10,
+      "downgraded": 1,
+      "detection_rate": 0.4762,
+      "at_least_warn_rate": 0.5238
+    },
+    {
+      "version": "V2",
+      "technique": "sh.var_indirection",
+      "semantic": true,
+      "n": 18,
+      "blocked": 6,
+      "downgraded": 3,
+      "detection_rate": 0.3333,
+      "at_least_warn_rate": 0.5
+    },
+    {
+      "version": "V2",
+      "technique": "short-flags",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "short-option-slash-strip-extension",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-amp",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-quote-cmd",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 1,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-quote-cmd-arg",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-quote-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-quote-wrapping",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "single-quotes-and-logical-and",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "start-verb",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "string-concat",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "string-interpolation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "string-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "string-split-variable",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "subexpression-with-double-quotes",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "switch-casing-caret-escape",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "uppercase-binary-and-long-flag",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "url-encoding",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "var-expansion",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-alias",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-assignment",
+      "semantic": true,
+      "n": 3,
+      "blocked": 3,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-elimination",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-indirect",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-intermediate",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-interpolation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-invocation",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "variable-substitution",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "webclient-equiv",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "webclient-instead-of-iwr",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "whitespace-injection",
+      "semantic": true,
+      "n": 1,
+      "blocked": 0,
+      "downgraded": 0,
+      "detection_rate": 0.0,
+      "at_least_warn_rate": 0.0
+    },
+    {
+      "version": "V2",
+      "technique": "whitespace-padding",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "whitespace-removal",
+      "semantic": true,
+      "n": 2,
+      "blocked": 2,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "whitespace-split",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    },
+    {
+      "version": "V2",
+      "technique": "zero-width-removal",
+      "semantic": true,
+      "n": 1,
+      "blocked": 1,
+      "downgraded": 0,
+      "detection_rate": 1.0,
+      "at_least_warn_rate": 1.0
+    }
+  ],
+  "validity": [
+    {
+      "generator": "g0",
+      "total": 8103,
+      "statuses": {
+        "invalid": 163,
+        "not_validated": 783,
+        "ok": 7014,
+        "unchecked": 143
+      },
+      "valid": 7940,
+      "valid_rate": 0.9799
+    },
+    {
+      "generator": "g1",
+      "total": 2153,
+      "statuses": {
+        "not_validated": 114,
+        "ok": 2039
+      },
+      "valid": 2153,
+      "valid_rate": 1.0
+    },
+    {
+      "generator": "seed",
+      "total": 40,
+      "statuses": {
+        "not_validated": 40
+      },
+      "valid": 40,
+      "valid_rate": 1.0
+    }
+  ],
+  "generation": [],
+  "latency": [
+    {
+      "version": "V1",
+      "n": 937,
+      "p50_us": 78,
+      "p99_us": 10844,
+      "max_us": 42678
+    },
+    {
+      "version": "V2",
+      "n": 937,
+      "p50_us": 78,
+      "p99_us": 10417,
+      "max_us": 45078
+    }
+  ],
+  "notes": []
+}

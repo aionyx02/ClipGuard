@@ -33,3 +33,7 @@ __pycache__/
 /fuzz/corpus/
 /fuzz/artifacts/
 /fuzz/coverage/
+
+# red team (phase-5.md §5.3.4): run stores hold payloads, never commit them
+/redteam/runs/
+/redteam/.cache/

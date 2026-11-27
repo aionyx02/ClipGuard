@@ -43,6 +43,12 @@ pub enum Command {
         /// PII packs, comma separated (e.g. tw,us). Default: universal + tw.
         #[arg(long, value_delimiter = ',')]
         packs: Vec<String>,
+        /// Add a Tier 2 LLM explanation (off unless llm.toml says `enabled = true`).
+        #[arg(long)]
+        llm: bool,
+        /// LLM config (default: ~/.config/paste-warden/llm.toml; Windows: %APPDATA%\PasteWarden\llm.toml).
+        #[arg(long, requires = "llm")]
+        llm_config: Option<PathBuf>,
     },
     /// Print the text with every detected secret masked.
     Mask {
@@ -58,12 +64,20 @@ pub enum Command {
     },
     /// Read-only stdio MCP server (analysis and explanation).
     Mcp {
-        /// Tool profile. Only `guard` exists before Phase 5.
+        /// Tool profile: `guard` (default) or `redteam` (adds run_benchmark, validate_syntax).
         #[arg(long, value_enum, default_value_t = Profile::Guard)]
         profile: Profile,
         /// Print the config snippet that registers this server with an agent, then exit.
         #[arg(long, value_enum)]
         print_config: Option<Agent>,
+        /// Syntax validator for the redteam `validate_syntax` tool (JSONL over stdin).
+        #[arg(long, default_value = crate::mcp_redteam::DEFAULT_VALIDATOR_CMD)]
+        validator_cmd: String,
+    },
+    /// Tier 2 LLM explanations (off by default).
+    Llm {
+        #[command(subcommand)]
+        command: LlmCommand,
     },
     /// Evaluate a JSONL file of {"id", "text"} lines; prints one JSON result per
     /// line and a final {"summary": …} line.
@@ -71,6 +85,16 @@ pub enum Command {
         file: PathBuf,
         #[arg(long, value_delimiter = ',')]
         packs: Vec<String>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum LlmCommand {
+    /// Send a built-in harmless sample to the configured endpoint and check the
+    /// JSON answer. Exit code 0 on success, 3 otherwise.
+    Check {
+        #[arg(long)]
+        llm_config: Option<PathBuf>,
     },
 }
 
@@ -163,7 +187,13 @@ pub fn run(cli: Cli) -> u8 {
         .map_or_else(process_locale, parse_locale);
     let l10n = Localizer::new(locale);
     match cli.command {
-        Command::Scan { file, json, packs } => {
+        Command::Scan {
+            file,
+            json,
+            packs,
+            llm,
+            llm_config,
+        } => {
             let text = match scan::read_input(file.as_deref(), &l10n) {
                 Ok(t) => t,
                 Err(e) => {
@@ -171,15 +201,32 @@ pub fn run(cli: Cli) -> u8 {
                     return EXIT_ERROR;
                 }
             };
-            let report = scan::engine(&packs).analyze(&text, &Context::default());
-            let rj = ReportJson::new(&report, &text, &l10n);
+            let engine = scan::engine(&packs);
+            let mut report = engine.analyze(&text, &Context::default());
+            let mut rj = ReportJson::new(&report, &text, &l10n);
+            if llm {
+                match crate::llm::scan(&text, &report, &engine, llm_config.as_deref(), &l10n) {
+                    Ok(x) => {
+                        // Guardrail ④: the action is only ever raised.
+                        report.action =
+                            paste_warden_llm::merge_action(report.action, Some(x.level));
+                        rj.action = report.action.into();
+                        rj.llm = Some(x.json);
+                    }
+                    Err(notice) => err(&notice),
+                }
+            }
             if json {
                 out(&serde_json::to_string_pretty(&rj).unwrap_or_default());
             } else {
                 let colors = Colors {
                     on: std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none(),
                 };
-                out(&scan::render_human(&rj, &report, &l10n, colors));
+                let mut human = scan::render_human(&rj, &report, &l10n, colors);
+                if let Some(j) = &rj.llm {
+                    human.push_str(&crate::llm::render_human(j, &l10n));
+                }
+                out(&human);
             }
             scan::exit_code(report.action)
         }
@@ -212,20 +259,31 @@ pub fn run(cli: Cli) -> u8 {
             out(&lines.join("\n"));
             0
         }
+        Command::Llm {
+            command: LlmCommand::Check { llm_config },
+        } => {
+            let (line, ok) = crate::llm::check(llm_config.as_deref(), &l10n);
+            if ok {
+                out(&line);
+                0
+            } else {
+                err(&line);
+                EXIT_ERROR
+            }
+        }
         Command::Mcp {
             profile,
             print_config,
+            validator_cmd,
         } => {
-            if profile == Profile::Redteam {
-                err(&t(&l10n, "cli-mcp-redteam-later", &[]));
-                return EXIT_ERROR;
-            }
             if let Some(agent) = print_config {
                 let exe = install::exe_path().unwrap_or_else(|_| "paste-warden".into());
                 out(&mcp::print_config(agent, &exe));
                 return 0;
             }
-            match mcp::serve(locale) {
+            let redteam = (profile == Profile::Redteam)
+                .then(|| crate::mcp_redteam::RedteamConfig::new(Some(&validator_cmd)));
+            match mcp::serve(locale, redteam) {
                 Ok(()) => 0,
                 Err(e) => {
                     err(&format!("paste-warden mcp: {e}"));

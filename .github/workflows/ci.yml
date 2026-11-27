@@ -61,10 +61,53 @@ jobs:
           PW_PERF_SLACK: "2"   # fail only beyond 2x the budget (phase-1.md §1.6)
         run: cargo test --release --locked -p paste-warden-core -- --include-ignored --test-threads=1
 
+  redteam:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: redteam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run black --check .
+      - run: uv run pytest -q
+
+  # phase-5.md §5.6: an HTTP client may only appear in crates/llm.
+  no-http-in-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain || rustup toolchain install
+      - name: core, rules and wasm have no HTTP client
+        run: |
+          for p in paste-warden-core paste-warden-rules paste-warden-wasm; do
+            if cargo tree --locked -p "$p" -e normal --prefix none | grep -E '^(ureq|reqwest|hyper|isahc|curl) '; then
+              echo "::error::$p depends on an HTTP client"; exit 1
+            fi
+          done
+
+  # phase-5.md §5.5.3: blue-team branches may only touch rules and corpus.
+  redteam-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: redteam/* branches only change rules/ and corpus/
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'redteam/')
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bad=$(git diff --name-only "$BASE...$HEAD" | grep -vE '^(rules/|corpus/(cases|benign|divergences)/)' || true)
+          if [ -n "$bad" ]; then echo "::error::paths outside rules/ and corpus/:"; echo "$bad"; exit 1; fi
+
   # Stable name for the branch ruleset's required check: passes only when every job above passes.
   build-test:
     if: always()
-    needs: [rust, wasm, corpus, perf]
+    needs: [rust, wasm, corpus, perf, redteam, no-http-in-core, redteam-paths]
     runs-on: ubuntu-latest
     steps:
       - name: all CI jobs passed

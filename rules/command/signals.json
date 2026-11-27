@@ -1,0 +1,38 @@
+{
+  "format": 1,
+  "_comment": "Data-driven command signals (docs/spec/detection-rules.md §3.7). Each entry adds an execution or scam signal, matched like the built-in ones on the normalized text and on every deobfuscation layer. Patterns: Rust regex, matched with (?im); at most 512 chars, 200 entries. `reason` must be an existing reason id (execution ones for `execution`, scam ones for `scam`). Entries can only make verdicts stricter. Every entry needs must-match and must-not-match corpus cases.",
+  "execution": [
+    {
+      "id": "data-exec-001",
+      "pattern": "&\\s*\\(\\s*['\"]?mshta['\"]?\\s*\\)",
+      "reason": "cmd-reason-mshta"
+    },
+    {
+      "id": "data-exec-002",
+      "pattern": "@\\(\\s*['\"]?-windowstyle['\"]?\\s*,\\s*['\"]?(?:1|hidden)['\"]?[\\s\\S]{0,120}?&\\s*['\"]?powershell(?:\\.exe)?['\"]?\\s+@",
+      "reason": "cmd-reason-powershell"
+    },
+    {
+      "id": "data-exec-003",
+      "pattern": "\\[(?:system\\.)?reflection\\.assembly\\]::load\\s*\\([\\s\\S]{0,200}?(?:downloaddata|downloadstring)",
+      "reason": "cmd-reason-download-exec"
+    }
+  ],
+  "scam": [
+    {
+      "id": "data-scam-001",
+      "pattern": "&\\s*\\(\\s*['\"]?mshta['\"]?\\s*\\)\\s+https?://",
+      "reason": "cmd-reason-mshta-remote"
+    },
+    {
+      "id": "data-scam-002",
+      "pattern": "-windowstyle['\"]?\\s*,\\s*['\"]?(?:1|hidden)\\b",
+      "reason": "cmd-reason-hidden-window"
+    },
+    {
+      "id": "data-scam-003",
+      "pattern": "\\[(?:system\\.)?reflection\\.assembly\\]::load\\s*\\([\\s\\S]{0,200}?(?:downloaddata|downloadstring)",
+      "reason": "cmd-reason-encoded"
+    }
+  ]
+}

@@ -55,4 +55,3 @@ cli-uninstall-none = 沒有找到 PasteWarden 的設定：{ $path }
 ## MCP
 
 cli-mcp-too-long = 輸入太長：上限是 1,048,576 個字元。
-cli-mcp-redteam-later = redteam profile 會在 Phase 5 加入，目前只有 guard。

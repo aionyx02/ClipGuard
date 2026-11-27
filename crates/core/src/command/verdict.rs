@@ -92,6 +92,68 @@ const SCAM_SIGNALS: [Signal; 13] = [
     (signals::msiexec_quiet, "cmd-reason-msiexec-quiet"),
 ];
 
+/// A compiled data signal (§3.7): the regex and the (static) reason it adds.
+type DataSignal = (regex::Regex, &'static str);
+
+/// The static id in `known` equal to `reason`, if any.
+fn known_reason(known: &[&'static str], reason: &str) -> Option<&'static str> {
+    known.iter().copied().find(|k| *k == reason)
+}
+
+fn compile_data(
+    list: &[paste_warden_rules::command::DataSignal],
+    known: &[&'static str],
+) -> Vec<DataSignal> {
+    list.iter()
+        .filter_map(|s| Some((s.compile()?, known_reason(known, &s.reason)?)))
+        .collect()
+}
+
+/// Execution reasons a data signal may use.
+fn execution_reason_ids() -> Vec<&'static str> {
+    let mut ids: Vec<&'static str> = EXECUTION_SIGNALS.iter().map(|(_, id)| *id).collect();
+    ids.extend([REASON_DOWNLOAD_EXEC, REASON_NET_USE]);
+    ids
+}
+
+/// Scam reasons a data signal may use.
+fn scam_reason_ids() -> Vec<&'static str> {
+    let mut ids: Vec<&'static str> = SCAM_SIGNALS.iter().map(|(_, id)| *id).collect();
+    ids.push(REASON_UNOFFICIAL_SOURCE);
+    ids
+}
+
+/// `rules/command/signals.json` execution entries (§3.7). Entries with an
+/// unknown reason are dropped (`tests::data_signals_are_all_used` fails on them).
+fn data_execution() -> &'static [DataSignal] {
+    static DATA: std::sync::OnceLock<Vec<DataSignal>> = std::sync::OnceLock::new();
+    DATA.get_or_init(|| {
+        compile_data(
+            &paste_warden_rules::command::CommandRules::embedded().signals_execution,
+            &execution_reason_ids(),
+        )
+    })
+}
+
+/// `rules/command/signals.json` scam entries (§3.7).
+fn data_scam() -> &'static [DataSignal] {
+    static DATA: std::sync::OnceLock<Vec<DataSignal>> = std::sync::OnceLock::new();
+    DATA.get_or_init(|| {
+        compile_data(
+            &paste_warden_rules::command::CommandRules::embedded().signals_scam,
+            &scam_reason_ids(),
+        )
+    })
+}
+
+fn push_data(out: &mut Vec<Message>, data: &[DataSignal], text: &str) {
+    for (re, id) in data {
+        if !out.iter().any(|m| m.id == *id) && re.is_match(text) {
+            out.push(Message::new(id));
+        }
+    }
+}
+
 /// Is `id` an execution-signal reason?
 pub(crate) fn is_execution_id(id: &str) -> bool {
     id == REASON_DOWNLOAD_EXEC
@@ -255,6 +317,7 @@ fn matches(rules: &[Signal], text: &str) -> Vec<Message> {
 /// installer lists may lower download-and-execute to Suspicious.
 fn evaluate(text: &str, allow_official: bool) -> Verdict {
     let mut execution = matches(&EXECUTION_SIGNALS, text);
+    push_data(&mut execution, data_execution(), text);
     if signals::net_use_then_run(text) {
         execution.push(Message::new(REASON_NET_USE));
     }
@@ -269,6 +332,7 @@ fn evaluate(text: &str, allow_official: bool) -> Verdict {
     }
 
     let mut scam = matches(&SCAM_SIGNALS, text);
+    push_data(&mut scam, data_scam(), text);
     if download_exec && !(allow_official && download_exec::is_from_official_source(text)) {
         scam.push(Message::new(REASON_UNOFFICIAL_SOURCE));
     }
@@ -349,6 +413,41 @@ fn analyze_segment(raw: &str, collect: bool) -> Analysis {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn data_signals_are_all_used() {
+        let rules = paste_warden_rules::command::CommandRules::embedded();
+        assert!(rules.validate().is_empty(), "{:?}", rules.validate());
+        assert_eq!(data_execution().len(), rules.signals_execution.len());
+        assert_eq!(data_scam().len(), rules.signals_scam.len());
+    }
+
+    #[test]
+    fn data_signals_only_use_known_reasons() {
+        let sig = |pattern: &str, reason: &str| paste_warden_rules::command::DataSignal {
+            id: "t".into(),
+            pattern: pattern.into(),
+            reason: reason.into(),
+        };
+        let exec = compile_data(
+            &[
+                sig(r"\bfoo-run\b", "cmd-reason-powershell"),
+                sig(r"bar", "cmd-reason-made-up!"),
+                sig(r"baz", "cmd-reason-encoded"),
+            ],
+            &execution_reason_ids(),
+        );
+        assert_eq!(exec.len(), 1);
+        let mut out = Vec::new();
+        push_data(&mut out, &exec, "FOO-RUN now");
+        assert_eq!(out, vec![Message::new("cmd-reason-powershell")]);
+        // Never duplicates a reason a built-in signal already gave.
+        push_data(&mut out, &exec, "foo-run");
+        assert_eq!(out.len(), 1);
+        let scam = compile_data(&[sig("x", "cmd-reason-encoded")], &scam_reason_ids());
+        assert_eq!(scam.len(), 1);
+        assert!(is_strong_id(scam[0].1));
+    }
 
     #[test]
     fn collapse_keeps_newlines_and_short_runs() {

@@ -1,0 +1,202 @@
+{"type":"benign","id":"benign-extra.powershell.001","tags":["powershell"],"parts":["Get-Se","rvice ","| Wher","e-Obje","ct {$_",".Statu","s -eq ","\"Runni","ng\"}"]}
+{"type":"benign","id":"benign-extra.powershell.002","tags":["powershell"],"parts":["Get-Ch","ildIte","m -Pat","h C:\\U","sers -","Recurs","e -Fil","ter *.","log | ","Remove","-Item ","-WhatI","f"]}
+{"type":"benign","id":"benign-extra.powershell.003","tags":["powershell"],"parts":["Get-Ev","entLog"," -LogN","ame Sy","stem -","Newest"," 20"]}
+{"type":"benign","id":"benign-extra.powershell.004","tags":["powershell"],"parts":["Get-Wi","nEvent"," -LogN","ame Ap","plicat","ion -M","axEven","ts 50 ","| Form","at-Tab","le -Au","toSize"]}
+{"type":"benign","id":"benign-extra.powershell.005","tags":["powershell"],"parts":["Test-N","etConn","ection"," -Comp","uterNa","me exa","mple.i","nvalid"," -Port"," 443"]}
+{"type":"benign","id":"benign-extra.powershell.006","tags":["powershell"],"parts":["Restar","t-Serv","ice -N","ame Sp","ooler"]}
+{"type":"benign","id":"benign-extra.powershell.007","tags":["powershell"],"parts":["Stop-P","rocess"," -Name"," notep","ad -Fo","rce"]}
+{"type":"benign","id":"benign-extra.powershell.008","tags":["powershell"],"parts":["Set-Ex","ecutio","nPolic","y -Sco","pe Cur","rentUs","er -Ex","ecutio","nPolic","y Remo","teSign","ed"]}
+{"type":"benign","id":"benign-extra.powershell.009","tags":["powershell"],"parts":["Update","-Help ","-UICul","ture e","n-US -","ErrorA","ction ","Silent","lyCont","inue"]}
+{"type":"benign","id":"benign-extra.powershell.010","tags":["powershell"],"parts":["Get-He","lp Get","-Proce","ss -Ex","amples"]}
+{"type":"benign","id":"benign-extra.powershell.011","tags":["powershell"],"parts":["Get-It","emProp","erty H","KLM:\\S","oftwar","e\\Micr","osoft\\","Window","s\\Curr","entVer","sion\\U","ninsta","ll\\* |"," Selec","t-Obje","ct Dis","playNa","me, Di","splayV","ersion"]}
+{"type":"benign","id":"benign-extra.powershell.012","tags":["powershell"],"parts":["New-It","em -It","emType"," Direc","tory -","Path .","\\build"," -Forc","e"]}
+{"type":"benign","id":"benign-extra.powershell.013","tags":["powershell"],"parts":["Copy-I","tem .\\","config",".sampl","e.json"," .\\con","fig.js","on"]}
+{"type":"benign","id":"benign-extra.powershell.014","tags":["powershell"],"parts":["Compre","ss-Arc","hive -","Path .","\\dist\\","* -Des","tinati","onPath"," .\\rel","ease.z","ip"]}
+{"type":"benign","id":"benign-extra.powershell.015","tags":["powershell"],"parts":["Expand","-Archi","ve -Pa","th .\\r","elease",".zip -","Destin","ationP","ath .\\","out"]}
+{"type":"benign","id":"benign-extra.powershell.016","tags":["powershell"],"parts":["Select","-Strin","g -Pat","h .\\*.","cs -Pa","ttern ","\"TODO\""]}
+{"type":"benign","id":"benign-extra.powershell.017","tags":["powershell"],"parts":["$env:P","ATH -s","plit \"",";\""]}
+{"type":"benign","id":"benign-extra.powershell.018","tags":["powershell"],"parts":["[Envir","onment","]::Get","Enviro","nmentV","ariabl","e(\"JAV","A_HOME","\", \"Us","er\")"]}
+{"type":"benign","id":"benign-extra.powershell.019","tags":["powershell"],"parts":["Get-Ci","mInsta","nce Wi","n32_Op","eratin","gSyste","m | Se","lect-O","bject ","Captio","n, Ver","sion"]}
+{"type":"benign","id":"benign-extra.powershell.020","tags":["powershell"],"parts":["Get-PS","Drive ","-PSPro","vider ","FileSy","stem"]}
+{"type":"benign","id":"benign-extra.powershell.021","tags":["powershell"],"parts":["Get-Di","sk | G","et-Par","tition"]}
+{"type":"benign","id":"benign-extra.powershell.022","tags":["powershell"],"parts":["Clear-","Recycl","eBin -","Force"]}
+{"type":"benign","id":"benign-extra.powershell.023","tags":["powershell"],"parts":["Get-Ap","pxPack","age *c","alcula","tor*"]}
+{"type":"benign","id":"benign-extra.powershell.024","tags":["powershell"],"parts":["wsl --","instal","l -d U","buntu"]}
+{"type":"benign","id":"benign-extra.powershell.025","tags":["powershell"],"parts":["Invoke","-RestM","ethod ","-Uri h","ttps:/","/api.g","ithub.","com/re","pos/ru","st-lan","g/rust","/relea","ses/la","test |"," Selec","t-Obje","ct tag","_name"]}
+{"type":"benign","id":"benign-extra.powershell.026","tags":["powershell"],"parts":["Invoke","-WebRe","quest ","-Uri h","ttps:/","/www.p","ython.","org/ft","p/pyth","on/3.1","3.1/py","thon-3",".13.1-","amd64.","exe -O","utFile"," pytho","n-inst","aller.","exe"]}
+{"type":"benign","id":"benign-extra.powershell.027","tags":["powershell"],"parts":["Start-","Proces","s -Fil","ePath ",".\\pyth","on-ins","taller",".exe -","Argume","ntList"," \"/qui","et Ins","tallAl","lUsers","=0\" -W","ait"]}
+{"type":"benign","id":"benign-extra.powershell.028","tags":["powershell"],"parts":["Get-Lo","calUse","r"]}
+{"type":"benign","id":"benign-extra.powershell.029","tags":["powershell"],"parts":["Get-Sc","hedule","dTask ","| Wher","e-Obje","ct Sta","te -eq"," Ready"," | Sel","ect-Ob","ject T","askNam","e"]}
+{"type":"benign","id":"benign-extra.powershell.030","tags":["powershell"],"parts":["Get-Co","ntent ",".\\data",".csv |"," Conve","rtFrom","-Csv |"," Forma","t-Tabl","e"]}
+{"type":"benign","id":"benign-extra.powershell.031","tags":["powershell"],"parts":["Import","-Csv .","\\users",".csv |"," Expor","t-Csv ",".\\user","s-copy",".csv -","NoType","Inform","ation"]}
+{"type":"benign","id":"benign-extra.powershell.032","tags":["powershell"],"parts":["Conver","tTo-Js","on @{n","ame=\"d","emo\"; ","versio","n=1}"]}
+{"type":"benign","id":"benign-extra.powershell.033","tags":["powershell"],"parts":["(Get-C","ontent"," .\\set","tings.","json |"," Conve","rtFrom","-Json)",".versi","on"]}
+{"type":"benign","id":"benign-extra.powershell.034","tags":["powershell"],"parts":["Get-Da","te -Fo","rmat \"","yyyy-M","M-dd H","H:mm:s","s\""]}
+{"type":"benign","id":"benign-extra.powershell.035","tags":["powershell"],"parts":["Write-","Host \"","Build ","finish","ed\" -F","oregro","undCol","or Gre","en"]}
+{"type":"benign","id":"benign-extra.powershell.036","tags":["powershell"],"parts":["Rename","-Item ",".\\old.","txt ne","w.txt"]}
+{"type":"benign","id":"benign-extra.powershell.037","tags":["powershell"],"parts":["Get-Ac","l .\\se","cret.t","xt | F","ormat-","List"]}
+{"type":"benign","id":"benign-extra.powershell.038","tags":["powershell"],"parts":["Get-Ho","tfix |"," Sort-","Object"," Insta","lledOn"," -Desc","ending"," | Sel","ect-Ob","ject -","First ","5"]}
+{"type":"benign","id":"benign-extra.pkg.001","tags":["pkg"],"parts":["winget"," insta","ll Mic","rosoft",".Power","Toys"]}
+{"type":"benign","id":"benign-extra.pkg.002","tags":["pkg"],"parts":["winget"," insta","ll --i","d Micr","osoft.","Visual","Studio","Code"]}
+{"type":"benign","id":"benign-extra.pkg.003","tags":["pkg"],"parts":["winget"," searc","h pyth","on"]}
+{"type":"benign","id":"benign-extra.pkg.004","tags":["pkg"],"parts":["winget"," list ","--upgr","ade-av","ailabl","e"]}
+{"type":"benign","id":"benign-extra.pkg.005","tags":["pkg"],"parts":["scoop ","instal","l git ","nodejs"]}
+{"type":"benign","id":"benign-extra.pkg.006","tags":["pkg"],"parts":["scoop ","update"," *"]}
+{"type":"benign","id":"benign-extra.pkg.007","tags":["pkg"],"parts":["choco ","instal","l 7zip"," -y"]}
+{"type":"benign","id":"benign-extra.pkg.008","tags":["pkg"],"parts":["choco ","list -","-local","-only"]}
+{"type":"benign","id":"benign-extra.pkg.009","tags":["pkg"],"parts":["irm ge","t.scoo","p.sh |"," iex"]}
+{"type":"benign","id":"benign-extra.cmd.001","tags":["cmd"],"parts":["ping -","n 4 ex","ample.","invali","d"]}
+{"type":"benign","id":"benign-extra.cmd.002","tags":["cmd"],"parts":["netsta","t -ano"," | fin","dstr :","8080"]}
+{"type":"benign","id":"benign-extra.cmd.003","tags":["cmd"],"parts":["taskli","st /fi"," \"imag","ename ","eq chr","ome.ex","e\""]}
+{"type":"benign","id":"benign-extra.cmd.004","tags":["cmd"],"parts":["taskki","ll /im"," notep","ad.exe"," /f"]}
+{"type":"benign","id":"benign-extra.cmd.005","tags":["cmd"],"parts":["chkdsk"," C: /s","can"]}
+{"type":"benign","id":"benign-extra.cmd.006","tags":["cmd"],"parts":["dir /s"," /b *.","log"]}
+{"type":"benign","id":"benign-extra.cmd.007","tags":["cmd"],"parts":["roboco","py C:\\","src D:","\\backu","p /MIR"," /R:2 ","/W:5"]}
+{"type":"benign","id":"benign-extra.cmd.008","tags":["cmd"],"parts":["xcopy ",".\\asse","ts .\\d","ist\\as","sets /","E /I /","Y"]}
+{"type":"benign","id":"benign-extra.cmd.009","tags":["cmd"],"parts":["del /q"," /s *.","tmp"]}
+{"type":"benign","id":"benign-extra.cmd.010","tags":["cmd"],"parts":["mkdir ","build ","&& cd ","build"]}
+{"type":"benign","id":"benign-extra.cmd.011","tags":["cmd"],"parts":["powerc","fg /ba","tteryr","eport"]}
+{"type":"benign","id":"benign-extra.cmd.012","tags":["cmd"],"parts":["cls"]}
+{"type":"benign","id":"benign-extra.cmd.013","tags":["cmd"],"parts":["type R","EADME.","md | m","ore"]}
+{"type":"benign","id":"benign-extra.cmd.014","tags":["cmd"],"parts":["findst","r /si ","\"passw","ord\" *",".confi","g"]}
+{"type":"benign","id":"benign-extra.cmd.015","tags":["cmd"],"parts":["reg qu","ery HK","CU\\Sof","tware\\","Micros","oft\\Wi","ndows\\","Curren","tVersi","on\\Run"]}
+{"type":"benign","id":"benign-extra.cmd.016","tags":["cmd"],"parts":["sc que","ry wua","userv"]}
+{"type":"benign","id":"benign-extra.cmd.017","tags":["cmd"],"parts":["curl -","o read","me.md ","https:","//raw.","github","userco","ntent.","com/ru","st-lan","g/rust","/maste","r/READ","ME.md"]}
+{"type":"benign","id":"benign-extra.cmd.018","tags":["cmd"],"parts":["tar -x","f arch","ive.zi","p"]}
+{"type":"benign","id":"benign-extra.unix.001","tags":["unix"],"parts":["ls -la"]}
+{"type":"benign","id":"benign-extra.unix.002","tags":["unix"],"parts":["ls -lh"," /var/","log"]}
+{"type":"benign","id":"benign-extra.unix.003","tags":["unix"],"parts":["top -o"," cpu"]}
+{"type":"benign","id":"benign-extra.unix.004","tags":["unix"],"parts":["ps aux"," | gre","p node"]}
+{"type":"benign","id":"benign-extra.unix.005","tags":["unix"],"parts":["kill -","9 1234","5"]}
+{"type":"benign","id":"benign-extra.unix.006","tags":["unix"],"parts":["pkill ","-f \"py","thon s","erver.","py\""]}
+{"type":"benign","id":"benign-extra.unix.007","tags":["unix"],"parts":["lsof -","i :300","0"]}
+{"type":"benign","id":"benign-extra.unix.008","tags":["unix"],"parts":["netsta","t -an ","| grep"," LISTE","N"]}
+{"type":"benign","id":"benign-extra.unix.009","tags":["unix"],"parts":["find ."," -name"," \"*.py","c\" -de","lete"]}
+{"type":"benign","id":"benign-extra.unix.010","tags":["unix"],"parts":["find /","var/lo","g -typ","e f -m","time +","7 -exe","c gzip"," {} \\;"]}
+{"type":"benign","id":"benign-extra.unix.011","tags":["unix"],"parts":["grep -","rn \"TO","DO\" sr","c/"]}
+{"type":"benign","id":"benign-extra.unix.012","tags":["unix"],"parts":["rg --h","idden ","--glob"," \"!.gi","t\" \"de","precat","ed\""]}
+{"type":"benign","id":"benign-extra.unix.013","tags":["unix"],"parts":["sed -i"," \"s/lo","calhos","t/127.","0.0.1/","g\" con","fig.in","i"]}
+{"type":"benign","id":"benign-extra.unix.014","tags":["unix"],"parts":["awk -F",", '{pr","int $1",", $3}'"," data.","csv"]}
+{"type":"benign","id":"benign-extra.unix.015","tags":["unix"],"parts":["sort a","ccess.","log | ","uniq -","c | so","rt -rn"," | hea","d"]}
+{"type":"benign","id":"benign-extra.unix.016","tags":["unix"],"parts":["tail -","f /var","/log/s","yslog"]}
+{"type":"benign","id":"benign-extra.unix.017","tags":["unix"],"parts":["journa","lctl -","u ngin","x --si","nce \"1"," hour ","ago\""]}
+{"type":"benign","id":"benign-extra.unix.018","tags":["unix"],"parts":["system","ctl st","atus d","ocker"]}
+{"type":"benign","id":"benign-extra.unix.019","tags":["unix"],"parts":["sudo s","ystemc","tl ena","ble --","now ss","h"]}
+{"type":"benign","id":"benign-extra.unix.020","tags":["unix"],"parts":["chmod ","+x ./s","cripts","/build",".sh &&"," ./scr","ipts/b","uild.s","h"]}
+{"type":"benign","id":"benign-extra.unix.021","tags":["unix"],"parts":["chown ","-R $US","ER:$US","ER ~/p","roject"]}
+{"type":"benign","id":"benign-extra.unix.022","tags":["unix"],"parts":["tar -c","zvf ba","ckup.t","ar.gz ","./data"]}
+{"type":"benign","id":"benign-extra.unix.023","tags":["unix"],"parts":["tar -x","zf nod","e-v22.","12.0-l","inux-x","64.tar",".xz"]}
+{"type":"benign","id":"benign-extra.unix.024","tags":["unix"],"parts":["unzip ","releas","e.zip ","-d rel","ease"]}
+{"type":"benign","id":"benign-extra.unix.025","tags":["unix"],"parts":["zip -r"," site.","zip pu","blic/"]}
+{"type":"benign","id":"benign-extra.unix.026","tags":["unix"],"parts":["rsync ","-avz -","-delet","e ./di","st/ de","ploy@e","xample",".inval","id:/va","r/www/","site/"]}
+{"type":"benign","id":"benign-extra.unix.027","tags":["unix"],"parts":["scp ./","build.","tar.gz"," user@","exampl","e.inva","lid:/t","mp/"]}
+{"type":"benign","id":"benign-extra.unix.028","tags":["unix"],"parts":["ssh -i"," ~/.ss","h/id_e","d25519"," user@","exampl","e.inva","lid"]}
+{"type":"benign","id":"benign-extra.unix.029","tags":["unix"],"parts":["ssh-ke","ygen -","t ed25","519 -C"," \"work"," lapto","p\""]}
+{"type":"benign","id":"benign-extra.unix.030","tags":["unix"],"parts":["ssh-ad","d ~/.s","sh/id_","ed2551","9"]}
+{"type":"benign","id":"benign-extra.unix.031","tags":["unix"],"parts":["echo $","PATH |"," tr \":","\" \"\\n\""]}
+{"type":"benign","id":"benign-extra.unix.032","tags":["unix"],"parts":["export"," NODE_","ENV=pr","oducti","on"]}
+{"type":"benign","id":"benign-extra.unix.033","tags":["unix"],"parts":["source"," .venv","/bin/a","ctivat","e"]}
+{"type":"benign","id":"benign-extra.unix.034","tags":["unix"],"parts":["python","3 -m h","ttp.se","rver 8","000"]}
+{"type":"benign","id":"benign-extra.unix.035","tags":["unix"],"parts":["python","3 -c \"","import"," sys; ","print(","sys.ve","rsion)","\""]}
+{"type":"benign","id":"benign-extra.unix.036","tags":["unix"],"parts":["pip in","stall ","-r req","uireme","nts.tx","t"]}
+{"type":"benign","id":"benign-extra.unix.037","tags":["unix"],"parts":["pip in","stall ","--upgr","ade pi","p setu","ptools"," wheel"]}
+{"type":"benign","id":"benign-extra.unix.038","tags":["unix"],"parts":["pipx i","nstall"," ruff"]}
+{"type":"benign","id":"benign-extra.unix.039","tags":["unix"],"parts":["uv syn","c && u","v run ","pytest"," -q"]}
+{"type":"benign","id":"benign-extra.unix.040","tags":["unix"],"parts":["node -","e \"con","sole.l","og(pro","cess.v","ersion",")\""]}
+{"type":"benign","id":"benign-extra.unix.041","tags":["unix"],"parts":["which ","python","3"]}
+{"type":"benign","id":"benign-extra.unix.042","tags":["unix"],"parts":["whoami"]}
+{"type":"benign","id":"benign-extra.unix.043","tags":["unix"],"parts":["uname ","-a"]}
+{"type":"benign","id":"benign-extra.unix.044","tags":["unix"],"parts":["cat /e","tc/os-","releas","e"]}
+{"type":"benign","id":"benign-extra.unix.045","tags":["unix"],"parts":["histor","y | gr","ep doc","ker"]}
+{"type":"benign","id":"benign-extra.unix.046","tags":["unix"],"parts":["cronta","b -l"]}
+{"type":"benign","id":"benign-extra.unix.047","tags":["unix"],"parts":["watch ","-n 2 k","ubectl"," get p","ods"]}
+{"type":"benign","id":"benign-extra.unix.048","tags":["unix"],"parts":["xargs ","-n1 ba","sename"," < fil","es.txt"]}
+{"type":"benign","id":"benign-extra.unix.049","tags":["unix"],"parts":["diff -","u old.","conf n","ew.con","f"]}
+{"type":"benign","id":"benign-extra.unix.050","tags":["unix"],"parts":["patch ","-p1 < ","fix.pa","tch"]}
+{"type":"benign","id":"benign-extra.unix.051","tags":["unix"],"parts":["make -","j8"]}
+{"type":"benign","id":"benign-extra.unix.052","tags":["unix"],"parts":["cmake ","-S . -","B buil","d -DCM","AKE_BU","ILD_TY","PE=Rel","ease &","& cmak","e --bu","ild bu","ild"]}
+{"type":"benign","id":"benign-extra.unix.053","tags":["unix"],"parts":["gcc -O","2 -Wal","l -o h","ello h","ello.c"]}
+{"type":"benign","id":"benign-extra.unix.054","tags":["unix"],"parts":["shasum"," -a 25","6 rele","ase.ta","r.gz"]}
+{"type":"benign","id":"benign-extra.unix.055","tags":["unix"],"parts":["openss","l rand"," -hex ","32"]}
+{"type":"benign","id":"benign-extra.unix.056","tags":["unix"],"parts":["openss","l x509"," -in c","ert.pe","m -noo","ut -te","xt"]}
+{"type":"benign","id":"benign-extra.unix.057","tags":["unix"],"parts":["base64"," -d en","coded.","txt > ","decode","d.bin"]}
+{"type":"benign","id":"benign-extra.unix.058","tags":["unix"],"parts":["jq \".d","epende","ncies\""," packa","ge.jso","n"]}
+{"type":"benign","id":"benign-extra.unix.059","tags":["unix"],"parts":["curl -","s http","s://ap","i.gith","ub.com","/repos","/astra","l-sh/u","v/rele","ases/l","atest ","| jq -","r .tag","_name"]}
+{"type":"benign","id":"benign-extra.unix.060","tags":["unix"],"parts":["curl -","fsSL -","o get-","docker",".sh ht","tps://","get.do","cker.c","om"]}
+{"type":"benign","id":"benign-extra.unix.061","tags":["unix"],"parts":["wget -","O ubun","tu.iso"," https","://rel","eases.","ubuntu",".com/2","4.04/u","buntu-","24.04.","1-desk","top-am","d64.is","o"]}
+{"type":"benign","id":"benign-extra.unix.062","tags":["unix"],"parts":["curl -","I http","s://ex","ample.","invali","d"]}
+{"type":"benign","id":"benign-extra.unix.063","tags":["unix"],"parts":["dig ex","ample.","invali","d +sho","rt"]}
+{"type":"benign","id":"benign-extra.unix.064","tags":["unix"],"parts":["tracer","oute e","xample",".inval","id"]}
+{"type":"benign","id":"benign-extra.unix.065","tags":["unix"],"parts":["sudo d","nf ins","tall -","y git"]}
+{"type":"benign","id":"benign-extra.unix.066","tags":["unix"],"parts":["apk ad","d --no","-cache"," bash"]}
+{"type":"benign","id":"benign-extra.unix.067","tags":["unix"],"parts":["flatpa","k inst","all fl","athub ","org.mo","zilla.","firefo","x"]}
+{"type":"benign","id":"benign-extra.unix.068","tags":["unix"],"parts":["pbpast","e | wc"," -l"]}
+{"type":"benign","id":"benign-extra.unix.069","tags":["unix"],"parts":["caffei","nate -","d"]}
+{"type":"benign","id":"benign-extra.unix.070","tags":["unix"],"parts":["launch","ctl li","st | g","rep do","cker"]}
+{"type":"benign","id":"benign-extra.installer.001","tags":["installer"],"parts":["curl -","fsSL h","ttps:/","/deb.n","odesou","rce.co","m/setu","p_22.x"," | sud","o -E b","ash -"]}
+{"type":"benign","id":"benign-extra.installer.002","tags":["installer"],"parts":["curl -","sSL ht","tps://","instal","l.pyth","on-poe","try.or","g | py","thon3 ","-"]}
+{"type":"benign","id":"benign-extra.installer.003","tags":["installer"],"parts":["curl -","fsSL h","ttps:/","/tails","cale.c","om/ins","tall.s","h | sh"]}
+{"type":"benign","id":"benign-extra.installer.004","tags":["installer"],"parts":["iwr ht","tps://","get.pn","pm.io/","instal","l.ps1 ","-useb ","| iex"]}
+{"type":"benign","id":"benign-extra.installer.005","tags":["installer"],"parts":["sh <(c","url -L"," https","://nix","os.org","/nix/i","nstall",") --da","emon"]}
+{"type":"benign","id":"benign-extra.dev.001","tags":["dev"],"parts":["git ch","eckout"," -b fe","ature/","login-","form"]}
+{"type":"benign","id":"benign-extra.dev.002","tags":["dev"],"parts":["git sw","itch m","ain &&"," git p","ull --","rebase"]}
+{"type":"benign","id":"benign-extra.dev.003","tags":["dev"],"parts":["git pu","sh -u ","origin"," featu","re/log","in-for","m"]}
+{"type":"benign","id":"benign-extra.dev.004","tags":["dev"],"parts":["git st","ash pu","sh -m ","\"wip\" ","&& git"," stash"," list"]}
+{"type":"benign","id":"benign-extra.dev.005","tags":["dev"],"parts":["git re","base -","i HEAD","~3"]}
+{"type":"benign","id":"benign-extra.dev.006","tags":["dev"],"parts":["git ch","erry-p","ick 3f","2a1bc"]}
+{"type":"benign","id":"benign-extra.dev.007","tags":["dev"],"parts":["git di","ff --s","tat ma","in...H","EAD"]}
+{"type":"benign","id":"benign-extra.dev.008","tags":["dev"],"parts":["git bl","ame -L"," 10,40"," src/a","pp.ts"]}
+{"type":"benign","id":"benign-extra.dev.009","tags":["dev"],"parts":["git bi","sect s","tart H","EAD v1",".2.0"]}
+{"type":"benign","id":"benign-extra.dev.010","tags":["dev"],"parts":["git ta","g -a v","1.3.0 ","-m \"re","lease ","1.3.0\""]}
+{"type":"benign","id":"benign-extra.dev.011","tags":["dev"],"parts":["git re","mote a","dd ups","tream ","https:","//gith","ub.com","/rust-","lang/r","ust.gi","t"]}
+{"type":"benign","id":"benign-extra.dev.012","tags":["dev"],"parts":["git cl","one --","depth ","1 http","s://gi","thub.c","om/rus","t-lang","/rust.","git"]}
+{"type":"benign","id":"benign-extra.dev.013","tags":["dev"],"parts":["git co","nfig -","-globa","l user",".name ","\"Dev\""]}
+{"type":"benign","id":"benign-extra.dev.014","tags":["dev"],"parts":["git wo","rktree"," add .","./hotf","ix hot","fix/1.","2.1"]}
+{"type":"benign","id":"benign-extra.dev.015","tags":["dev"],"parts":["gh pr ","create"," --fil","l"]}
+{"type":"benign","id":"benign-extra.dev.016","tags":["dev"],"parts":["gh pr ","checko","ut 123"]}
+{"type":"benign","id":"benign-extra.dev.017","tags":["dev"],"parts":["npm ci"]}
+{"type":"benign","id":"benign-extra.dev.018","tags":["dev"],"parts":["npm ru","n dev"]}
+{"type":"benign","id":"benign-extra.dev.019","tags":["dev"],"parts":["npm te","st -- ","--watc","h"]}
+{"type":"benign","id":"benign-extra.dev.020","tags":["dev"],"parts":["npx cr","eate-n","ext-ap","p@late","st my-","app"]}
+{"type":"benign","id":"benign-extra.dev.021","tags":["dev"],"parts":["npx pr","ettier"," --wri","te ."]}
+{"type":"benign","id":"benign-extra.dev.022","tags":["dev"],"parts":["yarn a","dd -D ","typesc","ript"]}
+{"type":"benign","id":"benign-extra.dev.023","tags":["dev"],"parts":["bun ru","n buil","d"]}
+{"type":"benign","id":"benign-extra.dev.024","tags":["dev"],"parts":["cargo ","test -","-works","pace"]}
+{"type":"benign","id":"benign-extra.dev.025","tags":["dev"],"parts":["cargo ","instal","l ripg","rep"]}
+{"type":"benign","id":"benign-extra.dev.026","tags":["dev"],"parts":["rustup"," updat","e stab","le"]}
+{"type":"benign","id":"benign-extra.dev.027","tags":["dev"],"parts":["go tes","t ./..","."]}
+{"type":"benign","id":"benign-extra.dev.028","tags":["dev"],"parts":["dotnet"," new c","onsole"," -n He","llo"]}
+{"type":"benign","id":"benign-extra.dev.029","tags":["dev"],"parts":["dotnet"," test"]}
+{"type":"benign","id":"benign-extra.dev.030","tags":["dev"],"parts":["./grad","lew as","semble","Debug"]}
+{"type":"benign","id":"benign-extra.dev.031","tags":["dev"],"parts":["flutte","r pub ","get"]}
+{"type":"benign","id":"benign-extra.dev.032","tags":["dev"],"parts":["php ar","tisan ","migrat","e"]}
+{"type":"benign","id":"benign-extra.dev.033","tags":["dev"],"parts":["compos","er ins","tall -","-no-de","v"]}
+{"type":"benign","id":"benign-extra.dev.034","tags":["dev"],"parts":["bundle"," exec ","rails ","server"]}
+{"type":"benign","id":"benign-extra.dev.035","tags":["dev"],"parts":["pytest"," -k \"n","ot slo","w\" -x"]}
+{"type":"benign","id":"benign-extra.dev.036","tags":["dev"],"parts":["black ",". && r","uff ch","eck --","fix"]}
+{"type":"benign","id":"benign-extra.dev.037","tags":["dev"],"parts":["mypy s","rc/"]}
+{"type":"benign","id":"benign-extra.dev.038","tags":["dev"],"parts":["tsc --","noEmit"]}
+{"type":"benign","id":"benign-extra.dev.039","tags":["dev"],"parts":["eslint"," \"src/","**/*.t","s\" --f","ix"]}
+{"type":"benign","id":"benign-extra.dev.040","tags":["dev"],"parts":["terraf","orm in","it && ","terraf","orm pl","an"]}
+{"type":"benign","id":"benign-extra.dev.041","tags":["dev"],"parts":["terraf","orm ap","ply -a","uto-ap","prove"]}
+{"type":"benign","id":"benign-extra.dev.042","tags":["dev"],"parts":["ansibl","e-play","book -","i inve","ntory ","site.y","ml --c","heck"]}
+{"type":"benign","id":"benign-extra.dev.043","tags":["dev"],"parts":["code -","-insta","ll-ext","ension"," ms-py","thon.p","ython"]}
+{"type":"benign","id":"benign-extra.container.001","tags":["container"],"parts":["docker"," build"," -t my","app:la","test ."]}
+{"type":"benign","id":"benign-extra.container.002","tags":["container"],"parts":["docker"," run -","-rm -i","t -p 8","080:80"," nginx",":alpin","e"]}
+{"type":"benign","id":"benign-extra.container.003","tags":["container"],"parts":["docker"," exec ","-it db"," psql ","-U pos","tgres"]}
+{"type":"benign","id":"benign-extra.container.004","tags":["container"],"parts":["docker"," image","s | gr","ep mya","pp"]}
+{"type":"benign","id":"benign-extra.container.005","tags":["container"],"parts":["docker"," pull ","ghcr.i","o/astr","al-sh/","uv:lat","est"]}
+{"type":"benign","id":"benign-extra.container.006","tags":["container"],"parts":["docker"," volum","e ls"]}
+{"type":"benign","id":"benign-extra.container.007","tags":["container"],"parts":["podman"," run -","-rm do","cker.i","o/libr","ary/al","pine e","cho hi"]}
+{"type":"benign","id":"benign-extra.container.008","tags":["container"],"parts":["kubect","l desc","ribe p","od web","-7d9f8","c"]}
+{"type":"benign","id":"benign-extra.container.009","tags":["container"],"parts":["kubect","l logs"," -f de","ploy/w","eb"]}
+{"type":"benign","id":"benign-extra.container.010","tags":["container"],"parts":["kubect","l appl","y -f k","8s/"]}
+{"type":"benign","id":"benign-extra.container.011","tags":["container"],"parts":["kubect","l port","-forwa","rd svc","/web 8","080:80"]}
+{"type":"benign","id":"benign-extra.container.012","tags":["container"],"parts":["kubect","l roll","out re","start ","deploy","ment/w","eb"]}
+{"type":"benign","id":"benign-extra.container.013","tags":["container"],"parts":["helm i","nstall"," redis"," bitna","mi/red","is"]}
+{"type":"benign","id":"benign-extra.container.014","tags":["container"],"parts":["helm u","pgrade"," --ins","tall a","pp ./c","hart -","f valu","es.yam","l"]}
+{"type":"benign","id":"benign-extra.container.015","tags":["container"],"parts":["aws s3"," ls s3","://my-","bucket","/"]}
+{"type":"benign","id":"benign-extra.container.016","tags":["container"],"parts":["gcloud"," confi","g set ","projec","t my-p","roject"]}
+{"type":"benign","id":"benign-extra.container.017","tags":["container"],"parts":["az gro","up lis","t -o t","able"]}
+{"type":"benign","id":"benign-extra.container.018","tags":["container"],"parts":["psql -","h loca","lhost ","-U pos","tgres ","-c \"\\l","\""]}
+{"type":"benign","id":"benign-extra.container.019","tags":["container"],"parts":["redis-","cli pi","ng"]}

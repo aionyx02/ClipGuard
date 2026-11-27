@@ -318,6 +318,26 @@ macOS／Linux 訊號的強弱（1b，P1）：會叫起程式或交出控制權�
 - 例：`cmd /c dir` 未知來源 30、瀏覽器 40、通訊軟體 35、終端機 20；從瀏覽器複製的隱藏視窗＋下載執行約 100。
 - `Context.platform` 目前不影響分數（保留給之後「指令方言和平台不符」的判斷）。
 
+### 3.7 資料驅動的擴充訊號（Phase 5，`rules/command/signals.json`）
+
+§3.1 的訊號寫在 `crates/core/src/command/signals.rs`，藍隊 agent（只能改 `rules/` 和語料，CLAUDE.md）改不到。這個檔案讓規則資料也能**加入**訊號，引擎只負責通用的比對：
+
+```json
+{
+  "format": 1,
+  "_comment": "…",
+  "execution": [{ "id": "data-exec-001", "pattern": "…", "reason": "cmd-reason-powershell" }],
+  "scam":      [{ "id": "data-scam-001", "pattern": "…", "reason": "cmd-reason-encoded" }]
+}
+```
+
+- **比對位置**：和內建的 `EXECUTION_SIGNALS`、`SCAM_SIGNALS` 完全相同，也就是 §3.0 正規化後的文字，以及 §3.5 每一層解混淆的結果，所以資料訊號自動享有解混淆。`execution` 的命中等於多一個執行訊號，`scam` 的命中等於多一個詐騙訊號，之後照 §3.2 的判定表：只有詐騙訊號、沒有執行訊號仍然是 None。
+- **`reason` 只能用既有的 reason ID**：`execution` 用 `EXECUTION_SIGNALS` 的理由或 `cmd-reason-download-exec`、`cmd-reason-net-use`；`scam` 用 `SCAM_SIGNALS` 的理由或 `cmd-reason-unofficial-source`（`cmd-reason-download`、`cmd-reason-iex` 是弱訊號，其餘都是強訊號），所以不需要新增翻譯字串，UI 和白話說明（§3.3）照常運作。不在清單裡的條目比對時被丟掉，core 的 `data_signals_are_all_used` 測試會失敗。
+- **只能補、不能減**：這個檔案只能讓判定變嚴，沒有「放行」或「降級」的欄位（P1）。誤報只能靠修改 pattern 本身。
+- **pattern 語法**：Rust `regex`（線性時間），比對時一律加 `(?im)`；`regex` 本來就不支援 lookaround、backreference。每條 pattern 最多 `MAX_DATA_SIGNAL_PATTERN_LEN` = 512 字、編譯後上限 `MAX_DATA_SIGNAL_REGEX_BYTES` = 256 KiB，整個檔案最多 `MAX_DATA_SIGNALS` = 200 條；`id` 只能用 `[a-z0-9-]`、不能重複。不符合的條目載入時丟掉並由 `CommandRules::validate` 回報，引擎不會 panic。
+- **測試**：每條資料訊號都要有「該命中」和「不該命中」的語料（CLAUDE.md）；1 Mi 字的病態輸入效能測試涵蓋這個檔案。
+- 檔案一開始是空的（`execution`、`scam` 都是 `[]`），所以加入這個機制本身不改變任何判定。
+
 程式：`crates/core/src/policy/entry.rs`、`ForegroundWatcher`（舊版 Windows App；Phase 4 由 `crates/platform` 與桌面 App 重做）（`EVENT_SYSTEM_FOREGROUND`）。
 
 | 入口 | 判斷（Windows 11 zh-TW 實測） |

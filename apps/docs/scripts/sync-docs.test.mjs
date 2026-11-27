@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { extractTitle, REPO, rewriteLinks, toStarlightPage } from './sync-docs.mjs';
+import { extractTitle, REPO, rewriteLinks, themedCharts, toStarlightPage } from './sync-docs.mjs';
 
 test('extracts the first heading as the title', () => {
   const { title, body } = extractTitle('# 威脅模型\n\n> intro\n\n## 1. 保護什麼\n');
@@ -30,4 +30,18 @@ test('produces Starlight frontmatter with an edit link to the source', () => {
   assert.match(page, /editUrl: ".*\/edit\/dev\/docs\/spec\/detection-rules.md"/);
   assert.match(page, /order: 20/);
   assert.ok(page.endsWith('body'));
+});
+
+test('report charts become a light and a dark image under the chart base', () => {
+  const out = themedCharts(
+    'x\n![Attacker "success"](rounds.svg)\n![x](https://e.invalid/a.svg)',
+    '/docs/dev/r/',
+  );
+  assert.match(
+    out,
+    /<img class="pw-chart-light" src="\/docs\/dev\/r\/rounds\.svg" alt="Attacker &quot;success&quot;" \/>/,
+  );
+  assert.match(out, /<img class="pw-chart-dark" src="\/docs\/dev\/r\/rounds-dark\.svg"/);
+  // Only local chart names are rewritten.
+  assert.match(out, /!\[x\]\(https:\/\/e\.invalid\/a\.svg\)/);
 });
