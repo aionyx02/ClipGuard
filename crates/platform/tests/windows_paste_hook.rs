@@ -38,7 +38,8 @@ use paste_warden_platform::windows::{ClipboardMonitor, HookMsg, PasteHook, foreg
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
-    KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY, VK_CONTROL, VK_INSERT, VK_RETURN, VK_SHIFT, VK_V,
+    KEYEVENTF_KEYUP, MAPVK_VK_TO_VSC, MapVirtualKeyW, SendInput, VIRTUAL_KEY, VK_CONTROL,
+    VK_INSERT, VK_RETURN, VK_SHIFT, VK_V,
 };
 use windows::core::BOOL;
 
@@ -85,7 +86,14 @@ fn send_keys(keys: &[(VIRTUAL_KEY, bool)]) -> usize {
             Anonymous: INPUT_0 {
                 ki: KEYBDINPUT {
                     wVk: vk,
-                    wScan: 0,
+                    // A real keyboard always sends a scan code; with 0,
+                    // Tabby (Electron) turned an injected Ctrl key-up into
+                    // a console Ctrl+C for the whole group.
+                    // SAFETY: plain Win32 lookup.
+                    wScan: u16::try_from(unsafe {
+                        MapVirtualKeyW(u32::from(vk.0), MAPVK_VK_TO_VSC)
+                    })
+                    .unwrap_or(0),
                     // The dedicated Insert key is an extended key; without the
                     // flag it is the numpad one, which NumLock can turn into
                     // a digit with a synthetic Shift-up.
@@ -314,4 +322,45 @@ fn foreground_is_described_without_elevation() {
         "run from a non-elevated terminal: {fg:?} looks elevated"
     );
     assert!(foreground::own_integrity_level().is_some());
+}
+
+/// Seconds the manual test waits for physical Ctrl+V presses.
+const MANUAL_WAIT: Duration = Duration::from_secs(30);
+/// Physical pastes the manual test asks for.
+const MANUAL_PASTES: usize = 3;
+
+/// Manual check with the real keyboard (not injected keys): does a swallowed
+/// Ctrl+V leak anything to the window in front? Run it from one terminal,
+/// then within 30 s click into another terminal that runs `sleep 60` and
+/// press Ctrl+V three times. Expected: three "swallowed" lines here, nothing
+/// pasted there, and `sleep 60` still running.
+///
+/// ```sh
+/// cargo test --release -p paste-warden-platform --test windows_paste_hook manual_physical_ctrl_v -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "manual: waits for the tester to press Ctrl+V on the real keyboard"]
+fn manual_physical_ctrl_v() {
+    watch_console_events();
+    let _clip = ClipboardGuard::new();
+    let (gate, _hook, rx) = start_hook();
+    gate.publish(sequence(), Decision::Intercept);
+    eprintln!(
+        "within {MANUAL_WAIT:?}: click into the other terminal and press Ctrl+V {MANUAL_PASTES} times"
+    );
+    let until = Instant::now() + MANUAL_WAIT;
+    let mut seen = 0;
+    while seen < MANUAL_PASTES {
+        let left = until.saturating_duration_since(Instant::now());
+        match rx.recv_timeout(left) {
+            Ok(HookMsg::PasteSwallowed { reason, .. }) => {
+                seen += 1;
+                eprintln!("swallowed {seen}/{MANUAL_PASTES} ({reason:?})");
+            }
+            Ok(other) => eprintln!("other hook message: {other:?}"),
+            Err(_) => break,
+        }
+    }
+    assert_eq!(seen, MANUAL_PASTES, "not every Ctrl+V reached the hook");
+    eprintln!("now check the other terminal: nothing pasted, `sleep 60` still running");
 }
