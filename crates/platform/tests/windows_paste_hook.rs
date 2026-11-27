@@ -225,11 +225,16 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
     // worker) is the slowest one. The first paste is cold (page faults, the
     // receiver's first wake-up) and is only reported; the budget applies to
     // the warm ones. Both are far below HOOK_FAIL_OPEN_MS.
+    // Ctrl is pressed once and held while V is pressed repeatedly (as a
+    // user holding Ctrl would). Tapping Ctrl again for every paste made
+    // both Tabby and Windows Terminal raise a console Ctrl+C on the second
+    // tap; the physical keyboard does not (manual_physical_ctrl_v).
+    step("Ctrl down");
+    press(&[(VK_CONTROL, false)]);
     let mut times = Vec::with_capacity(WARM_PASTES + 1);
     for i in 0..=WARM_PASTES {
-        step(&format!("paste {i}: Ctrl+V down"));
-        press(&[(VK_CONTROL, false), (VK_V, false)]);
-        step(&format!("paste {i}: wait for the hook"));
+        step(&format!("paste {i}: V down"));
+        press(&[(VK_V, false)]);
         match rx.recv_timeout(DEADLINE) {
             Ok(HookMsg::PasteSwallowed { reason, .. }) => {
                 assert_eq!(reason, SwallowReason::Intercept)
@@ -237,13 +242,17 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
             other => panic!("paste {i}: expected a swallowed paste, got {other:?}"),
         }
         times.push(hook.last_callback_ns());
-        step(&format!("paste {i}: callback {} ns; key-ups", times[i]));
-        // Ctrl released first, then V: the V key-up is swallowed silently.
-        press(&[(VK_CONTROL, true), (VK_V, true)]);
-        step(&format!("paste {i}: key-ups sent"));
+        step(&format!("paste {i}: callback {} ns; V up", times[i]));
+        // The V key-up is swallowed silently, also when Ctrl is released
+        // first (the last paste).
+        if i == WARM_PASTES {
+            step("Ctrl up, then V up");
+            press(&[(VK_CONTROL, true), (VK_V, true)]);
+        } else {
+            press(&[(VK_V, true)]);
+        }
         let extra = rx.recv_timeout(Duration::from_millis(200));
         assert!(extra.is_err(), "paste {i}: key-up reported {extra:?}");
-        step(&format!("paste {i}: done"));
     }
     let warm = times[1..].iter().copied().max().unwrap_or(0);
     step(&format!("cold {} ns, warm max {warm} ns", times[0]));
