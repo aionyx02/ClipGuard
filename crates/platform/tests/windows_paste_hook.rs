@@ -344,12 +344,20 @@ const MANUAL_PASTES: usize = 3;
 /// press Ctrl+V three times. Expected: three "swallowed" lines here, nothing
 /// pasted there, and `sleep 60` still running.
 ///
+/// Skipped unless `PW_MANUAL=1`, so a plain `--ignored` run of this file
+/// stays automatic:
+///
 /// ```sh
-/// cargo test --release -p paste-warden-platform --test windows_paste_hook manual_physical_ctrl_v -- --ignored --nocapture
+/// PW_MANUAL=1 cargo test --release -p paste-warden-platform --test windows_paste_hook manual_physical_ctrl_v -- --ignored --nocapture
 /// ```
+/// (PowerShell: `$env:PW_MANUAL=1; cargo test …`, then `Remove-Item Env:PW_MANUAL`.)
 #[test]
 #[ignore = "manual: waits for the tester to press Ctrl+V on the real keyboard"]
 fn manual_physical_ctrl_v() {
+    if std::env::var_os("PW_MANUAL").is_none() {
+        eprintln!("manual_physical_ctrl_v skipped: set PW_MANUAL=1 to run it");
+        return;
+    }
     watch_console_events();
     let _clip = ClipboardGuard::new();
     let (gate, _hook, rx) = start_hook();

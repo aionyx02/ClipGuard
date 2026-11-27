@@ -10,6 +10,7 @@
 |---|---|
 | 分支 | `feature/phase-4-desktop`，先 `git pull` |
 | 自動測試先過 | `cargo test --release -p paste-warden-platform --test windows_paste_hook -- --ignored --test-threads=1`，以及 `windows_host`（debug）、`windows_clipboard`（release） |
+| 實體鍵盤檢查 | 開兩個終端機分頁，第二個先跑 `sleep 60`。在第一個執行 `PW_MANUAL=1 cargo test --release -p paste-warden-platform --test windows_paste_hook manual_physical_ctrl_v -- --ignored --nocapture`（PowerShell 先執行 `$env:PW_MANUAL=1`），30 秒內切到第二個分頁按 3 次 Ctrl+V。預期：第一個分頁出現 3 行 `swallowed`，第二個分頁什麼都沒貼上，`sleep` 還在跑 |
 | 正式版 | `cd apps/desktop && cargo tauri build --config src-tauri/tauri.release.conf.json`，用產出的安裝檔安裝（項目 A1） |
 | dev 版 | `cd apps/desktop && cargo tauri dev`，只有項目 F6 需要，它用到除錯指令 |
 | 瀏覽器 | Chrome、Edge、Firefox，H 區用 |
