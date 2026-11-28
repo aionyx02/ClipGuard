@@ -717,7 +717,7 @@ impl Worker {
         if let Some(w) = warning
             && self
                 .entry_gate
-                .try_enter(window as u64, self.guard.generation())
+                .try_enter_entry(entry, window as u64, self.guard.generation())
         {
             let level = if w.level == Level::Malicious {
                 NotificationLevel::Error
