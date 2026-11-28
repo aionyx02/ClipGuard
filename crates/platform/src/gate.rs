@@ -47,6 +47,10 @@ pub struct PasteGate {
     // Read by the macOS tap and the Windows hook; Linux has no interception.
     #[cfg_attr(target_os = "linux", allow(dead_code))]
     pub(crate) swallowed_key: AtomicU32,
+    /// Event time of that key-down or its last auto-repeat (Windows tick
+    /// milliseconds), to notice a key-up that never arrived.
+    #[cfg_attr(not(windows), allow(dead_code))]
+    pub(crate) swallowed_at: AtomicU32,
     /// Root window of the foreground at the last change (Windows HWND as
     /// i64; 0 = unknown). Written by `pw-work`.
     pub(crate) fg_root: AtomicI64,
@@ -61,6 +65,7 @@ impl Default for PasteGate {
             clipboard_seq: AtomicU32::new(0),
             fg_allowed: AtomicBool::new(false),
             swallowed_key: AtomicU32::new(NO_KEY),
+            swallowed_at: AtomicU32::new(0),
             fg_root: AtomicI64::new(0),
             pending_target: AtomicI64::new(0),
         }

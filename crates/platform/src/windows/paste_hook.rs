@@ -64,6 +64,12 @@ pub const PASTE_CALLBACK_CEILING_US: u64 = 10_000;
 /// How long `pw-work` waits for the analysis of a swallowed paste before
 /// giving up without re-sending it (fail closed, §4.3).
 pub const PENDING_ANALYSIS_TIMEOUT_MS: u64 = 2_000;
+/// Longest gap between two key-downs of a swallowed key that still counts as
+/// auto-repeat. The slowest Windows setting waits 1 s before the first
+/// repeat, then repeats at least ~2.5 times a second. A longer gap means the
+/// key-up never reached the callback, and the key is a new press (manual
+/// test 2026-11-28: Ctrl+V stopped working altogether).
+pub const AUTO_REPEAT_MAX_GAP_MS: u32 = 1_500;
 /// Capacity of the [`HookMsg`] channel, allocated before the hook starts.
 pub const HOOK_EVENT_QUEUE_LEN: usize = 64;
 /// Longest wait for the hook thread to (re)install the hook.
@@ -111,6 +117,8 @@ pub struct KeyEvent {
     /// `WM_KEYDOWN` / `WM_SYSKEYDOWN` (auto-repeat arrives as more downs).
     pub down: bool,
     pub extra_info: usize,
+    /// `KBDLLHOOKSTRUCT::time`: milliseconds, wraps after 49.7 days.
+    pub time: u32,
 }
 
 /// State the callback reads lazily, only when the decision needs it.
@@ -168,8 +176,17 @@ pub fn decide(e: &KeyEvent, gate: &PasteGate, env: &impl HookEnv) -> Verdict {
         return Verdict::Pass;
     }
     if swallowed == vk {
-        // Auto-repeat while held: the key-up has not arrived yet.
-        return Verdict::Swallow(Swallow::Quiet);
+        let since = e
+            .time
+            .wrapping_sub(gate.swallowed_at.load(Ordering::Acquire));
+        if since <= AUTO_REPEAT_MAX_GAP_MS {
+            // Auto-repeat while held: the key-up has not arrived yet.
+            gate.swallowed_at.store(e.time, Ordering::Release);
+            return Verdict::Swallow(Swallow::Quiet);
+        }
+        // Too long for auto-repeat: the key-up was lost (a skipped callback
+        // or a reinstall while held). This is a new press; decide it afresh.
+        gate.swallowed_key.store(NO_KEY, Ordering::Release);
     }
     if e.vk == VK_ENTER {
         let pending = gate.pending_target();
@@ -180,6 +197,7 @@ pub fn decide(e: &KeyEvent, gate: &PasteGate, env: &impl HookEnv) -> Verdict {
         if window != pending && root != pending {
             return Verdict::Pass;
         }
+        gate.swallowed_at.store(e.time, Ordering::Release);
         gate.swallowed_key.store(vk, Ordering::Release);
         return Verdict::Swallow(Swallow::Enter { target: pending });
     }
@@ -200,6 +218,7 @@ pub fn decide(e: &KeyEvent, gate: &PasteGate, env: &impl HookEnv) -> Verdict {
             Decision::Unknown => SwallowReason::Pending,
         }
     };
+    gate.swallowed_at.store(e.time, Ordering::Release);
     gate.swallowed_key.store(vk, Ordering::Release);
     Verdict::Swallow(Swallow::Paste {
         target: window,
@@ -297,6 +316,7 @@ fn on_key(wp: WPARAM, lp: LPARAM) -> bool {
         vk: u16::try_from(k.vkCode).unwrap_or(u16::MAX),
         down,
         extra_info: k.dwExtraInfo,
+        time: k.time,
     };
     let verdict = decide(&event, &ctx.gate, &Win32Env);
     let report = match verdict {
@@ -563,6 +583,7 @@ mod tests {
             vk,
             down,
             extra_info: 0,
+            time: 0,
         }
     }
 
@@ -647,6 +668,56 @@ mod tests {
             decide(&key(VK_V.0, false), &g, &none),
             Verdict::Pass,
             "only one key-up"
+        );
+    }
+
+    /// Manual test 2026-11-28: after a confirmation, Ctrl+V stopped pasting
+    /// anything. A key-up that never reaches the callback (Windows skipped a
+    /// slow callback, or the hook was reinstalled while V was held) left
+    /// `swallowed_key` set, and every later V was swallowed as "auto-repeat".
+    #[test]
+    fn missed_key_up_does_not_swallow_later_presses() {
+        let g = analyzed(7, Decision::Intercept);
+        let at = |t: u32| KeyEvent {
+            time: t,
+            ..key(VK_V.0, true)
+        };
+        assert_eq!(
+            decide(&at(1_000), &g, &env(7, CTRL)),
+            paste(SwallowReason::Intercept)
+        );
+        // Auto-repeat while held keeps being swallowed quietly.
+        let repeat = 1_000 + AUTO_REPEAT_MAX_GAP_MS - 1;
+        assert_eq!(
+            decide(&at(repeat), &g, &env(7, CTRL)),
+            Verdict::Swallow(Swallow::Quiet)
+        );
+        // The key-up is lost. Seconds later the clipboard is harmless.
+        g.publish(8, Decision::Allow);
+        assert_eq!(
+            decide(&at(repeat + AUTO_REPEAT_MAX_GAP_MS + 1), &g, &env(8, CTRL)),
+            Verdict::Pass,
+            "a new press, not auto-repeat"
+        );
+        // A plain V (typing) after a lost key-up is never eaten either.
+        g.publish(9, Decision::Intercept);
+        assert_eq!(
+            decide(&at(20_000), &g, &env(9, CTRL)),
+            paste(SwallowReason::Intercept)
+        );
+        assert_eq!(
+            decide(&at(40_000), &g, &env(9, Modifiers::default())),
+            Verdict::Pass
+        );
+        // The tick count wraps after 49.7 days.
+        assert_eq!(
+            decide(&at(u32::MAX - 10), &g, &env(9, CTRL)),
+            paste(SwallowReason::Intercept)
+        );
+        assert_eq!(
+            decide(&at(20), &g, &env(9, CTRL)),
+            Verdict::Swallow(Swallow::Quiet),
+            "31 ms later across the wrap"
         );
     }
 

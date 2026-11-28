@@ -97,6 +97,7 @@ UWP 用 `EnumChildWindows` 找 PID 和 frame host 不同的子視窗，找不到
 | `CALLBACK_BUDGET_US` | `100`（不呼叫 Win32 的探測路徑） | 自訂 |
 | `PASTE_CALLBACK_CEILING_US` | `10_000`（暖機後的貼上路徑） | 實測＋自訂 |
 | `PENDING_ANALYSIS_TIMEOUT_MS` | `2_000` | 自訂 |
+| `AUTO_REPEAT_MAX_GAP_MS` | `1_500` | 自訂（見下） |
 | `PENDING_TIMEOUT_MS`、`REGISTERED_MASK`、`MAX_ALLOWED_APPS`、`MAX_APP_NAME_LENGTH` | 引用 `core::policy::paste` | §5.3 |
 | `HOOK_PROBE_FAIL_THRESHOLD` | `2`：連續 2 次探測失敗才顯示「失效」，第 1 次只重裝 hook | 自訂 |
 | 探測暫停條件 | 前景視窗的 integrity level 高於自己（系統管理員視窗）、工作階段鎖定中（`WTSRegisterSessionNotification` 的 `WTS_SESSION_LOCK`/`UNLOCK`）、secure desktop（UAC 提示） | S3＋自訂，理由見 §4.8 |
@@ -148,6 +149,7 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 - `CALLBACK_BUDGET_US = 100`：S3 實測「查旗標、決定吞不吞」最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。這個預算只套用在**不呼叫 Win32 的路徑**，也就是帶標記的 F24 探測（`tagged_probe_is_answered_within_budget`）。
 - `PASTE_CALLBACK_CEILING_US = 10_000`：貼上路徑每次要呼叫 7 個 win32k 函式（`GetAsyncKeyState` ×5、`GetAncestor`、`GetClipboardSequenceNumber`），它們會等全系統共用的 USER 鎖，耗時取決於其他 GUI 程式，不是我們的程式碼能控制的。2026-11-28 在 Windows 實機（同時開著 Defender、輸入法、Snipaste、Everything）上：hook 裡暖機後的貼上 callback 連續 4 輪最長 179 µs～1.3 ms，計時顯示幾乎都花在這些呼叫上（`try_send` 不到 1 µs）；在一般 thread 上單獨呼叫同一組函式 5000 次，p50 1.2 µs、p99 58～71 µs、p99.9 322～540 µs、最長 2.0 ms，同一時間純運算 1 秒內只有 14 次超過 100 µs 的停頓。所以 100 µs 對貼上路徑不成立，改成 10 ms：約實測最長值的 5 倍，仍比 `HOOK_FAIL_OPEN_MS` 低 60 倍，使用者也感覺不到。第一次貼上（冷啟動，包含 page fault 和第一次喚醒 worker）實測 46～280 µs，`windows_paste_hook` 只檢查它低於 `HOOK_FAIL_OPEN_MS`，後面 5 次才套用這個上限。
 - `PENDING_ANALYSIS_TIMEOUT_MS = 2_000`：1 Mi 字的病態輸入在 release 下約 150 ms（§6.1）；超過 2 秒代表出了問題，這時**不補送**按鍵（fail closed），改跳 Warning 通知。
+- `AUTO_REPEAT_MAX_GAP_MS = 1_500`：吞掉貼上鍵後，hook 記下這個鍵，要等到它的放開事件才清掉，中間再來的按下都當成按住不放的自動重複。如果放開事件沒進到 callback（Windows 跳過了逾時的 callback，或按住時 hook 剛好重裝），這個鍵會一直被當成自動重複，之後每次 Ctrl+V 都被默默吞掉，連確認框都不會跳（2026-11-28 手動測試遇到）。low-level hook 沒有自動重複旗標，所以改看事件時間：Windows 最慢的設定是 1 秒後才開始重複，之後每秒至少約 2.5 次，兩次按下相隔超過 1.5 秒就當成新的一次按鍵，清掉舊狀態後重新判斷。macOS 的 tap 有自動重複旗標，之後另外處理。
 - `SOURCE_URL_MAX_BYTES`、`WINDOW_TITLE_MAX_CHARS`、`STORE_FILE_MAX_BYTES`、`MAX_REGISTERED_SECRETS`、`FOREGROUND_HISTORY_LEN`、`SELF_WRITE_CACHE_LEN`：讓每個外部輸入都有上限；值取正常使用的數倍。
 - `STATUS_POLL_MS = 250`（`macos/host.rs`）：`pw-host` 每 250 ms 檢查安全輸入、輔助使用權限、剪貼簿存取權限，變了就送 `HostEvent::StatusChanged`。worker 本來每 `TICK_MS` = 1 秒就會重讀狀態，這個值只是讓變化立刻出現在系統匣；檢查只讀幾個系統旗標，成本可以忽略。
 - 桌面 App 的其他常數（`apps/desktop/src-tauri/src/`，都是自訂）：`TICK_MS = 1_000`（worker 最少多久醒一次，重讀 host 狀態和探測排程）、`COMMAND_TIMEOUT_MS = 5_000`（UI 指令等 worker 回覆的上限）、`SHUTDOWN_TIMEOUT_MS = 2_000`（結束時等 host 和 worker 停下的上限）、`FOREGROUND_SETTLE_MS = 150`（複製前這麼短時間內才切換的前景視窗不算來源，大於 `CLIPBOARD_READ_DELAY_MS` 加上 100 ms 的前景輪詢）、`CONFIRM_PREVIEW_MAX_CHARS = 400`、`NOTIFY_MAX_SECRETS = 3`（同舊版 `SecretGuard.MaxListed`）、`NOTIFY_MAX_REASONS = 2`。
