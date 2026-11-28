@@ -350,6 +350,29 @@ fn registered_secret_publishes_intercept_and_confirm_flow() {
 }
 
 #[test]
+fn masked_paste_does_not_switch_back_over_a_newer_copy() {
+    let mut r = rig();
+    r.register(FAKE_SECRET).unwrap();
+    let ev = r.host.copy(FAKE_SECRET);
+    r.ev(ev);
+    r.ev(HostEvent::PasteSwallowed {
+        target: 42,
+        reason: SwallowReason::Intercept,
+    });
+    assert!(
+        r.cmd(|reply| UiCommand::PasteChoice(PasteChoice::Masked, reply))
+            .is_ok()
+    );
+    // The user copies something else before the switch back is due.
+    r.at(MASKED_PASTE_RESTORE_DELAY_MS / 2);
+    let ev = r.host.copy("copied meanwhile");
+    r.ev(ev);
+    r.at(MASKED_PASTE_RESTORE_DELAY_MS * 2);
+    assert_eq!(r.host.st().restores, 0);
+    assert_eq!(r.host.st().clipboard.as_deref(), Some("copied meanwhile"));
+}
+
+#[test]
 fn confirm_times_out_as_cancel() {
     let mut r = rig();
     r.register(FAKE_SECRET).unwrap();
