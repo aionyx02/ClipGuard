@@ -138,7 +138,7 @@ impl Emitter {
         match event {
             ClipEvent::Text(mut t) => {
                 let hash = content_hash(&t.text);
-                if self.dedupe.is_repeat(t.sequence, &hash) {
+                if self.dedupe.is_repeat(t.sequence, &hash, now) {
                     return;
                 }
                 t.self_write = t.self_write || self.self_writes.contains(&hash, now);

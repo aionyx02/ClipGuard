@@ -61,7 +61,8 @@ Phase 4 拆成兩段。**4a** 讓 Windows 和舊版 ClipGuard 的功能完全對
 | `CLIPBOARD_READ_DELAY_MS` | `25`：收到 `WM_CLIPBOARDUPDATE` 後延遲再讀，期間有新通知就重新計時 | 實測（見下） |
 | `CLIPBOARD_COMMAND_TIMEOUT_MS` | `1_000`：其他執行緒等 `pw-clip` 執行寫入、清空、快照的上限 | 自訂 |
 | `MAX_IMAGE_PATH_UNITS` | `32_768`：`QueryFullProcessImageNameW` 的緩衝區（UTF-16 單位） | Win32 路徑上限 |
-| 去重 | `(GetClipboardSequenceNumber, SHA-256(分析用的前綴))`，只記最後一組 | S3 發現 4 |
+| 去重 | `(GetClipboardSequenceNumber, SHA-256(分析用的前綴))`，只記最後一組。同一個序號一律算重複；序號不同但內容相同，只有在上一次變動後 `CLIPBOARD_DEDUPE_WINDOW_MS` 內才算重複 | S3 發現 4 |
+| `CLIPBOARD_DEDUPE_WINDOW_MS` | `3_000`：S3 的輔助程式會在幾百毫秒內重寫 2～3 次；超過這段時間再複製一樣的內容，就是使用者自己又複製了一次，要重新分析和通知。2026-11-28 手動測試 B3：沒有時間限制時，隔幾秒再複製同一個身分證字號完全沒有通知 | 自訂（同 detection-rules §6 的 3 秒） |
 | `SELF_WRITE_SUPPRESS_MS`／`SELF_WRITE_CACHE_LEN` | `3_000`／`4` | §5.3／自訂 |
 | `RUN_INITIAL_CHECK` | `true`，啟動後立刻分析現有剪貼簿 | 舊 #9 |
 | `MASKED_PASTE_RESTORE_DELAY_MS` | `600` | §5.3 |

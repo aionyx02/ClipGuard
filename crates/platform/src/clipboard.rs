@@ -16,6 +16,12 @@ pub use paste_warden_core::limits::MAX_ANALYZED_CHARS;
 /// Window during which our own clipboard writes (masked paste, restore) do
 /// not raise notifications again (detection-rules.md §5.3).
 pub const SELF_WRITE_SUPPRESS_MS: u64 = 3_000;
+/// Same text with a new sequence number within this long of the previous
+/// change is the same copy (a helper rewriting it, S3 finding 4); later it is
+/// a new copy and is analyzed and notified again (manual test B3). Same
+/// reasoning as detection-rules.md §6 (wallet swap): nobody copies the same text twice in
+/// 3 seconds on purpose.
+pub const CLIPBOARD_DEDUPE_WINDOW_MS: u64 = 3_000;
 /// How many of our own recent writes are remembered.
 pub const SELF_WRITE_CACHE_LEN: usize = 4;
 /// Longest source URL kept for `Context.source.url`; longer ones are dropped.
@@ -125,10 +131,13 @@ impl ClipboardFlags {
 ///
 /// Only the last text is remembered, and an empty clipboard forgets it, so
 /// copying the same text again after it was cleared (quarantine) is analyzed
-/// again.
+/// again. Same text with a new sequence number only counts as a repeat within
+/// [`CLIPBOARD_DEDUPE_WINDOW_MS`] of the previous change; later it is the
+/// user copying it again.
 #[derive(Debug, Default)]
 pub struct Deduper {
-    last: Option<(u32, ContentHash)>,
+    /// Sequence, hash and time of the last text change.
+    last: Option<(u32, ContentHash, u64)>,
     last_empty: Option<u32>,
 }
 
@@ -138,12 +147,12 @@ impl Deduper {
     }
 
     /// `true` when this text change repeats the previous one.
-    pub fn is_repeat(&mut self, sequence: u32, hash: &ContentHash) -> bool {
-        let repeat = self
-            .last
-            .as_ref()
-            .is_some_and(|(s, h)| *s == sequence || h == hash);
-        self.last = Some((sequence, *hash));
+    pub fn is_repeat(&mut self, sequence: u32, hash: &ContentHash, now_ms: u64) -> bool {
+        let repeat = self.last.as_ref().is_some_and(|(s, h, at)| {
+            *s == sequence
+                || (h == hash && now_ms.saturating_sub(*at) <= CLIPBOARD_DEDUPE_WINDOW_MS)
+        });
+        self.last = Some((sequence, *hash, now_ms));
         self.last_empty = None;
         repeat
     }
@@ -318,20 +327,38 @@ mod tests {
         let a = content_hash("alpha");
         let b = content_hash("beta");
         let mut d = Deduper::new();
-        assert!(!d.is_repeat(1, &a));
-        assert!(d.is_repeat(1, &a), "same sequence twice");
-        assert!(d.is_repeat(2, &a), "helper rewrote the same text");
-        assert!(!d.is_repeat(3, &b));
+        assert!(!d.is_repeat(1, &a, 0));
+        assert!(d.is_repeat(1, &a, 10), "same sequence twice");
+        assert!(d.is_repeat(2, &a, 20), "helper rewrote the same text");
+        assert!(!d.is_repeat(3, &b, 30));
         assert!(!d.on_empty(4));
         assert!(d.on_empty(4), "same empty notification twice");
         assert!(
-            !d.is_repeat(5, &b),
+            !d.is_repeat(5, &b, 40),
             "same text after the clipboard was cleared"
         );
         assert!(
             !d.on_empty(4),
             "an older sequence after text is a new change"
         );
+    }
+
+    /// Manual test B3 (2026-11-28): copying the same fake ID again a few
+    /// seconds later gave no notification at all.
+    #[test]
+    fn same_text_copied_again_later_is_a_new_copy() {
+        let a = content_hash("alpha");
+        let mut d = Deduper::new();
+        assert!(!d.is_repeat(1, &a, 1_000));
+        // A helper's rewrites keep extending the window.
+        assert!(d.is_repeat(2, &a, 1_000 + CLIPBOARD_DEDUPE_WINDOW_MS));
+        assert!(d.is_repeat(3, &a, 1_000 + 2 * CLIPBOARD_DEDUPE_WINDOW_MS));
+        assert!(
+            !d.is_repeat(4, &a, 1_001 + 3 * CLIPBOARD_DEDUPE_WINDOW_MS),
+            "the user copied the same text again"
+        );
+        // The same sequence number is always the same copy.
+        assert!(d.is_repeat(4, &a, 1_000_000));
     }
 
     #[test]
