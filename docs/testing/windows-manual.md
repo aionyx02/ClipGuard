@@ -138,4 +138,4 @@
 | E 機密與設定 | E1–E7 | 允許清單顯示輸入的 `notepad.exe` 而不是存下的名稱，已修（e68614e） |
 | F 誠實告知 | F1–F3、F5–F7 | 無。F1–F3 用提權的工作管理員代替系統管理員終端機；F3 驗的是複製時剪貼簿被清空，提權視窗收不到模擬按鍵，沒有實際按 Ctrl+V。F4 未記錄 |
 | G 已知限制 | G1（已知限制）、G2、G3（只有 Defender，三天內無偵測） | 無 |
-| H Native Messaging | H1、H2、H4、H5 | H3：電腦沒裝 Firefox，只驗了 manifest 和登錄機碼。H5 原本解除安裝會留下 NMH 註冊（phase-4.md §4.10 第 10 點），已修；nsis 實測清乾淨，msi 待測（要 UAC） |
+| H Native Messaging | H1、H2、H4、H5 | H3：電腦沒裝 Firefox，只驗了 manifest 和登錄機碼。H5 原本解除安裝會留下 NMH 註冊（phase-4.md §4.10 第 10 點），已修；nsis 和 msi 實測都清乾淨，設定檔不變。另外 msi 安裝版第一次啟動時卡住一次（沒裝 hook），之後 5 次都沒重現 |
