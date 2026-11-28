@@ -33,3 +33,7 @@ __pycache__/
 /fuzz/corpus/
 /fuzz/artifacts/
 /fuzz/coverage/
+
+# `cargo tauri icon` also writes mobile icons; only the desktop app is built
+/apps/desktop/src-tauri/icons/android/
+/apps/desktop/src-tauri/icons/ios/
