@@ -56,9 +56,11 @@ export function Allowlist() {
     setBusy(true);
     try {
       await ipc.allowlistAdd(name);
-      if (!allowlist.includes(name)) {
-        patch({ pasteGuard: { ...settings.pasteGuard, allowlist: [...allowlist, name] } });
-      }
+      // Rust stores the normalized name (no path, no `.exe`); show what it
+      // stored, not what was typed. Its settings-changed may arrive before or
+      // after this reply, so read the stored list back either way.
+      const stored = await ipc.getSettings();
+      patch({ pasteGuard: stored.pasteGuard });
       setValue('');
       setError(null);
     } catch (err) {

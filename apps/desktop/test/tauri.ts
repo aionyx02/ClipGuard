@@ -34,6 +34,12 @@ export async function emit(event: string, payload: unknown) {
   });
 }
 
+/** Delivers an event right away, for a command handler that emits before it
+ * returns (as the Rust worker does); the caller is already inside act(). */
+export function emitNow(event: string, payload: unknown) {
+  for (const cb of listeners.get(event) ?? []) cb({ event, id: 0, payload });
+}
+
 export function resetTauri() {
   handlers.clear();
   listeners.clear();
