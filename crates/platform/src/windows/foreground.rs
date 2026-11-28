@@ -239,7 +239,15 @@ pub fn describe(hwnd: HWND) -> ForegroundInfo {
         window: hwnd_id(hwnd),
         root: hwnd_id(root),
         class,
-        title: title(hwnd),
+        // Never for our own windows: GetWindowTextW sends them WM_GETTEXT
+        // and waits for the owner thread, which deadlocks when that thread
+        // is waiting for us (start-up hang, 2026-11-28). Our own windows are
+        // recognized by process, not title.
+        title: if pid == Some(std::process::id()) {
+            None
+        } else {
+            title(hwnd)
+        },
         process,
         elevated: elevated(own_integrity_level(), app_pid.and_then(integrity_level)),
     }
@@ -327,6 +335,52 @@ impl Drop for ForegroundWatch {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Manual test 2026-11-28: the app sometimes hung at start-up. `pw-clip`
+    /// described the foreground window before signalling ready, and that
+    /// window was our own, owned by the main thread that was waiting for
+    /// ready. `GetWindowTextW` on a window of our own process sends
+    /// `WM_GETTEXT` and waits for the owner thread: a deadlock.
+    #[test]
+    fn describing_an_own_window_never_waits_for_its_thread() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            CreateWindowExW, DestroyWindow, WINDOW_EX_STYLE, WINDOW_STYLE,
+        };
+        use windows::core::w;
+
+        // A window owned by this thread, which pumps no messages below.
+        // SAFETY: a system class, no parent, no extra data.
+        let hwnd = unsafe {
+            CreateWindowExW(
+                WINDOW_EX_STYLE(0),
+                w!("STATIC"),
+                w!("pw-test"),
+                WINDOW_STYLE(0),
+                0,
+                0,
+                0,
+                0,
+                None,
+                None,
+                None,
+                None,
+            )
+        }
+        .unwrap();
+        let id = hwnd_id(hwnd);
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let info = describe(HWND(id as isize as *mut _));
+            let _ = tx.send(info.process.is_some());
+        });
+        let done = rx.recv_timeout(Duration::from_secs(2));
+        // SAFETY: our window, created above on this thread. Destroying it
+        // also releases a stuck `WM_GETTEXT` sender.
+        let _ = unsafe { DestroyWindow(hwnd) };
+        assert_eq!(done, Ok(true), "describe() waited for the owner thread");
+    }
 
     #[test]
     fn uwp_rules_come_from_the_policy_file() {

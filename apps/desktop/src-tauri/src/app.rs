@@ -238,14 +238,17 @@ fn setup<R: Runtime>(app: &AppHandle<R>) -> Result<(), Box<dyn std::error::Error
     diag!("starting {}", env!("CARGO_PKG_VERSION"));
     let system_locale = system_locale();
     let (mut persist, store_problem) = open_persistence();
+    diag!("store opened");
     let mut boot = Boot::load(&mut *persist, env!("CARGO_PKG_VERSION"));
     boot.problems.extend(store_problem);
+    diag!("settings loaded");
     // Windows only (`legacy_data_dir` is None elsewhere): delete the C#
     // app's files and ask once to register again (§4.5).
     if let Some(dir) = store::legacy_data_dir() {
         boot.legacy_cleaned = store::cleanup_legacy(&dir);
     }
 
+    diag!("legacy data checked");
     register_foreground_observer();
 
     let (tx, rx) = mpsc::channel::<WorkerMsg>();
