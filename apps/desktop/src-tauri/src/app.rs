@@ -324,8 +324,13 @@ fn on_window_event<R: Runtime>(window: &tauri::Window<R>, event: &WindowEvent) {
 /// Runs the app.
 pub fn run() {
     let app = tauri::Builder::default()
-        // First: a second instance exits right away (legacy #9).
-        .plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}))
+        // First: a second instance exits right away (legacy #9). The running
+        // one opens its settings, so launching again from the Start menu
+        // shows that PasteWarden is already running (its tray icon is often
+        // hidden under the overflow arrow).
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            crate::ui::open_settings(app, None);
+        }))
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(crate::commands::handler())
         .setup(|app| setup(app.handle()))

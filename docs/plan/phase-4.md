@@ -246,7 +246,7 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 - 單元測試：`crates/platform` 的純邏輯（去重、自我寫入快取、`PasteGate` 的編碼、儲存檔損毀與過大、舊版資料只刪列出的檔案）一律把時間當參數傳入。keyring 用 mock 後端。
 - 整合測試（`#[ignore]`，本機執行）：真的剪貼簿（測試前備份、結束時還原）；同一個行程用 `SendInput` 送帶標記的 F24，斷言 callback ≤ `CALLBACK_BUDGET_US`；貼上路徑暖機後斷言 ≤ `PASTE_CALLBACK_CEILING_US`。跨行程的逾時行為手動測一次。
 - Native Messaging：Chromium E2E 用 Playwright 的暫存 `user-data-dir`；Windows 的 registry 只寫 HKCU，測完刪掉。
-- 手動測試清單（整理在 `docs/testing/windows-manual.md`，2026-11-28）：舊 #9 的 4 項（系統匣還原且還原後不再被攔、通知文字完整、啟動時現有的剪貼簿會被分析、第二個實例直接結束）、§4 的入口表、§5.3 的已知限制。
+- 手動測試清單（整理在 `docs/testing/windows-manual.md`，2026-11-28）：舊 #9 的 4 項（系統匣還原且還原後不再被攔、通知文字完整、啟動時現有的剪貼簿會被分析、第二個實例直接結束，已在執行的那個打開設定視窗。2026-11-28 補記：原本第二個實例什麼都不顯示，系統匣圖示又常被 Windows 收進 `^`，使用者會以為打不開）、§4 的入口表、§5.3 的已知限制。
 
 ## 4.7 完成條件
 
