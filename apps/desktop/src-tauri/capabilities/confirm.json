@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "confirm",
+  "description": "Paste confirmation window: read settings (theme, language) and answer the confirmation.",
+  "windows": ["confirm"],
+  "permissions": [
+    "core:event:default",
+    "core:window:default",
+    "allow-get-settings",
+    "allow-get-pending-paste",
+    "allow-paste-choice"
+  ]
+}

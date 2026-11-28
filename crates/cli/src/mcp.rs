@@ -21,7 +21,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::l10n::{parse_locale, t};
-use crate::report_json::{ReportJson, SecretJson, TraceStepJson, secrets_json};
+use paste_warden_report::{ReportJson, SecretJson, TraceStepJson, secrets_json};
 
 /// Longest accepted tool input, in chars (1 Mi). Longer input is an error.
 pub const MAX_INPUT_CHARS: usize = MAX_ANALYZED_CHARS;

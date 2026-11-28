@@ -13,6 +13,11 @@ paste-warden-core.workspace = true
 paste-warden-i18n.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+# Only the CLI (MCP output schemas) needs it; WASM and Python stay without.
+schemars = { workspace = true, optional = true }
+
+[features]
+schema = ["dep:schemars"]
 
 [lints]
 workspace = true

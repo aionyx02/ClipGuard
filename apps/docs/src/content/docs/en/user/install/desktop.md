@@ -7,6 +7,8 @@ sidebar:
 
 The desktop app arrives in Phase 4 and protects places outside the browser: it clears suspicious commands from the clipboard and warns again when you open the Run dialog or a terminal. Either the extension or the desktop app works fully on its own; with both installed they talk to each other.
 
+For what the desktop app can and can't protect, see [What is protected, and platform limits](../../limits/).
+
 Install steps will appear here after release. One rule up front:
 
 :::danger[Never paste a terminal command to install anything]

@@ -10,6 +10,14 @@ const repoRoot = here('../..');
 const coreDist = here('../../packages/core-js/dist');
 /** Output of scripts/build-engine.mjs: the wasm2js build as an on-demand ES module. */
 const w2jDir = here('.engine/w2j');
+/**
+ * Public key that fixes the Chrome / Edge / Chromium extension id to
+ * `nlbcepabhjkfeklnkbnjiibkfepmmmba` (docs/plan/phase-4.md §4.5: no store id). The native host
+ * allows only this id (`ALLOWED_CHROMIUM_EXTENSION_IDS` in crates/platform/src/nmh/mod.rs).
+ * The private key is not needed for unpacked or zip installs and is not kept in the repo.
+ */
+const CHROMIUM_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvHz1mgAhdW9kKv1n8LlQfWBjlsTTkJFUdUiXr0voifyV5DiVL9fGUv/Og9buYPFbkkfXntEhdhKpgbHHB4HmN2prTwia+EwYck7K4IZcYacRjNIYh+rZFrphQNV/4RmZIr/m1vqQwebi9C+bpR8v25xQ0A8baHzRuwz9ST0pEVij/cHsyK0qL9Q1xGKg/RTPHaCSA55S/PdJ6/QnH9boEga4ZAZRLX9AqnaK/HXLp5cezjr8RWioJ+tuOCRQo7rZ34nhCVgqeYRhrskoC9juigFQPhQINNbSOKzHxDLnktYwCPwLSYOGEw9pV2MDliep8BsF0cfDts6lOWvbijDOBwIDAQAB';
 
 // https://wxt.dev/api/config.html
 export default defineConfig({
@@ -53,6 +61,8 @@ export default defineConfig({
       'clipboardWrite',
       ...(browser === 'firefox' ? [] : ['offscreen']),
     ],
+    // Requested from the options page only when the user connects the desktop app (§4.4).
+    optional_permissions: ['nativeMessaging'],
     content_security_policy: {
       // S2: background / offscreen need 'wasm-unsafe-eval' to instantiate WebAssembly.
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
@@ -61,6 +71,7 @@ export default defineConfig({
       { resources: ['engine/*', 'engine/w2j/*'], matches: ['<all_urls>'] },
     ],
     action: { default_title: 'PasteWarden' },
+    ...(browser === 'firefox' ? {} : { key: CHROMIUM_KEY }),
     ...(browser === 'firefox'
       ? {
           browser_specific_settings: {

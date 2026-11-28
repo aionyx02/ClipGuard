@@ -125,5 +125,5 @@ export const ENGINE_VERSION: string;
 
 ## 2.9 後續
 
-- CLI 的 `report_json` 和共用的 `crates/report` 目前是兩份實作，由 `crates/cli/tests/report_parity.rs` 保證輸出一致（合併時抓到 CLI 的 span 用了 `[起點, 終點]`）。Phase 4 前把 CLI 改成直接使用 `crates/report`。
+- CLI 的 `report_json` 和共用的 `crates/report` 原本是兩份實作，由 `crates/cli/tests/report_parity.rs` 保證輸出一致（合併時抓到 CLI 的 span 用了 `[起點, 終點]`）。Phase 4 開始時已改成 CLI 直接使用 `crates/report`，兩份實作和 parity 測試都拿掉了（`docs/plan/phase-4.md` §4.5）。
 - 已知仍會 fail-open 的情況（執行檔不存在、行程被終止、使用者關閉 hook、`--bare`）寫在 `docs/integrations/agent-hooks.md`。agent 改寫自己的設定來關掉 hook 的情境，列入 Phase 5 紅隊題目。

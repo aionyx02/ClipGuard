@@ -149,6 +149,8 @@ pub const MAX_WARNED_WINDOWS: usize = 4096;
 pub struct EntryWarningGate {
     generation: Option<u64>,
     warned: HashSet<u64>,
+    /// Short-lived dialogs already warned about (see [`Self::try_enter_entry`]).
+    warned_kinds: HashSet<EntryPoint>,
 }
 
 impl EntryWarningGate {
@@ -162,11 +164,29 @@ impl EntryWarningGate {
         if self.generation != Some(generation) {
             self.generation = Some(generation);
             self.warned.clear();
+            self.warned_kinds.clear();
         }
         if self.warned.len() >= MAX_WARNED_WINDOWS && !self.warned.contains(&window) {
             self.warned.clear();
         }
         self.warned.insert(window)
+    }
+
+    /// Like [`Self::try_enter`], but the Run dialog and file dialogs count
+    /// once per kind: each Win+R or Open dialog is a new window, so closing
+    /// and reopening it would warn every time (manual test C5). File
+    /// Explorer and terminals stay open and keep the per-window rule.
+    pub fn try_enter_entry(&mut self, entry: EntryPoint, window: u64, generation: u64) -> bool {
+        match entry {
+            EntryPoint::RunDialog | EntryPoint::FileDialog => {
+                // Resets the windows on a new generation, as `try_enter` does.
+                if self.generation != Some(generation) {
+                    self.try_enter(window, generation);
+                }
+                self.warned_kinds.insert(entry)
+            }
+            _ => self.try_enter(window, generation),
+        }
     }
 }
 
@@ -216,5 +236,25 @@ mod tests {
         assert!(!g.try_enter(1, 0));
         assert!(g.try_enter(2, 0));
         assert!(g.try_enter(1, 1));
+    }
+
+    /// Manual test C5 (2026-11-28): closing Win+R and opening it again warned
+    /// again, because every Run dialog is a new window.
+    #[test]
+    fn short_lived_dialogs_warn_once_per_kind() {
+        use EntryPoint::*;
+        let mut g = EntryWarningGate::new();
+        assert!(g.try_enter_entry(RunDialog, 10, 0));
+        assert!(!g.try_enter_entry(RunDialog, 11, 0), "Win+R opened again");
+        assert!(g.try_enter_entry(FileDialog, 12, 0));
+        assert!(!g.try_enter_entry(FileDialog, 13, 0));
+        // Explorer and terminals stay open: once per window.
+        assert!(g.try_enter_entry(Terminal, 20, 0));
+        assert!(!g.try_enter_entry(Terminal, 20, 0));
+        assert!(g.try_enter_entry(Terminal, 21, 0), "another terminal");
+        assert!(g.try_enter_entry(FileExplorer, 30, 0));
+        // A new clipboard warns again everywhere.
+        assert!(g.try_enter_entry(RunDialog, 14, 1));
+        assert!(g.try_enter_entry(Terminal, 20, 1));
     }
 }

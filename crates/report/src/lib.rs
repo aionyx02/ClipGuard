@@ -151,11 +151,29 @@ pub fn localizer(locale: &str) -> &'static Localizer {
 
 // ---------------------------------------------------------------------------
 // Report JSON (§2.2)
+//
+// The one implementation of the §2.2 shape: `paste-warden scan --json`, the MCP
+// `analyze` tool, the agent hooks, WASM and Python all serialize through
+// [`ReportJson::new`]. Field names, enum spellings and the UTF-16 span
+// convention here are the contract; change §2.2 first, then this code.
+//
+// Invariants (P4): no secret plaintext (secrets carry only `masked` and a
+// UTF-16 span; `trace[].preview` is already masked by the engine); no wallet
+// address text, only currency and span; every `text` is rendered in the
+// requested locale.
 
-#[derive(Debug, Serialize)]
+/// Version of this JSON shape (`schema` field).
+pub const SCHEMA_VERSION: u32 = REPORT_SCHEMA;
+
+/// §2.2 top level.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ReportJson {
+    /// Always [`SCHEMA_VERSION`].
     pub schema: u32,
-    pub action: &'static str,
+    /// Recommended action.
+    pub action: ActionJson,
+    /// Only a prefix (1 Mi chars) of the text was analyzed.
     pub truncated: bool,
     pub command: CommandJson,
     pub secrets: Vec<SecretJson>,
@@ -163,49 +181,105 @@ pub struct ReportJson {
     pub wallets: Vec<WalletJson>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct CommandJson {
-    pub level: &'static str,
-    pub risk_score: u8,
-    pub reasons: Vec<ReasonJson>,
-    pub trace: Vec<TraceJson>,
-    pub hosts: Vec<String>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ActionJson {
+    Allow,
+    Warn,
+    Quarantine,
 }
 
-#[derive(Debug, Serialize)]
+impl From<Action> for ActionJson {
+    fn from(a: Action) -> Self {
+        match a {
+            Action::Allow => ActionJson::Allow,
+            Action::Warn => ActionJson::Warn,
+            Action::Quarantine => ActionJson::Quarantine,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum LevelJson {
+    None,
+    Suspicious,
+    Malicious,
+}
+
+impl From<Level> for LevelJson {
+    fn from(l: Level) -> Self {
+        match l {
+            Level::None => LevelJson::None,
+            Level::Suspicious => LevelJson::Suspicious,
+            Level::Malicious => LevelJson::Malicious,
+        }
+    }
+}
+
+/// A rendered message: Fluent id plus the text in the requested locale.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ReasonJson {
     pub id: String,
     pub text: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct TraceJson {
-    pub kind: &'static str,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct CommandJson {
+    pub level: LevelJson,
+    /// 0–100 (docs/spec/detection-rules.md §3.6).
+    pub risk_score: u8,
+    pub reasons: Vec<ReasonJson>,
+    pub trace: Vec<TraceStepJson>,
+    /// Download hosts, lowercase.
+    pub hosts: Vec<String>,
+}
+
+/// One deobfuscation step.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct TraceStepJson {
+    /// Step kind (`caret`, `backtick`, `concat`, `base64`, …; `StepKind::as_str`).
+    pub kind: String,
+    /// What the step did, localized.
     pub text: String,
-    /// Masked by the engine.
+    /// Text after the step around the change; secrets masked. Untrusted.
     pub preview: String,
 }
 
-#[derive(Debug, Serialize)]
+/// One detected secret. Never contains the plaintext.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SecretJson {
-    pub kind: &'static str,
+    /// `national_id`, `api_key`, … (`SecretKind::as_str`).
+    pub kind: String,
+    /// Rule id (`tw-national-id`, `gitleaks.…`); empty for registered secrets.
     pub rule_id: String,
+    /// Localized label.
     pub label: String,
+    /// Masked value (`A12****789`).
     pub masked: String,
-    /// `[start, length]` in UTF-16 code units (corpus convention).
+    /// `[start, length]` in UTF-16 code units of the input text (corpus convention).
     pub span_utf16: [usize; 2],
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct HiddenJson {
-    pub level: &'static str,
+    pub level: LevelJson,
     pub reasons: Vec<ReasonJson>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct WalletJson {
-    pub currency: &'static str,
-    /// `[start, length]` in UTF-16 code units.
+    /// `btc`, `eth`, … (`Cryptocurrency::as_str`).
+    pub currency: String,
+    /// `[start, length]` in UTF-16 code units of the input text.
     pub span_utf16: [usize; 2],
 }
 
@@ -217,23 +291,49 @@ pub fn action_str(a: Action) -> &'static str {
     }
 }
 
-fn reasons(v: &Verdict, loc: &Localizer) -> Vec<ReasonJson> {
-    v.reasons
+/// Renders a verdict's reasons.
+pub fn reasons(v: &Verdict, loc: &Localizer) -> Vec<ReasonJson> {
+    v.reasons.iter().map(|m| reason(m, loc)).collect()
+}
+
+/// Renders one message.
+pub fn reason(m: &Message, loc: &Localizer) -> ReasonJson {
+    ReasonJson {
+        id: m.id.to_string(),
+        text: loc.format(m),
+    }
+}
+
+/// Renders deobfuscation steps.
+pub fn trace(steps: &[DeobfuscationStep], loc: &Localizer) -> Vec<TraceStepJson> {
+    steps
         .iter()
-        .map(|m| ReasonJson {
-            id: m.id.to_string(),
-            text: loc.format(m),
+        .map(|s| TraceStepJson {
+            kind: s.kind.as_str().to_owned(),
+            text: loc.format(&s.message),
+            preview: s.preview.clone(),
         })
         .collect()
 }
 
-fn trace(steps: &[DeobfuscationStep], loc: &Localizer) -> Vec<TraceJson> {
-    steps
+/// Renders secret matches found in `text` (MCP `scan_secrets`).
+pub fn secrets_json(matches: &[SecretMatch], text: &str, loc: &Localizer) -> Vec<SecretJson> {
+    let map = Utf16Map::new(
+        text,
+        matches.iter().flat_map(|m| [m.span.start, m.span.end]),
+    );
+    secrets(matches, &map, loc)
+}
+
+fn secrets(matches: &[SecretMatch], map: &Utf16Map, loc: &Localizer) -> Vec<SecretJson> {
+    matches
         .iter()
-        .map(|s| TraceJson {
-            kind: s.kind.as_str(),
-            text: loc.format(&s.message),
-            preview: s.preview.clone(),
+        .map(|m| SecretJson {
+            kind: m.kind.as_str().to_owned(),
+            rule_id: m.rule_id.clone(),
+            label: loc.format(&m.label),
+            masked: m.masked.clone(),
+            span_utf16: map.span(m.span.start, m.span.end),
         })
         .collect()
 }
@@ -283,60 +383,57 @@ impl Utf16Map {
     }
 }
 
-/// Builds the §2.2 Report for `report` (computed from `text`) in `locale`.
-pub fn report_json(text: &str, report: &Report, locale: &str) -> ReportJson {
-    let loc = localizer(locale);
-    let offsets = report
-        .secrets
-        .iter()
-        .flat_map(|m| [m.span.start, m.span.end])
-        .chain(
-            report
-                .wallets
-                .iter()
-                .flat_map(|w| [w.start, w.start + w.len]),
-        );
-    let map = Utf16Map::new(text, offsets);
-    ReportJson {
-        schema: REPORT_SCHEMA,
-        action: action_str(report.action),
-        truncated: report.truncated,
-        command: CommandJson {
-            level: report.command.verdict.level.as_str(),
-            risk_score: report.command.risk_score,
-            reasons: reasons(&report.command.verdict, loc),
-            trace: trace(&report.command.trace, loc),
-            hosts: report.command.hosts.clone(),
-        },
-        secrets: report
+impl ReportJson {
+    /// Serializes `report` (from `Engine::analyze(text, …)`) with messages
+    /// rendered by `loc`. `text` is only used to convert byte offsets to UTF-16.
+    pub fn new(report: &Report, text: &str, loc: &Localizer) -> ReportJson {
+        let offsets = report
             .secrets
             .iter()
-            .map(|m| SecretJson {
-                kind: m.kind.as_str(),
-                rule_id: m.rule_id.clone(),
-                label: loc.format(&m.label),
-                masked: m.masked.clone(),
-                span_utf16: map.span(m.span.start, m.span.end),
-            })
-            .collect(),
-        hidden: HiddenJson {
-            level: match report.hidden.level {
-                Level::None => "none",
-                // Hidden-character findings are never Malicious; keep the
-                // two-value enum of §2.2 even if that ever changes.
-                Level::Suspicious | Level::Malicious => "suspicious",
+            .flat_map(|m| [m.span.start, m.span.end])
+            .chain(
+                report
+                    .wallets
+                    .iter()
+                    .flat_map(|w| [w.start, w.start + w.len]),
+            );
+        let map = Utf16Map::new(text, offsets);
+        ReportJson {
+            schema: SCHEMA_VERSION,
+            action: report.action.into(),
+            truncated: report.truncated,
+            command: CommandJson {
+                level: report.command.verdict.level.into(),
+                risk_score: report.command.risk_score,
+                reasons: reasons(&report.command.verdict, loc),
+                trace: trace(&report.command.trace, loc),
+                hosts: report.command.hosts.clone(),
             },
-            reasons: reasons(&report.hidden, loc),
-        },
-        wallets: report
-            .wallets
-            .iter()
-            .map(|w| WalletJson {
-                currency: w.currency.as_str(),
-                span_utf16: map.span(w.start, w.start + w.len),
-            })
-            .collect(),
+            secrets: secrets(&report.secrets, &map, loc),
+            hidden: HiddenJson {
+                level: match report.hidden.level {
+                    Level::None => LevelJson::None,
+                    // Hidden-character findings are never Malicious; keep the
+                    // two-value enum of §2.2 even if that ever changes.
+                    Level::Suspicious | Level::Malicious => LevelJson::Suspicious,
+                },
+                reasons: reasons(&report.hidden, loc),
+            },
+            wallets: report
+                .wallets
+                .iter()
+                .map(|w| WalletJson {
+                    currency: w.currency.as_str().to_owned(),
+                    span_utf16: map.span(w.start, w.start + w.len),
+                })
+                .collect(),
+        }
     }
+}
+
+/// Builds the §2.2 Report for `report` (computed from `text`) in `locale`.
+pub fn report_json(text: &str, report: &Report, locale: &str) -> ReportJson {
+    ReportJson::new(report, text, localizer(locale))
 }
 
 fn to_json<T: Serialize>(v: &T) -> String {
@@ -488,7 +585,7 @@ pub fn messages(locale: &str) -> String {
 
 #[derive(Debug, Serialize)]
 pub struct DeobfuscatedJson {
-    pub trace: Vec<TraceJson>,
+    pub trace: Vec<TraceStepJson>,
     /// Start of the fully peeled text (at most [`MAX_OUTPUT_PREVIEW_CHARS`]
     /// chars, `…` where cut), secrets masked.
     pub output_preview: String,
@@ -523,6 +620,35 @@ pub fn deobfuscate_json(text: &str, locale: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    /// Moved from the CLI's former copy (`crates/cli/src/report_json.rs`).
+    #[test]
+    fn report_has_the_spec_shape_and_no_plaintext() {
+        let text = "🔑 身分證 A123456789";
+        let report = Engine::default().analyze(text, &Context::default());
+        let json = ReportJson::new(&report, text, &Localizer::new("en"));
+        let v = serde_json::to_value(&json).unwrap();
+        for key in [
+            "schema",
+            "action",
+            "truncated",
+            "command",
+            "secrets",
+            "hidden",
+            "wallets",
+        ] {
+            assert!(v.get(key).is_some(), "{key}");
+        }
+        assert_eq!(v["action"], "warn");
+        assert_eq!(v["command"]["level"], "none");
+        let s = &v["secrets"][0];
+        assert_eq!(s["kind"], "national_id");
+        assert_eq!(s["span_utf16"], serde_json::json!([7, 10])); // [start, length]
+        assert!(!v.to_string().contains("A123456789"));
+        // Round-trips (the MCP client side deserializes it).
+        let back: ReportJson = serde_json::from_value(v).unwrap();
+        assert_eq!(back, json);
+    }
 
     fn clickfix() -> String {
         [

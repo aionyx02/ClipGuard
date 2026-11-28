@@ -1,4 +1,4 @@
-# S9 Native Messaging（macOS 部分；Windows 待補）
+# S9 Native Messaging（macOS、Windows；Windows 的 Firefox 待補）
 
 - 日期：2026-11-24　平台：macOS（Darwin 27.2，Apple Silicon），headless
 - 版本：Playwright 1.65.1 內建的 Chromium 159（Google Chrome for Testing）、Firefox 159.0；Rust 1.100.0（host 只用 `serde_json`）
@@ -15,7 +15,7 @@
 
 ## 安裝位置（實測：Chromium 的 user-data-dir、Firefox 的使用者路徑；其餘查文件）
 
-| 瀏覽器 | macOS 使用者層級 | Linux 使用者層級 | Windows（**待在 Windows 驗證**） |
+| 瀏覽器 | macOS 使用者層級 | Linux 使用者層級 | Windows（Chromium、Edge 已實測，見「Windows 實測」；Firefox 待補） |
 |---|---|---|---|
 | Chrome | `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/<name>.json` | `~/.config/google-chrome/NativeMessagingHosts/` | `HKCU\Software\Google\Chrome\NativeMessagingHosts\<name>`，預設值 = manifest 的絕對路徑 |
 | Chromium | `~/Library/Application Support/Chromium/NativeMessagingHosts/` | `~/.config/chromium/NativeMessagingHosts/` | `HKCU\Software\Chromium\NativeMessagingHosts\<name>` |
@@ -53,7 +53,7 @@
 | 擴充功能沒宣告 `nativeMessaging` 權限 | `chrome.runtime.connectNative` 是 `undefined` | 未測（推論相同） |
 
 host 看到的 argv（實測）：
-- Chrome：`[<host path>, "chrome-extension://pfoeleofbpiicppadpiimgfemhcpjnfc/"]`。文件說 Windows 上還會多一個 `--parent-window=<HWND>`，**待驗證**。
+- Chrome：`[<host path>, "chrome-extension://pfoeleofbpiicppadpiimgfemhcpjnfc/"]`。Windows 上還會多一個 `--parent-window=<HWND>`（已實測，headless 時是 0）。
 - Firefox：`[<host path>, "/Users/…/Mozilla/NativeMessagingHosts/org.pastewarden.spike.json", "pw-spike@example.invalid"]`
 
 ## 延遲（1 KB echo，單位 ms）
@@ -72,7 +72,31 @@ Firefox 的數字是 background 裡量的，沒有經過 content script 橋接�
 - Firefox 對「ID 不在白名單」和「沒安裝」回同一個錯誤，擴充功能端分不出是哪一種。Chrome 會明確說 forbidden。
 - Playwright 的 Firefox 不能 `goto` `moz-extension://` 頁面，也抓不到擴充功能自己開的分頁，所以要用 content script 加 http 頁面橋接（和 S2 一樣）。
 - Playwright 的 Chromium 不管 `--user-data-dir` 怎麼設，都會更新 `~/Library/Application Support/Google/Chrome for Testing/Crashpad/settings.dat`（這個資料夾 S2 之前就有了，不是本次建立的）。
-- 長度前綴是 native-endian。目前所有平台都是 little-endian，但程式裡照規格寫 `to_ne_bytes`。Windows 的 stdout 要確認是 binary mode（Rust std 不會轉換換行，**待驗證**）。
+- 長度前綴是 native-endian。目前所有平台都是 little-endian，但程式裡照規格寫 `to_ne_bytes`。Windows 上 Rust std 的 stdin／stdout 不做文字模式轉換（已實測，見「Windows 實測」）。
+
+## Windows 實測（2026-11-25）
+
+- 平台：Windows 11 Home 10.0.26200（x64），headless。瀏覽器是 Playwright 1.65.1 的 Chromium 159（`channel: 'chromium'`，和 `apps/extension/e2e` 相同）、系統安裝的 Microsoft Edge 158（`channel: 'msedge'`）。host 是 std-only 的 Rust 1.100.0 release binary（172 KB），程式放在暫存資料夾，不合併。
+- **只寫 HKCU**，測試前三個位置都沒有任何 `NativeMessagingHosts` key，測完全部刪掉並確認。每個情境用新的暫存 profile。這台電腦沒有 Firefox，Firefox 的 Windows 部分沒測。
+
+| 情境 | Chromium 159 | Edge 158 |
+|---|---|---|
+| 只有 `HKCU\Software\Chromium\NativeMessagingHosts\<name>` | ✅ | — |
+| 只有 `HKCU\Software\Google\Chrome\NativeMessagingHosts\<name>` | ✅（Playwright 的 Chromium 也會讀 Chrome 的 key） | ✅（Edge 會退回讀 Chrome 的 key） |
+| 只有 `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\<name>` | — | ✅ |
+| 沒有 key | `Specified native messaging host not found.` | 同左 |
+| extension ID 不在 `allowed_origins` | `Access to the specified native messaging host is forbidden.`，host 沒被啟動 | 同左 |
+| 長度前綴含 `0x0A`、`0x0D`、`0x1A`（10、13、26、266、3338 bytes），雙向 | ✅ 全部正確 | ✅ |
+| `sendNativeMessage` 單次（20 次） | p50 54–59 ms、p95 62–74 ms | p50 50–53 ms、p95 59–62 ms |
+
+- **argv**：兩個瀏覽器都是 `[<host 路徑>, "chrome-extension://<id>/", "--parent-window=0"]`，確實多一個 `--parent-window`。headless 時值是 0；有視窗時應該是 HWND（沒測）。host 解析 argv 時要接受第 3 個參數，只比對第 2 個。
+- **cwd** 是 host 執行檔所在的資料夾，和 macOS 相同。
+- **binary mode**：Rust std 的 stdin／stdout 在 Windows 上直接呼叫 `ReadFile`／`WriteFile`，不做換行轉換，也不把 `0x1A` 當 EOF。長度前綴剛好是這些位元組時也正確，**不需要**另外切換 binary mode。
+- **單次呼叫比 macOS 慢約 10 倍**（macOS 3.5–5.5 ms）。差距推測來自 Windows 建立行程的成本和 Defender 即時掃描新行程，沒有個別量測。50 ms 對「啟動時探測一次」和偶爾送 `verdict` 沒有影響；如果之後有需要即時回覆的 op，要改用 `connectNative` 長連線（Windows 的熱 port 延遲沒測）。
+- **Defender**：瀏覽器啟動本機建置、未簽章的 host 時沒有任何攔截或警告。這個 host 不是下載來的（沒有 MOTW），所以 SmartScreen 不會介入；安裝檔下載後的情況要等 Phase 6 有正式發佈檔再測。
+- **Chrome stable 不能用 `--load-extension`**：用系統安裝的 Chrome（`channel: 'chrome'`）測時，擴充功能沒有被載入，service worker 一直沒出現。Chrome 137 起品牌版已經不支援這個參數。所以 E2E 只能用 Chromium 和 Edge；Chrome stable 要手動載入未封裝的擴充功能再測。
+
+**Phase 4 的做法**：安裝程式寫 `Google\Chrome`、`Microsoft\Edge`、`Chromium`、`Mozilla` 四個 HKCU key（Edge 和 Chromium 雖然會退回讀 Chrome 的 key，各寫一份比較不受瀏覽器行為變動影響），解除安裝時全部刪除。
 
 ## Phase 4 建議設計
 
@@ -98,7 +122,7 @@ Firefox 的數字是 background 裡量的，沒有經過 content script 橋接�
 
 ## 待決問題
 
-- **Windows（和 S3 一起做）**：實測 registry 位置（HKCU，Chrome／Edge／Firefox）；Chrome 是否多傳 `--parent-window`；stdout 的 binary mode；Defender／SmartScreen 對瀏覽器啟動未簽章 host 的反應。
+- **Windows**：registry 位置、`--parent-window`、binary mode、Defender 已在 2026-11-25 實測（見上）。還沒測的是 Firefox 的 `HKCU\Software\Mozilla\NativeMessagingHosts`、有視窗時 `--parent-window` 的值、熱 port 的延遲，以及下載的安裝檔帶 MOTW 時 SmartScreen 的反應。
 - Linux snap／Flatpak 版 Firefox 透過 portal 啟動 host 是否可行。
 - 沒有封裝的 `.app` 裡的 host 被 quarantine 標記時，瀏覽器能不能啟動它（要等 Phase 4 有簽章／公證的 build 再驗證）。
 - 擴充功能和桌面端各自偵測時，警告會不會重複出現、要由誰顯示。需要在 Phase 4 規格裡定義。

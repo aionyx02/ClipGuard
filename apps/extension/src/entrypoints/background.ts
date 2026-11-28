@@ -2,10 +2,14 @@
 // log, relaying dialogs from sub-frames to the top frame, and the extension-side clipboard write
 // (Chrome: offscreen document + execCommand('copy'); Firefox: navigator.clipboard here). S2.
 //
+// Also the optional Native Messaging link to the desktop app (lib/native.ts): off until the user
+// grants `nativeMessaging` from the options page; the extension never depends on it.
+//
 // No engine runs here; nothing here keeps state in memory (the service worker can be killed).
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import type { ToBackground, ToContent, ToOffscreen } from '../lib/messages';
+import { NATIVE_KEY, NativeLink, NMH_NAME } from '../lib/native';
 import {
   type BlockRecord,
   isBlockRecord,
@@ -38,6 +42,24 @@ async function appendRecord(record: BlockRecord): Promise<void> {
     await browser.storage.local.set({ [RECENT_KEY]: [clean, ...list].slice(0, RECENT_MAX) });
   });
 }
+
+type SendNative = (app: string, msg: unknown) => Promise<unknown>;
+
+const native = new NativeLink({
+  hasPermission: () => browser.permissions.contains({ permissions: ['nativeMessaging'] }),
+  send: (msg) => {
+    // Only defined once the optional permission is granted; looked up on every call.
+    const runtime = browser.runtime as unknown as { sendNativeMessage?: SendNative };
+    if (typeof runtime.sendNativeMessage !== 'function') {
+      return Promise.reject(new Error('nativeMessaging unavailable'));
+    }
+    return runtime.sendNativeMessage(NMH_NAME, msg);
+  },
+  load: async () => (await browser.storage.local.get(NATIVE_KEY))[NATIVE_KEY],
+  save: (r) => browser.storage.local.set({ [NATIVE_KEY]: r }),
+  now: () => Date.now(),
+  version: browser.runtime.getManifest().version,
+});
 
 const OFFSCREEN_URL = '/offscreen.html';
 
@@ -79,14 +101,28 @@ export default defineBackground(() => {
     await browser.storage.local.set({ [SETTINGS_KEY]: normalizeSettings(got[SETTINGS_KEY]) });
   });
 
+  // Probe when the worker starts (only if due), and right after the user grants or revokes it.
+  void native.probe();
+  browser.permissions.onAdded.addListener((p) => {
+    if (p.permissions?.includes('nativeMessaging')) void native.probe(true);
+  });
+  browser.permissions.onRemoved.addListener((p) => {
+    if (p.permissions?.includes('nativeMessaging')) void native.probe(true);
+  });
+
   browser.runtime.onMessage.addListener((raw: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return undefined;
     const msg = raw as ToBackground & { target?: string };
     if (msg.target === 'offscreen') return undefined;
     switch (msg.type) {
       case 'record':
-        if (isBlockRecord(msg.record)) return appendRecord(msg.record).then(() => true);
-        return undefined;
+        if (!isBlockRecord(msg.record)) return undefined;
+        if (msg.verdict) void native.sendVerdict(msg.verdict, msg.record.domain);
+        return appendRecord(msg.record).then(() => true);
+      case 'native-status':
+        return native.probe();
+      case 'native-probe':
+        return native.probe(true);
       case 'present-blocked':
       case 'present-warning': {
         const tabId = sender.tab?.id;

@@ -9,6 +9,42 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+paste-warden-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+zeroize.workspace = true
+# store.rs: settings / registered-secret persistence, OS keyring for the HMAC key
+keyring.workspace = true
+# CSPRNG for the HMAC key (already in Cargo.lock through other crates)
+getrandom.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2.workspace = true
+objc2-foundation.workspace = true
+objc2-app-kit.workspace = true
+objc2-core-foundation.workspace = true
+objc2-core-graphics.workspace = true
+objc2-application-services.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb.workspace = true
+wayland-client.workspace = true
+wayland-protocols.workspace = true
+wayland-protocols-wlr.workspace = true
+# nmh IPC: SO_PEERCRED and getuid (phase-4.md §4.9.2).
+rustix = { workspace = true, features = ["net", "process"] }
+
+[dev-dependencies]
+proptest.workspace = true
+tempfile.workspace = true
+
+[[bin]]
+name = "paste-warden-nmh"
+path = "src/bin/paste-warden-nmh.rs"
 
 [lints]
 workspace = true

@@ -3,7 +3,7 @@
 //   command — that is exactly the ClickFix pattern PasteWarden blocks;
 // - every zh-TW page has an English counterpart.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../src/content/docs/', import.meta.url));
@@ -17,7 +17,9 @@ function walk(dir) {
 }
 
 const problems = [];
-const pages = walk(root).map((p) => relative(root, p));
+// `/`-separated on every OS: on Windows `relative` returns `en\…`, which never
+// matched the `en/` checks below.
+const pages = walk(root).map((p) => relative(root, p).split(sep).join('/'));
 for (const page of pages) {
   const text = readFileSync(join(root, page), 'utf8');
   if (/xattr/i.test(text)) problems.push(`${page}: mentions xattr (roadmap §8)`);

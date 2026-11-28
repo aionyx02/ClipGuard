@@ -12,18 +12,12 @@ interface IconProps {
 export function ShieldMark({ className }: IconProps) {
   return (
     <svg viewBox="0 0 128 128" className={className} aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="pw-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3B82F6" />
-          <stop offset="1" stopColor="#0D9488" />
-        </linearGradient>
-      </defs>
       <path
         d="M30 24H98a8 8 0 0 1 8 8V64c0 26-17 42-42 54C39 106 22 90 22 64V32a8 8 0 0 1 8-8Z"
-        fill="url(#pw-mark)"
+        fill="#161616"
       />
-      <rect x="42" y="12" width="44" height="22" rx="7" fill="#E2E8F0" />
-      <rect x="55" y="17" width="18" height="7" rx="3.5" fill="#1E3A8A" />
+      <rect x="42" y="12" width="44" height="22" rx="7" fill="#D4D4D1" />
+      <rect x="55" y="17" width="18" height="7" rx="3.5" fill="#161616" />
       <path
         d="M43 68l15 15 28-31"
         fill="none"

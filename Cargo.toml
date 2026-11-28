@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "xtask"]
+members = ["crates/*", "xtask", "apps/desktop/src-tauri"]
 default-members = ["crates/*"]
 exclude = ["fuzz"]
 
@@ -43,7 +43,54 @@ toml = "1"
 unic-langid = "0.9"
 unicode-normalization = "0.1"
 wasm-bindgen = "0.2.130"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_DataExchange",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_Ole",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+    # Phase 4a: foreground, paste hook, probe, integrity, session lock, NMH pipe
+    "Win32_UI_Accessibility",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_RemoteDesktop",
+    "Win32_System_StationsAndDesktops",
+    "Win32_System_Pipes",
+    "Win32_System_IO",
+    "Win32_System_Registry",
+    "Win32_Storage_FileSystem",
+    "Win32_Security_Authorization",
+    # tests only: windows_paste_hook reports console control events
+    "Win32_System_Console",
+] }
 zeroize = "1"
+# Phase 4 desktop (phase-4.md §4.1): Tauri v2 only (CLAUDE.md), OS keyring.
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-build = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-single-instance = "2"
+keyring = "4"
+getrandom = "0.4"
+sys-locale = "0.3"
+paste-warden-platform = { path = "crates/platform" }
+# macOS (phase-4.md §4.9.1, S4). objc2 framework crates enable all bindings by
+# default; crates/platform narrows nothing for now.
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
+objc2-core-foundation = "0.3"
+objc2-core-graphics = "0.3"
+objc2-application-services = "0.3"
+# Linux (phase-4.md §4.9.2, S5). Pure-Rust protocol clients: no libwayland /
+# libxcb at build or run time.
+x11rb = { version = "0.14", default-features = false, features = ["xfixes", "res"] }
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+rustix = { version = "1", features = ["pipe", "event", "fs"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

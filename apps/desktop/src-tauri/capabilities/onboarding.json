@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "onboarding",
+  "description": "First-run walkthrough: preferences, protection status, permissions, finish.",
+  "windows": ["onboarding"],
+  "permissions": [
+    "core:event:default",
+    "core:window:default",
+    "core:window:allow-hide",
+    "allow-get-protection-status",
+    "allow-get-settings",
+    "allow-set-locale",
+    "allow-set-theme",
+    "allow-complete-onboarding",
+    "allow-open-accessibility-settings"
+  ]
+}
