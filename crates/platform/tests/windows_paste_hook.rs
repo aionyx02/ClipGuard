@@ -33,6 +33,7 @@ use paste_warden_platform::host::SwallowReason;
 use paste_warden_platform::windows::clipboard::{Snapshot, sequence};
 use paste_warden_platform::windows::paste_hook::{
     CALLBACK_BUDGET_US, HOOK_EVENT_QUEUE_LEN, HOOK_FAIL_OPEN_MS, HOOK_PROBE_DEADLINE_MS,
+    PASTE_CALLBACK_CEILING_US,
 };
 use paste_warden_platform::windows::{ClipboardMonitor, HookMsg, PasteHook, foreground, send};
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
@@ -222,9 +223,11 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
     let (gate, hook, rx) = start_hook();
     gate.publish(sequence(), Decision::Intercept);
     // The paste path (clipboard sequence, foreground, modifiers, waking the
-    // worker) is the slowest one. The first paste is cold (page faults, the
-    // receiver's first wake-up) and is only reported; the budget applies to
-    // the warm ones. Both are far below HOOK_FAIL_OPEN_MS.
+    // worker) is the slowest one: its win32k getters wait on the USER lock,
+    // so it gets PASTE_CALLBACK_CEILING_US rather than CALLBACK_BUDGET_US.
+    // The first paste is cold (page faults, the receiver's first wake-up)
+    // and is only reported; the ceiling applies to the warm ones. Both are
+    // far below HOOK_FAIL_OPEN_MS.
     // Ctrl is pressed once and held while V is pressed repeatedly (as a
     // user holding Ctrl would). Tapping Ctrl again for every paste made
     // both Tabby and Windows Terminal raise a console Ctrl+C on the second
@@ -260,8 +263,8 @@ fn intercept_swallows_ctrl_v_with_its_key_up() {
     let _ = watchdog.join();
     assert!(times[0] < HOOK_FAIL_OPEN_MS * 1_000_000);
     assert!(
-        warm <= CALLBACK_BUDGET_US * 1_000,
-        "warm paste callback {warm} ns > budget {CALLBACK_BUDGET_US} µs"
+        warm <= PASTE_CALLBACK_CEILING_US * 1_000,
+        "warm paste callback {warm} ns > ceiling {PASTE_CALLBACK_CEILING_US} µs"
     );
 }
 

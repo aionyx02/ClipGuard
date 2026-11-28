@@ -93,7 +93,8 @@ UWP 用 `EnumChildWindows` 找 PID 和 frame host 不同的子視窗，找不到
 | `PROBE_VK` | `VK_F24` | S3 |
 | `HOOK_PROBE_INTERVAL_MS`／`HOOK_PROBE_DEADLINE_MS` | `30_000`／`1_000` | 自訂 |
 | `HOOK_FAIL_OPEN_MS` | `615`（文件常數，只當測試門檻） | S3 實測 |
-| `CALLBACK_BUDGET_US` | `100` | 自訂 |
+| `CALLBACK_BUDGET_US` | `100`（不呼叫 Win32 的探測路徑） | 自訂 |
+| `PASTE_CALLBACK_CEILING_US` | `10_000`（暖機後的貼上路徑） | 實測＋自訂 |
 | `PENDING_ANALYSIS_TIMEOUT_MS` | `2_000` | 自訂 |
 | `PENDING_TIMEOUT_MS`、`REGISTERED_MASK`、`MAX_ALLOWED_APPS`、`MAX_APP_NAME_LENGTH` | 引用 `core::policy::paste` | §5.3 |
 | `HOOK_PROBE_FAIL_THRESHOLD` | `2`：連續 2 次探測失敗才顯示「失效」，第 1 次只重裝 hook | 自訂 |
@@ -143,7 +144,8 @@ S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\S
 ### 自訂值的理由
 
 - `HOOK_PROBE_INTERVAL_MS = 30_000`、`HOOK_PROBE_DEADLINE_MS = 1_000`：S3 連續 14 次逾時都沒看到 hook 被移除，失效應該很少見；30 秒探測一次的成本是每分鐘 2 個被吞掉的 F24。1 秒的期限遠大於實測的 `SendInput → callback` p99（約 0.26 ms）。
-- `CALLBACK_BUDGET_US = 100`：實測最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。這個預算針對暖機後的呼叫：2026-11-28 在 Windows 實機上，第一次貼上（冷啟動，包含 page fault 和第一次喚醒 worker）是 123 µs。所以 `windows_paste_hook` 會先記下第一次的時間，只檢查它低於 `HOOK_FAIL_OPEN_MS`，後面 5 次才套用 100 µs 的預算。
+- `CALLBACK_BUDGET_US = 100`：S3 實測「查旗標、決定吞不吞」最長 14.8 µs，留約 7 倍的餘裕，又比 fail-open 門檻低四個數量級。這個預算只套用在**不呼叫 Win32 的路徑**，也就是帶標記的 F24 探測（`tagged_probe_is_answered_within_budget`）。
+- `PASTE_CALLBACK_CEILING_US = 10_000`：貼上路徑每次要呼叫 7 個 win32k 函式（`GetAsyncKeyState` ×5、`GetAncestor`、`GetClipboardSequenceNumber`），它們會等全系統共用的 USER 鎖，耗時取決於其他 GUI 程式，不是我們的程式碼能控制的。2026-11-28 在 Windows 實機（同時開著 Defender、輸入法、Snipaste、Everything）上：hook 裡暖機後的貼上 callback 連續 4 輪最長 179 µs～1.3 ms，計時顯示幾乎都花在這些呼叫上（`try_send` 不到 1 µs）；在一般 thread 上單獨呼叫同一組函式 5000 次，p50 1.2 µs、p99 58～71 µs、p99.9 322～540 µs、最長 2.0 ms，同一時間純運算 1 秒內只有 14 次超過 100 µs 的停頓。所以 100 µs 對貼上路徑不成立，改成 10 ms：約實測最長值的 5 倍，仍比 `HOOK_FAIL_OPEN_MS` 低 60 倍，使用者也感覺不到。第一次貼上（冷啟動，包含 page fault 和第一次喚醒 worker）實測 46～280 µs，`windows_paste_hook` 只檢查它低於 `HOOK_FAIL_OPEN_MS`，後面 5 次才套用這個上限。
 - `PENDING_ANALYSIS_TIMEOUT_MS = 2_000`：1 Mi 字的病態輸入在 release 下約 150 ms（§6.1）；超過 2 秒代表出了問題，這時**不補送**按鍵（fail closed），改跳 Warning 通知。
 - `SOURCE_URL_MAX_BYTES`、`WINDOW_TITLE_MAX_CHARS`、`STORE_FILE_MAX_BYTES`、`MAX_REGISTERED_SECRETS`、`FOREGROUND_HISTORY_LEN`、`SELF_WRITE_CACHE_LEN`：讓每個外部輸入都有上限；值取正常使用的數倍。
 - `STATUS_POLL_MS = 250`（`macos/host.rs`）：`pw-host` 每 250 ms 檢查安全輸入、輔助使用權限、剪貼簿存取權限，變了就送 `HostEvent::StatusChanged`。worker 本來每 `TICK_MS` = 1 秒就會重讀狀態，這個值只是讓變化立刻出現在系統匣；檢查只讀幾個系統旗標，成本可以忽略。
@@ -239,7 +241,7 @@ Ctrl+V 等（pw-hook callback，只讀 atomic）
 ## 4.6 測試
 
 - 單元測試：`crates/platform` 的純邏輯（去重、自我寫入快取、`PasteGate` 的編碼、儲存檔損毀與過大、舊版資料只刪列出的檔案）一律把時間當參數傳入。keyring 用 mock 後端。
-- 整合測試（`#[ignore]`，本機執行）：真的剪貼簿（測試前備份、結束時還原）；同一個行程用 `SendInput` 送帶標記的 F24，斷言 callback ≤ `CALLBACK_BUDGET_US`。跨行程的逾時行為手動測一次。
+- 整合測試（`#[ignore]`，本機執行）：真的剪貼簿（測試前備份、結束時還原）；同一個行程用 `SendInput` 送帶標記的 F24，斷言 callback ≤ `CALLBACK_BUDGET_US`；貼上路徑暖機後斷言 ≤ `PASTE_CALLBACK_CEILING_US`。跨行程的逾時行為手動測一次。
 - Native Messaging：Chromium E2E 用 Playwright 的暫存 `user-data-dir`；Windows 的 registry 只寫 HKCU，測完刪掉。
 - 手動測試清單（整理在 `docs/testing/windows-manual.md`，2026-11-28）：舊 #9 的 4 項（系統匣還原且還原後不再被攔、通知文字完整、啟動時現有的剪貼簿會被分析、第二個實例直接結束）、§4 的入口表、§5.3 的已知限制。
 

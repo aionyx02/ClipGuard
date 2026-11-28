@@ -9,8 +9,9 @@
 //! [`PasteGate`], and reports through a pre-allocated bounded channel
 //! (`try_send`, never blocks). Windows stops waiting for a callback after
 //! about [`HOOK_FAIL_OPEN_MS`] and delivers the key anyway (S3), so the whole
-//! decision is the pure [`decide`] and must stay far below
-//! [`CALLBACK_BUDGET_US`].
+//! decision is the pure [`decide`]. Our own work stays within
+//! [`CALLBACK_BUDGET_US`]; a paste also waits on the Win32 getters, which
+//! [`PASTE_CALLBACK_CEILING_US`] bounds.
 
 use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -51,8 +52,15 @@ pub const PROBE_VK: u16 = VK_F24.0;
 /// Windows ignores a callback that runs longer than this (S3, measured with
 /// no `LowLevelHooksTimeout`). Documentation and test threshold only.
 pub const HOOK_FAIL_OPEN_MS: u64 = 615;
-/// Longest acceptable callback run time (measured worst case 14.8 µs).
+/// Longest acceptable callback run time without Win32 getters: the tagged
+/// probe path (S3 measured worst case 14.8 µs for the flag check).
 pub const CALLBACK_BUDGET_US: u64 = 100;
+/// Longest acceptable warm paste callback. The paste path makes seven win32k
+/// calls (`GetAsyncKeyState` ×5, `GetAncestor`, `GetClipboardSequenceNumber`)
+/// that wait on the system-wide USER lock; outside any hook they measured
+/// p99.9 up to 540 µs and max 2.0 ms on 2026-11-28 (phase-4.md). Still 60×
+/// below [`HOOK_FAIL_OPEN_MS`].
+pub const PASTE_CALLBACK_CEILING_US: u64 = 10_000;
 /// How long `pw-work` waits for the analysis of a swallowed paste before
 /// giving up without re-sending it (fail closed, §4.3).
 pub const PENDING_ANALYSIS_TIMEOUT_MS: u64 = 2_000;
