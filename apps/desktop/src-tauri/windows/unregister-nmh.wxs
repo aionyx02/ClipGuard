@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MSI counterpart of hooks.nsh (bundle.windows.wix.fragmentPaths): on a
+     full uninstall, not a major upgrade, run the app with the unregister flag
+     before its files are removed. Impersonate="yes" runs it as the user who
+     uninstalls, whose HKCU holds the registration (docs/plan/phase-4.md §4.3).
+     Return="ignore": a failure must not block the uninstall. -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <CustomAction Id="UnregisterNmh" FileKey="Path" ExeCommand="--unregister-nmh"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="UnregisterNmh" Before="RemoveFiles">REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+    <!-- Referenced from tauri.conf.json (componentRefs) so the linker pulls
+         this fragment in; the component itself installs nothing. -->
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="UnregisterNmhRef" Guid="5f1d2c3a-8b7e-4c61-9d0a-3e2f4b6c7a81">
+        <CreateFolder />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

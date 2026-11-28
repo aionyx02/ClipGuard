@@ -182,6 +182,44 @@ fn install_error_kind(e: &nmh::install::InstallError) -> String {
     }
 }
 
+/// The Windows uninstallers (NSIS `NSIS_HOOK_PREUNINSTALL`, MSI custom action)
+/// start the app with only this argument to remove what [`install_nmh`]
+/// registered (phase-4.md §4.3).
+pub const UNREGISTER_NMH_FLAG: &str = "--unregister-nmh";
+
+#[derive(Debug, PartialEq, Eq)]
+enum Startup {
+    Run,
+    UnregisterNmh,
+}
+
+/// Only the exact argv `<exe> --unregister-nmh` unregisters; anything else
+/// starts the app.
+fn startup(args: impl Iterator<Item = std::ffi::OsString>) -> Startup {
+    let rest: Vec<_> = args.skip(1).collect();
+    match rest.as_slice() {
+        [flag] if flag == UNREGISTER_NMH_FLAG => Startup::UnregisterNmh,
+        _ => Startup::Run,
+    }
+}
+
+/// Removes the browser registration and exits without starting Tauri (no
+/// window, no single-instance handshake with a running copy). Exit code 1 on
+/// failure; the uninstallers ignore it.
+fn unregister_nmh_and_exit() -> ! {
+    let code = match nmh::install::uninstall() {
+        Ok(()) => 0,
+        Err(e) => {
+            diag!(
+                "native messaging uninstall failed: {}",
+                install_error_kind(&e)
+            );
+            1
+        }
+    };
+    std::process::exit(code)
+}
+
 /// Keeps the IPC server alive until the process ends (dropping it removes the
 /// socket / pipe).
 struct NmhServer(#[allow(dead_code)] Mutex<Option<IpcServer>>);
@@ -323,6 +361,9 @@ fn on_window_event<R: Runtime>(window: &tauri::Window<R>, event: &WindowEvent) {
 
 /// Runs the app.
 pub fn run() {
+    if startup(std::env::args_os()) == Startup::UnregisterNmh {
+        unregister_nmh_and_exit();
+    }
     let app = tauri::Builder::default()
         // First: a second instance exits right away (legacy #9). The running
         // one opens its settings, so launching again from the Start menu
@@ -364,6 +405,31 @@ mod tests {
             status_line(&s),
             "watch=active write=active foreground=active intercept=unavailable(host-failed)"
         );
+    }
+
+    #[test]
+    fn unregister_flag_is_the_only_startup_switch() {
+        let parse = |args: &[&str]| startup(args.iter().map(std::ffi::OsString::from));
+        assert_eq!(parse(&["pw"]), Startup::Run);
+        assert_eq!(parse(&["pw", UNREGISTER_NMH_FLAG]), Startup::UnregisterNmh);
+        // Anything else (a typo, a second flag, the flag in another position)
+        // starts the app normally: the uninstallers pass exactly this argv.
+        assert_eq!(parse(&["pw", "--unregister"]), Startup::Run);
+        assert_eq!(parse(&["pw", UNREGISTER_NMH_FLAG, "x"]), Startup::Run);
+        assert_eq!(parse(&["pw", "x", UNREGISTER_NMH_FLAG]), Startup::Run);
+        assert_eq!(parse(&[]), Startup::Run);
+    }
+
+    #[test]
+    fn installer_hooks_pass_the_flag() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        for f in ["windows/hooks.nsh", "windows/unregister-nmh.wxs"] {
+            let body = std::fs::read_to_string(root.join(f)).unwrap();
+            assert!(body.contains(UNREGISTER_NMH_FLAG), "{f}");
+        }
+        let conf = std::fs::read_to_string(root.join("tauri.conf.json")).unwrap();
+        assert!(conf.contains("windows/hooks.nsh"));
+        assert!(conf.contains("windows/unregister-nmh.wxs"));
     }
 
     #[test]

@@ -137,7 +137,7 @@ UWP 用 `EnumChildWindows` 找 PID 和 frame host 不同的子視窗，找不到
 
 訊息裡不放剪貼簿或輸入框的原文、遮罩前的機密、完整網址（只放 host）、HMAC 金鑰；host 不提供讀剪貼簿或讀機密的 op（T16）。
 
-S9 的 Windows 實測結果決定了三件事。第一，安裝程式寫 `HKCU\Software\{Google\Chrome,Microsoft\Edge,Chromium,Mozilla}\NativeMessagingHosts\org.pastewarden.nmh` 四個 key，解除安裝時全部刪除。第二，argv 的第 3 個參數是 `--parent-window=<HWND>`，host 要接受它，只比對第 2 個參數的 extension ID。第三，`sendNativeMessage` 單次呼叫在 Windows 上約 50–60 ms，只用在啟動探測和偶爾的 `verdict`，需要即時回覆的 op 一律走 `connectNative`。
+S9 的 Windows 實測結果決定了三件事。第一，桌面版每次啟動時寫 `HKCU\Software\{Google\Chrome,Microsoft\Edge,Chromium,Mozilla}\NativeMessagingHosts\org.pastewarden.nmh` 四個 key 和 manifest；解除安裝時，NSIS（`NSIS_HOOK_PREUNINSTALL`）和 MSI（WiX custom action，以解除安裝的使用者身分執行）呼叫 `paste-warden-desktop --unregister-nmh` 全部刪除，更新時不刪。第二，argv 的第 3 個參數是 `--parent-window=<HWND>`，host 要接受它，只比對第 2 個參數的 extension ID。第三，`sendNativeMessage` 單次呼叫在 Windows 上約 50–60 ms，只用在啟動探測和偶爾的 `verdict`，需要即時回覆的 op 一律走 `connectNative`。
 
 ### UI 指令（`apps/desktop/src-tauri/src/commands.rs`）
 
@@ -442,4 +442,4 @@ hook 只看得到 §4.3 `PASTE_COMBOS` 列的按鍵。右鍵選單、App 的「�
 7. **`match_registered` 的金鑰**：擴充功能要算出和桌面版相同的 HMAC 才能比對，但 T16 禁止傳送 HMAC 金鑰。可能的做法是讓擴充功能把候選字串的長度和雜湊前綴送過去，由桌面版比對；或乾脆讓擴充功能自己登記機密。4a 先不做，協定保留這個 op。
 8. **Chromium 擴充功能 ID 的私鑰**：manifest 的 `key` 是一次性產生的，私鑰沒有保存。載入未封裝的擴充功能或用 zip 安裝都不需要它；如果之後要自己打包 CRX 並維持同一個 ID，要重新產生 key 並更新 `ALLOWED_CHROMIUM_EXTENSION_IDS`。
 9. **Linux 的最後輸入時間**：沒有不需要權限的 API（X11 要 XScreenSaver extension，Wayland 要 `ext-idle-notify`），目前 `idle_ms` 回傳「不知道」，錢包掉包只套用快速替換的時間窗。
-10. **Windows 解除安裝不會清掉 Native Messaging 註冊**（2026-11-28 手動測試 H5 發現）：§4.4 寫「解除安裝時全部刪除」四個 key，但 NSIS 和 MSI 都沒有掛 uninstall hook，`nmh::install::uninstall` 也沒有人呼叫。實測解除安裝後，`HKCU\…\NativeMessagingHosts\org.pastewarden.nmh` 四個 key 和 `NativeMessagingHosts\*.json` 都還在，指向已刪除的 `paste-warden-nmh.exe`。擴充功能會把連線失敗當成「找不到桌面版」，所以使用者看到的結果正確，只是留下垃圾。另外，NSIS per-user 的預設安裝位置 `%LOCALAPPDATA%\PasteWarden` 和資料夾是同一個；解除安裝不會刪設定，但介面上的「刪除應用程式資料」勾選框刪的是 `%LOCALAPPDATA%\org.pastewarden.app`，碰不到我們的資料。建議：桌面版加 `--unregister-nmh` 參數，NSIS 用 `NSIS_HOOK_PREUNINSTALL`、MSI 用 WiX fragment 呼叫它；資料夾和安裝位置要不要分開，一起決定。
+10. ~~**Windows 解除安裝不會清掉 Native Messaging 註冊**~~ 已解決（2026-11-28）：手動測試 H5 發現解除安裝後四個 key 和 manifest 都還在，改成由安裝程式呼叫 `--unregister-nmh`，見 S9 實測結果那段。另外，NSIS per-user 的預設安裝位置 `%LOCALAPPDATA%\PasteWarden` 和資料夾是同一個；解除安裝不會刪設定（實測三個設定檔不變），但介面上的「刪除應用程式資料」勾選框刪的是 `%LOCALAPPDATA%\org.pastewarden.app`，碰不到我們的資料。資料夾要不要和安裝位置分開，留到 Phase 6 打包時再決定。

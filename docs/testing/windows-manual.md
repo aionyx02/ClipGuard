@@ -119,7 +119,7 @@
 | H2 | 在 Edge 重複 H1 | 同上 | S9 |
 | H3 | 在 Firefox 重複 H1（之前沒測過） | 同上；manifest 在 `%LOCALAPPDATA%\PasteWarden\NativeMessagingHosts\`，登錄機碼有指到那裡 | §4.7、S9 |
 | H4 | 結束桌面版，再看擴充功能的設定頁 | 顯示「已安裝桌面版，但目前沒有執行。」，擴充功能本身的偵測照常運作 | CLAUDE.md「只裝其中一個也必須完整運作」 |
-| H5 | 解除安裝桌面版 | 擴充功能不跳錯誤，設定頁顯示「找不到桌面版。…」 | §4.4 |
+| H5 | 解除安裝桌面版（nsis 和 msi 各一次） | 擴充功能不跳錯誤，設定頁顯示「找不到桌面版。…」；`HKCU\Software\{Google\Chrome,Microsoft\Edge,Chromium,Mozilla}\NativeMessagingHosts\org.pastewarden.nmh` 和 `%LOCALAPPDATA%\PasteWarden\NativeMessagingHosts\` 都不見了，設定檔還在 | §4.4 |
 
 ---
 
@@ -138,4 +138,4 @@
 | E 機密與設定 | E1–E7 | 允許清單顯示輸入的 `notepad.exe` 而不是存下的名稱，已修（e68614e） |
 | F 誠實告知 | F6、F7 | F1–F3、F5 要使用者操作（UAC、解鎖），未測；F4 未記錄 |
 | G 已知限制 | G1（已知限制）、G2、G3（只有 Defender，三天內無偵測） | 無 |
-| H Native Messaging | H1、H2、H4、H5 | H3：電腦沒裝 Firefox，只驗了 manifest 和登錄機碼。H5 畫面正確，但解除安裝留下 NMH 註冊，見 phase-4.md §4.10 第 10 點 |
+| H Native Messaging | H1、H2、H4、H5 | H3：電腦沒裝 Firefox，只驗了 manifest 和登錄機碼。H5 原本解除安裝會留下 NMH 註冊（phase-4.md §4.10 第 10 點），已修；nsis 實測清乾淨，msi 待測（要 UAC） |
